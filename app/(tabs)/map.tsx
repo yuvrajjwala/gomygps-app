@@ -1,9 +1,10 @@
-import { FontAwesome5, MaterialIcons } from '@expo/vector-icons';
+import { MaterialIcons } from '@expo/vector-icons';
+import { BottomSheetBackdrop, BottomSheetModal } from '@gorhom/bottom-sheet';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import React from 'react';
+import React, { useCallback, useEffect, useMemo } from 'react';
 import { Dimensions, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import MapView, { Marker } from 'react-native-maps';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import MapView from 'react-native-maps';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const fallbackVehicle = {
   number: 'UP15CX3953',
@@ -20,8 +21,14 @@ const fallbackVehicle = {
 };
 
 export default function MapScreen() {
-  const params = useLocalSearchParams();
+  let params: Record<string, any> = {};
+  try {
+    params = useLocalSearchParams();
+  } catch (e) {
+    params = {};
+  }
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const vehicle = {
     ...fallbackVehicle,
     ...params,
@@ -29,6 +36,17 @@ export default function MapScreen() {
     lng: params.lng ? Number(params.lng) : fallbackVehicle.lng,
     speed: params.speed ? Number(params.speed) : fallbackVehicle.speed,
   };
+  const bottomSheetRef = React.useRef<BottomSheetModal>(null);
+  const snapPoints = useMemo(() => ['25%', '50%', '90%'], []);
+  const renderBackdrop = useCallback(
+    (props: any) => <BottomSheetBackdrop {...props} disappearsOnIndex={-1} appearsOnIndex={0} />, []
+  );
+
+  // Keep bottom sheet open from start
+  useEffect(() => {
+    bottomSheetRef.current?.present();
+  }, []);
+
   return (
     <SafeAreaView style={styles.safeArea}>
       {/* Header */}
@@ -50,61 +68,147 @@ export default function MapScreen() {
         initialRegion={{
           latitude: vehicle.lat,
           longitude: vehicle.lng,
-          latitudeDelta: 0.0922,
-          longitudeDelta: 0.0421,
+          latitudeDelta: 0.01,
+          longitudeDelta: 0.01,
         }}
       >
-        <Marker coordinate={{ latitude: vehicle.lat, longitude: vehicle.lng }}>
+        {/* <Marker coordinate={{ latitude: vehicle.lat, longitude: vehicle.lng }}>
           <MaterialIcons name="directions-car" size={36} color="#43A047" style={{ backgroundColor: '#fff', borderRadius: 18, padding: 2 }} />
-        </Marker>
+        </Marker> */}
       </MapView>
-      {/* Bottom Card */}
-      <View style={styles.bottomCard}>
-        <View style={styles.bottomCardHeader}>
-          <Text style={styles.vehicleNumber}>{vehicle.number}</Text>
-          <View style={styles.speedoWrap}>
-            <FontAwesome5 name="tachometer-alt" size={18} color="#43A047" />
-            <Text style={styles.speedoText}>{vehicle.speed}</Text>
-          </View>
+      {/* Modern Bottom Sheet */}
+      <View style={[styles.sheetModern, { paddingBottom: 18 + insets.bottom }]}> {/* Modern bottom sheet */}
+        {/* Header Section */}
+        <View style={styles.headerSection}>
+          <Text style={styles.carNumberModern}>{vehicle.number}</Text>
+          <Text style={styles.carAddressModern}>{vehicle.address}</Text>
         </View>
-        <View style={styles.bottomCardRow}>
-          <MaterialIcons name="event" size={18} color="#FFD600" style={{ marginRight: 6 }} />
-          <Text style={styles.bottomCardRowText}>{vehicle.lastUpdate}</Text>
+        <View style={styles.dividerModern} />
+        {/* Icon Row in Card */}
+        <View style={styles.iconRowCard}>
+          <MaterialIcons name="local-parking" size={26} color="#1de9b6" style={styles.iconRowIconModern} />
+          <MaterialIcons name="lock" size={26} color="#ff7043" style={styles.iconRowIconModern} />
+          <MaterialIcons name="ac-unit" size={26} color="#00bcd4" style={styles.iconRowIconModern} />
+          <MaterialIcons name="directions-car" size={26} color="#43a047" style={styles.iconRowIconModern} />
+          <MaterialIcons name="build" size={26} color="#43a047" style={styles.iconRowIconModern} />
+          <MaterialIcons name="signal-cellular-alt" size={26} color="#43a047" style={styles.iconRowIconModern} />
         </View>
-        <View style={styles.bottomCardRow}>
-          <MaterialIcons name="location-on" size={18} color="#2979FF" style={{ marginRight: 6 }} />
-          <Text style={styles.bottomCardRowText}>{vehicle.address}</Text>
-        </View>
-        <View style={styles.bottomCardDivider} />
-        <View style={styles.statusIconsRow}>
-          <View style={styles.statusIconItem}>
-            <MaterialIcons name="call" size={20} color="#43A047" />
-            <Text style={styles.statusIconText}>Power</Text>
+        <View style={styles.dividerModern} />
+        {/* Stats Grid: 2 columns, stat cards */}
+        <View style={styles.statsGridModern}>
+          {/* Row 1 */}
+          <View style={styles.statsRowModern}>
+            <View style={styles.statCardModern}>
+              <MaterialIcons name="access-time" size={20} color="#1976d2" style={styles.statIconModern} />
+              <View style={styles.statTextModern}>
+                <Text style={styles.statValueModern}>3 Dec 21, 02:39 PM</Text>
+                <Text style={styles.statLabelModern}>Ping Time</Text>
+              </View>
+            </View>
+            <View style={styles.statCardModern}>
+              <MaterialIcons name="timer" size={20} color="#1976d2" style={styles.statIconModern} />
+              <View style={styles.statTextModern}>
+                <Text style={styles.statValueModern}>4h 38m</Text>
+                <Text style={styles.statLabelModern}>Stopped Since</Text>
+              </View>
+            </View>
           </View>
-          <View style={styles.statusIconItem}>
-            <MaterialIcons name="waves" size={20} color="#42A5F5" />
-            <Text style={styles.statusIconText}>Ignition</Text>
+          {/* Row 2 */}
+          <View style={styles.statsRowModern}>
+            <View style={styles.statCardModern}>
+              <MaterialIcons name="speed" size={20} color="#1976d2" style={styles.statIconModern} />
+              <View style={styles.statTextModern}>
+                <Text style={styles.statValueModern}>225h: 38m</Text>
+                <Text style={styles.statLabelModern}>Total Engine</Text>
+              </View>
+            </View>
+            <View style={styles.statCardModern}>
+              <MaterialIcons name="speed" size={20} color="#1976d2" style={styles.statIconModern} />
+              <View style={styles.statTextModern}>
+                <Text style={styles.statValueModern}>42 kmh</Text>
+                <Text style={styles.statLabelModern}>Avg Speed</Text>
+              </View>
+            </View>
           </View>
-          <View style={styles.statusIconItem}>
-            <MaterialIcons name="gps-fixed" size={20} color="#FFA000" />
-            <Text style={styles.statusIconText}>GPS</Text>
+          {/* Row 3 */}
+          <View style={styles.statsRowModern}>
+            <View style={styles.statCardModern}>
+              <MaterialIcons name="map" size={20} color="#1976d2" style={styles.statIconModern} />
+              <View style={styles.statTextModern}>
+                <Text style={styles.statValueModern}>2344.93 km</Text>
+                <Text style={styles.statLabelModern}>Total Distance</Text>
+              </View>
+            </View>
+            <View style={styles.statCardModern}>
+              <MaterialIcons name="speed" size={20} color="#1976d2" style={styles.statIconModern} />
+              <View style={styles.statTextModern}>
+                <Text style={styles.statValueModern}>57 kmh</Text>
+                <Text style={styles.statLabelModern}>Today Max Speed</Text>
+              </View>
+            </View>
           </View>
-          <View style={styles.statusIconItem}>
-            <MaterialIcons name="battery-charging-full" size={20} color="#7C4DFF" />
-            <Text style={styles.statusIconText}>{vehicle.battery}</Text>
+          {/* Row 4 */}
+          <View style={styles.statsRowModern}>
+            <View style={styles.statCardModern}>
+              <MaterialIcons name="stop" size={20} color="#1976d2" style={styles.statIconModern} />
+              <View style={styles.statTextModern}>
+                <Text style={styles.statValueModern}>14h: 07m</Text>
+                <Text style={styles.statLabelModern}>Today Stopped</Text>
+              </View>
+            </View>
+            <View style={styles.statCardModern}>
+              <MaterialIcons name="play-arrow" size={20} color="#1976d2" style={styles.statIconModern} />
+              <View style={styles.statTextModern}>
+                <Text style={styles.statValueModern}>00h: 25m</Text>
+                <Text style={styles.statLabelModern}>Today Running</Text>
+              </View>
+            </View>
           </View>
-          <View style={styles.statusIconItem}>
-            <MaterialIcons name="flash-off" size={20} color="#B0BEC5" />
-            <Text style={styles.statusIconText}>NA</Text>
+          {/* Row 5 */}
+          <View style={styles.statsRowModern}>
+            <View style={styles.statCardModern}>
+              <MaterialIcons name="pause" size={20} color="#1976d2" style={styles.statIconModern} />
+              <View style={styles.statTextModern}>
+                <Text style={styles.statValueModern}>00h: 02m</Text>
+                <Text style={styles.statLabelModern}>Today Idle</Text>
+              </View>
+            </View>
+            <View style={styles.statCardModern}>
+              <MaterialIcons name="power" size={20} color="#1976d2" style={styles.statIconModern} />
+              <View style={styles.statTextModern}>
+                <Text style={styles.statValueModern}>00h: 30m</Text>
+                <Text style={styles.statLabelModern}>Today Ignition On</Text>
+              </View>
+            </View>
           </View>
-        </View>
-        <View style={styles.bottomButtonsRow}>
-          <TouchableOpacity style={styles.centerMapBtn}>
-            <Text style={styles.centerMapBtnText}>Center Map</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.viewReportsBtn}>
-            <Text style={styles.viewReportsBtnText}>View Reports</Text>
-          </TouchableOpacity>
+          {/* Row 6 */}
+          <View style={styles.statsRowModern}>
+            <View style={styles.statCardModern}>
+              <MaterialIcons name="speed" size={20} color="#1976d2" style={styles.statIconModern} />
+              <View style={styles.statTextModern}>
+                <Text style={styles.statValueModern}>0 kmh</Text>
+                <Text style={styles.statLabelModern}>Speed</Text>
+              </View>
+            </View>
+            <View style={styles.statCardModern}>
+              <MaterialIcons name="ac-unit" size={20} color="#1976d2" style={styles.statIconModern} />
+              <View style={styles.statTextModern}>
+                <Text style={styles.statValueModern}>00h: 00m</Text>
+                <Text style={styles.statLabelModern}>Today AC Off</Text>
+              </View>
+            </View>
+          </View>
+          {/* Row 7 */}
+          <View style={styles.statsRowModern}>
+            <View style={styles.statCardModern}>
+              <MaterialIcons name="ac-unit" size={20} color="#1976d2" style={styles.statIconModern} />
+              <View style={styles.statTextModern}>
+                <Text style={styles.statValueModern}>14h: 39m</Text>
+                <Text style={styles.statLabelModern}>Today AC On</Text>
+              </View>
+            </View>
+            <View style={{ flex: 1 }} />
+          </View>
         </View>
       </View>
     </SafeAreaView>
@@ -115,12 +219,12 @@ const { width } = Dimensions.get('window');
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: '#000',
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#2979FF',
+    backgroundColor: '#000',
     paddingHorizontal: 16,
     paddingTop: 12,
     paddingBottom: 8,
@@ -133,7 +237,7 @@ const styles = StyleSheet.create({
     letterSpacing: 1,
   },
   headerSubtitle: {
-    color: '#BBDEFB',
+    color: '#fff',
     fontSize: 13,
     fontWeight: '600',
   },
@@ -142,109 +246,96 @@ const styles = StyleSheet.create({
     width: '100%',
     zIndex: 1,
   },
-  bottomCard: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    width: width,
+  sheetModern: {
     backgroundColor: '#fff',
+    paddingHorizontal: 16,
+    paddingTop: 16,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
-    padding: 18,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: -2 },
-    shadowOpacity: 0.12,
+    shadowOpacity: 0.08,
     shadowRadius: 8,
     elevation: 8,
-    zIndex: 3,
   },
-  bottomCardHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+  headerSection: {
     alignItems: 'center',
-    marginBottom: 6,
+    marginBottom: 8,
   },
-  vehicleNumber: {
+  carNumberModern: {
     fontWeight: 'bold',
-    fontSize: 18,
-    color: '#2979FF',
-  },
-  speedoWrap: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#F7F8FA',
-    borderRadius: 16,
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-  },
-  speedoText: {
-    fontWeight: 'bold',
-    color: '#43A047',
-    marginLeft: 4,
-    fontSize: 16,
-  },
-  bottomCardRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    fontSize: 22,
+    color: '#1976d2',
+    textAlign: 'center',
     marginBottom: 2,
-    marginTop: 2,
   },
-  bottomCardRowText: {
-    color: '#444',
-    fontSize: 14,
-    flex: 1,
-    flexWrap: 'wrap',
-  },
-  bottomCardDivider: {
-    height: 1,
-    backgroundColor: '#F0F0F0',
-    marginVertical: 10,
-  },
-  statusIconsRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginTop: 4,
-    marginBottom: 10,
-  },
-  statusIconItem: {
-    alignItems: 'center',
-    flex: 1,
-  },
-  statusIconText: {
-    fontSize: 12,
+  carAddressModern: {
     color: '#888',
-    marginTop: 2,
-    fontWeight: '600',
+    fontSize: 15,
+    textAlign: 'center',
+    marginBottom: 2,
   },
-  bottomButtonsRow: {
+  dividerModern: {
+    height: 1,
+    backgroundColor: '#e0e0e0',
+    marginVertical: 10,
+    width: '100%',
+  },
+  iconRowCard: {
     flexDirection: 'row',
     justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: '#f5f7fa',
+    borderRadius: 16,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    marginBottom: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.04,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  iconRowIconModern: {
+    marginHorizontal: 4,
+  },
+  statsGridModern: {
     marginTop: 8,
   },
-  centerMapBtn: {
+  statsRowModern: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 10,
+  },
+  statCardModern: {
     flex: 1,
-    backgroundColor: '#2979FF',
-    borderRadius: 10,
-    paddingVertical: 12,
+    flexDirection: 'row',
     alignItems: 'center',
+    backgroundColor: '#fff',
+    borderRadius: 14,
+    paddingVertical: 12,
+    paddingHorizontal: 10,
+    marginHorizontal: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.03,
+    shadowRadius: 2,
+    elevation: 1,
+  },
+  statIconModern: {
     marginRight: 8,
   },
-  centerMapBtnText: {
-    color: '#fff',
-    fontWeight: 'bold',
-    fontSize: 16,
-  },
-  viewReportsBtn: {
+  statTextModern: {
     flex: 1,
-    backgroundColor: '#43A047',
-    borderRadius: 10,
-    paddingVertical: 12,
-    alignItems: 'center',
-    marginLeft: 8,
   },
-  viewReportsBtnText: {
-    color: '#fff',
+  statValueModern: {
+    color: '#222',
     fontWeight: 'bold',
     fontSize: 16,
+    marginBottom: 2,
+  },
+  statLabelModern: {
+    color: '#888',
+    fontSize: 13,
   },
 }); 

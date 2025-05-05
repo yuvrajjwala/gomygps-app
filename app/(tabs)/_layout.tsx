@@ -43,7 +43,7 @@ export default function TabLayout() {
         name="vehicles"
         options={{
           title: 'Vehicles',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="local-shipping" color={color} />,
+          tabBarIcon: ({ color }) => <IconSymbol size={28} name="person.crop.circle.fill" color={color} />,
         }}
       />
       <Tabs.Screen
@@ -54,17 +54,10 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
-        name="fuel"
+        name="devices"
         options={{
-          title: 'Fuel',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="local-gas-station" color={color} />,
-        }}
-      />
-      <Tabs.Screen
-        name="drivers"
-        options={{
-          title: 'Drivers',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="person" color={color} />,
+          title: 'Devices',
+          tabBarIcon: ({ color }) => <IconSymbol size={28} name="map" color={color} />,
         }}
       />
     </Tabs>

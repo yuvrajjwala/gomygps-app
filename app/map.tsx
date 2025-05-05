@@ -2,7 +2,7 @@ import Api from '@/config/Api';
 import { FontAwesome5, MaterialIcons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useRef, useState } from 'react';
-import { Dimensions, Image, ImageSourcePropType, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Dimensions, Image, ImageSourcePropType, StatusBar, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import MapView, { Marker, Region } from 'react-native-maps';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -36,34 +36,6 @@ export default function MapScreen() {
     }, 5000);
     return () => clearInterval(interval);
   }, []);
-
-  const handleZoomIn = () => {
-    const newZoom = zoomLevel / 2;
-    setZoomLevel(newZoom);
-    if (device?.latitude && device?.longitude) {
-      const newRegion: Region = {
-        latitude: device.latitude,
-        longitude: device.longitude,
-        latitudeDelta: newZoom,
-        longitudeDelta: newZoom * 0.5,
-      };
-      mapRef.current?.animateToRegion(newRegion, 300);
-    }
-  };
-
-  const handleZoomOut = () => {
-    const newZoom = zoomLevel * 2;
-    setZoomLevel(newZoom);
-    if (device?.latitude && device?.longitude) {
-      const newRegion: Region = {
-        latitude: device.latitude,
-        longitude: device.longitude,
-        latitudeDelta: newZoom,
-        longitudeDelta: newZoom * 0.5,
-      };
-      mapRef.current?.animateToRegion(newRegion, 300);
-    }
-  };
 
   const handleCenterMap = () => {
     if (device?.latitude && device?.longitude) {
@@ -100,6 +72,7 @@ export default function MapScreen() {
   
   return (
     <SafeAreaView style={styles.safeArea}>
+      <StatusBar barStyle="light-content" backgroundColor="#2979FF" />
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()}>
@@ -142,16 +115,6 @@ export default function MapScreen() {
           />
         </Marker>
       </MapView>
-
-      {/* Zoom Controls */}
-      <View style={styles.zoomControls}>
-        <TouchableOpacity style={styles.zoomButton} onPress={handleZoomIn}>
-          <MaterialIcons name="add" size={24} color="#2979FF" />
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.zoomButton} onPress={handleZoomOut}>
-          <MaterialIcons name="remove" size={24} color="#2979FF" />
-        </TouchableOpacity>
-      </View>
 
       {/* Bottom Card */}
       <View style={styles.bottomCard}>
@@ -347,25 +310,5 @@ const styles = StyleSheet.create({
     height: 30,
     resizeMode: 'contain',
   },
-  zoomControls: {
-    position: 'absolute',
-    right: 16,
-    top: '50%',
-    transform: [{ translateY: -40 }],
-    backgroundColor: '#fff',
-    borderRadius: 8,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-    elevation: 5,
-  },
-  zoomButton: {
-    width: 40,
-    height: 40,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
-  },
+
 }); 

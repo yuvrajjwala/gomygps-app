@@ -312,7 +312,10 @@ export default function MapScreen() {
           </TouchableOpacity>
         </View>
         <View style={styles.bottomButtonsRow}>
-          <TouchableOpacity style={styles.centerMapBtn} onPress={handleCenterMap}>
+          <TouchableOpacity
+            style={styles.centerMapBtn}
+            onPress={() => router.push({ pathname: '/vehicle-details', params: device })}
+          >
             <Text style={styles.centerMapBtnText}>View Details</Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.viewReportsBtn} onPress={() => router.push('/reports')}>

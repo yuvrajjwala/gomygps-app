@@ -159,7 +159,7 @@ export default function MapScreen() {
         </View>
         <View style={styles.bottomButtonsRow}>
           <TouchableOpacity style={styles.centerMapBtn} onPress={handleCenterMap}>
-            <Text style={styles.centerMapBtnText}>Center Map</Text>
+            <Text style={styles.centerMapBtnText}>View Details</Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.viewReportsBtn}>
             <Text style={styles.viewReportsBtnText}>View Reports</Text>
@@ -179,7 +179,7 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#2979FF',
+    backgroundColor: '#000',
     paddingHorizontal: 16,
     paddingTop: 12,
     paddingBottom: 8,
@@ -294,7 +294,7 @@ const styles = StyleSheet.create({
   },
   centerMapBtn: {
     flex: 1,
-    backgroundColor: '#2979FF',
+    backgroundColor: '#000000',
     borderRadius: 10,
     paddingVertical: 12,
     alignItems: 'center',
@@ -307,7 +307,7 @@ const styles = StyleSheet.create({
   },
   viewReportsBtn: {
     flex: 1,
-    backgroundColor: '#43A047',
+    backgroundColor: '#000000',
     borderRadius: 10,
     paddingVertical: 12,
     alignItems: 'center',

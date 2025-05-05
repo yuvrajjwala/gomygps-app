@@ -24,7 +24,7 @@ export default function DashboardScreen() {
   }, []);
 
   useEffect(() => {
-    if (devicesData.length > 0) {
+    if (devicesData?.length > 0) {
       updateVehicleStats();
     }
   }, [devicesData]);
@@ -124,8 +124,8 @@ export default function DashboardScreen() {
             <Text style={styles.listHeader}>NAME</Text>
             <Text style={styles.listHeader}>STATUS</Text>
           </View>
-          {devicesData.length > 0 && devicesData.slice(0, 5).map((device: any, idx: number) => (
-            <View key={device.name + idx} style={[styles.listRow, idx !== devicesData.length - 1 && styles.listRowBorder]}>
+          {devicesData?.length > 0 && devicesData?.slice(0, 5)?.map((device: any, idx: number) => (
+            <View key={device.name + idx} style={[styles.listRow, idx !== devicesData?.length - 1 && styles.listRowBorder]}>
               <View style={styles.listLeft}>
                 <View style={styles.deviceIconCircle}>
                   <MaterialIcons name="local-shipping" size={24} color="#fff" style={{}} />
@@ -145,8 +145,8 @@ export default function DashboardScreen() {
           <View style={styles.listHeaderRow}>
             <Text style={styles.listHeader}>NAME</Text>
           </View>
-          {groupsData.length > 0 && groupsData.map((group: any, idx: number) => (
-            <View key={group.name} style={[styles.listRow, idx !== groupsData.length - 1 && styles.listRowBorder]}>
+          {groupsData?.length > 0 && groupsData?.map((group: any, idx: number) => (
+            <View key={group.name} style={[styles.listRow, idx !== groupsData?.length - 1 && styles.listRowBorder]}>
               <View style={styles.listLeft}>
                 <View style={styles.groupIconCircle}>
                   <MaterialIcons name="layers" size={22} color="#fff" />

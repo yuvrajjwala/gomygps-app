@@ -1,31 +1,136 @@
+import Api from '@/config/Api';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import React from 'react';
+import React, { useState } from 'react';
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function VehicleDetailsScreen() {
   const router = useRouter();
   const params = useLocalSearchParams();
-  const vehicle = params;
+  const [isParked, setIsParked] = useState(false);
+  const [isLocked, setIsLocked] = useState(false);
+  const [carMode, setCarMode] = useState(false);
+  const [autoFollow, setAutoFollow] = useState(false);
 
-  // Example fallback data for demo
+  const vehicle = JSON.parse(params.device as string);
+  console.log("vehicle", vehicle);
+
+  // Format date to readable format
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleString('en-US', {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: true
+    });
+  };
+
+  // Calculate time difference
+  const getTimeDifference = (dateString: string) => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffHrs = Math.floor(diffMs / (1000 * 60 * 60));
+    const diffMins = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+    return `${diffHrs}h ${diffMins}m`;
+  };
+
+  const createGeofence = async (device: any) => {
+    try {
+      const geofenceData = {
+        name: `High Alert ${device.name}`,
+        description: `Auto-generated high alert zone for ${device.name}`,
+        area: `CIRCLE (${device.latitude} ${device.longitude}, 50)`,
+      };
+      const response = await Api.call('/api/geofences', 'POST', geofenceData, '');
+      let deviceData = await fetchDeviceDetails(device.deviceId);
+      await Api.call('/api/permissions', 'POST', {
+        deviceId: device.deviceId,
+        geofenceId: response.data.id,
+      }, '');
+      let newAttributes = {
+        ...deviceData.attributes,
+        fence_id: response.data.id,
+        parked_time: new Date().toISOString(),
+        is_parked: true,
+      };
+      deviceData.attributes = newAttributes;
+      await Api.call(`/api/devices/${device.deviceId}`, 'PUT', deviceData, '');
+      setIsParked(true);
+    } catch (error) {
+      console.error("Error creating geofence:", error);
+    }
+  };
+
+  const removeGeofence = async (device: any) => {
+    try {
+      let deviceData = await fetchDeviceDetails(device.deviceId);
+      await Api.call(`/api/geofences/${deviceData.attributes.fence_id}`, 'DELETE', {}, '');
+      let newAttributes = {
+        ...deviceData.attributes,
+        fence_id: null,
+        parked_time: null,
+        is_parked: false,
+      };
+      deviceData.attributes = newAttributes;
+      await Api.call(`/api/devices/${device.deviceId}`, 'PUT', deviceData, '');
+      setIsParked(false);
+    } catch (error) {
+      console.error("Error removing geofence:", error);
+    }
+  };
+
+  const fetchDeviceDetails = async (deviceId: string) => {
+    try {
+      const response = await Api.call(`/api/devices?id=${deviceId}`, 'GET', {}, '');
+      if (response.data) {
+        const device = response.data.find((d: any) => d.id === deviceId);
+        return device;
+      }
+    } catch (error) {
+      console.error("Error fetching device details:", error);
+    }
+  };
+
+  const mobilize = async (protocol: string) => {
+    try {
+      let lockStatus = isLocked ? "RELAY,1#" : "RELAY,0#";
+      await Api.call('/api/commands/send', 'POST', {
+        commandId: "",
+        deviceId: vehicle?.deviceId,
+        description: "mobilize",
+        type: "custom",
+        attributes: {
+          data: lockStatus,
+        },
+      }, '');
+      let deviceData = await fetchDeviceDetails(vehicle?.deviceId);
+      let newAttributes = {
+        ...deviceData.attributes,
+        is_mobilized: !isLocked,
+      };
+      deviceData.attributes = newAttributes;
+      await Api.call(`/api/devices/${deviceData.id}`, 'PUT', deviceData, '');
+      setIsLocked(!isLocked);
+    } catch (error) {
+      console.error("Error mobilizing device:", error);
+    }
+  };
+
   const data = {
-    number: vehicle?.name || 'UP15CX3953',
-    address: vehicle?.address || 'Global International Academy, Dhana-Buxer, Road, Simbhali, Uttar Pradesh (SW)',
-    pingTime: vehicle?.lastUpdate || '3 Dec 21, 02:39 PM',
-    stoppedSince: '4h 38m',
-    totalEngine: '225h: 38m',
-    avgSpeed: '42 kmh',
-    totalDistance: '2344.93 km',
-    todayMaxSpeed: '57 kmh',
-    todayStopped: '14h: 07m',
-    todayRunning: '00h: 25m',
-    todayIdle: '00h: 02m',
-    todayIgnitionOn: '00h: 30m',
-    speed: '0 kmh',
-    todayACOff: '00h: 00m',
-    todayACOn: '14h: 39m',
+    number: vehicle?.name || 'N/A',
+    address: vehicle?.address || 'N/A',
+    pingTime: formatDate(vehicle?.lastUpdate || new Date().toISOString()),
+    stoppedSince: getTimeDifference(vehicle?.lastUpdate || new Date().toISOString()),
+    speed: `${parseFloat(vehicle?.speed || '0').toFixed(1)} kmh`,
+    status: vehicle?.status || 'N/A',
+    model: vehicle?.model || 'N/A',
+    protocol: vehicle?.protocol || 'N/A',
+    category: vehicle?.category || 'N/A',
   };
 
   const stats = [
@@ -34,27 +139,15 @@ export default function VehicleDetailsScreen() {
       { icon: 'timer', label: 'Stopped Since', value: data.stoppedSince },
     ],
     [
-      { icon: 'av-timer', label: 'Total Engine', value: data.totalEngine },
-      { icon: 'speed', label: 'Avg Speed', value: data.avgSpeed },
+      { icon: 'speed', label: 'Current Speed', value: data.speed },
+      { icon: 'power', label: 'Status', value: data.status },
     ],
     [
-      { icon: 'map', label: 'Total Distance', value: data.totalDistance },
-      { icon: 'speed', label: 'Today Max Speed', value: data.todayMaxSpeed },
+      { icon: 'build', label: 'Model', value: data.model },
+      { icon: 'settings', label: 'Protocol', value: data.protocol },
     ],
     [
-      { icon: 'stop', label: 'Today Stopped', value: data.todayStopped },
-      { icon: 'play-arrow', label: 'Today Running', value: data.todayRunning },
-    ],
-    [
-      { icon: 'pause', label: 'Today Idle', value: data.todayIdle },
-      { icon: 'power', label: 'Today Ignition On', value: data.todayIgnitionOn },
-    ],
-    [
-      { icon: 'speed', label: 'Speed', value: data.speed },
-      { icon: 'ac-unit', label: 'Today AC Off', value: data.todayACOff },
-    ],
-    [
-      { icon: 'ac-unit', label: 'Today AC On', value: data.todayACOn },
+      { icon: 'category', label: 'Category', value: data.category },
       { icon: '', label: '', value: '' },
     ],
   ];
@@ -73,27 +166,70 @@ export default function VehicleDetailsScreen() {
         {/* Vehicle Number and Address */}
         <Text style={styles.vehicleNumber}>{data.number}</Text>
         <Text style={styles.vehicleAddress}>{data.address}</Text>
-        {/* Status Icon Row */}
-        <View style={styles.statusIconRowColorful}>
-          <View style={[styles.statusIconCircle, { backgroundColor: '#E3FCEC' }]}> {/* Green */}
-            <MaterialIcons name="local-parking" size={28} color="#43A047" />
-          </View>
-          <View style={[styles.statusIconCircle, { backgroundColor: '#FFEAEA' }]}> {/* Red */}
-            <MaterialIcons name="lock" size={28} color="#E53935" />
-          </View>
-          <View style={[styles.statusIconCircle, { backgroundColor: '#E0F7FA' }]}> {/* Cyan */}
-            <MaterialIcons name="ac-unit" size={28} color="#00B8D4" />
-          </View>
-          <View style={[styles.statusIconCircle, { backgroundColor: '#E3FCEC' }]}> {/* Green */}
-            <MaterialIcons name="directions-car" size={28} color="#43A047" />
-          </View>
-          <View style={[styles.statusIconCircle, { backgroundColor: '#FFF8E1' }]}> {/* Yellow */}
-            <MaterialIcons name="build" size={28} color="#FFD600" />
-          </View>
-          <View style={[styles.statusIconCircle, { backgroundColor: '#E3F2FD' }]}> {/* Blue */}
-            <MaterialIcons name="signal-cellular-alt" size={28} color="#2979FF" />
-          </View>
+        
+        {/* Status Icons Row */}
+        <View style={styles.statusIconsRow}>
+          {/* Parking */}
+          <TouchableOpacity 
+            style={[styles.iconCircle, { borderColor: isParked ? '#43A047' : '#A5F3C7' }]}
+            onPress={() => {
+              if (vehicle) {
+                isParked ? removeGeofence(vehicle) : createGeofence(vehicle);
+              }
+            }}
+          > 
+            <MaterialIcons name="local-parking" size={24} color={isParked ? '#43A047' : '#A5F3C7'} />
+          </TouchableOpacity>
+          
+          {/* Play (active) */}
+          <TouchableOpacity 
+            style={[styles.iconCircle, styles.iconCircleActive, { backgroundColor: '#4285F4', borderColor: '#4285F4', shadowColor: '#4285F4' }]}
+            onPress={() => {
+              const data = btoa(JSON.stringify({
+                deviceId: vehicle?.deviceId,
+                id: vehicle?.deviceId,
+              }));
+            }}
+          > 
+            <MaterialIcons name="play-arrow" size={24} color="#fff" />
+          </TouchableOpacity>
+          
+          {/* Car Mode */}
+          <TouchableOpacity 
+            style={[styles.iconCircle, { borderColor: carMode ? '#4285F4' : '#90CAF9' }]}
+            onPress={() => setCarMode(!carMode)}
+          > 
+            <MaterialIcons name="directions-car" size={24} color={carMode ? '#4285F4' : '#90CAF9'} />
+          </TouchableOpacity>
+          
+          {/* Lock */}
+          <TouchableOpacity 
+            style={[styles.iconCircle, { borderColor: isLocked ? '#E53935' : '#FFCDD2' }]}
+            onPress={() => {
+              if (vehicle) {
+                mobilize(vehicle.protocol);
+              }
+            }}
+          > 
+            <MaterialIcons name="lock" size={24} color={isLocked ? '#E53935' : '#FFCDD2'} />
+          </TouchableOpacity>
+          
+          {/* Auto Follow */}
+          <TouchableOpacity 
+            style={[styles.iconCircle, { borderColor: autoFollow ? '#43A047' : '#A5F3C7' }]}
+            onPress={() => {
+              if (!carMode) {
+                // Show error toast
+                return;
+              }
+              setAutoFollow(!autoFollow);
+            }}
+          > 
+            <MaterialIcons name="location-on" size={24} color={autoFollow ? '#43A047' : '#A5F3C7'} />
+          </TouchableOpacity>
         </View>
+
+    
         {/* Stats Grid */}
         <View style={styles.statsGridColorful}>
           {stats.map((row, i) => (
@@ -189,6 +325,36 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     marginTop: 2,
     fontWeight: '600',
+  },
+  statusIconsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 4,
+    marginBottom: 20,
+    paddingHorizontal: 10,
+  
+  },
+  iconCircle: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    borderWidth: 2,
+    backgroundColor: '#fff',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginHorizontal: 6,
+    shadowColor: 'transparent',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0,
+    shadowRadius: 0,
+  },
+  iconCircleActive: {
+    backgroundColor: '#4285F4',
+    borderColor: '#4285F4',
+    shadowColor: '#4285F4',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.18,
+    shadowRadius: 8,
   },
   statusIconRowColorful: {
     flexDirection: 'row',

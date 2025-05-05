@@ -1,5 +1,6 @@
 import Api from '@/config/Api';
 import { MaterialIcons } from '@expo/vector-icons';
+import { router } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { FlatList, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
@@ -155,7 +156,7 @@ export default function DevicesScreen() {
         keyExtractor={item => item.id.toString()}
         contentContainerStyle={{ paddingBottom: 80, paddingTop: 12 }}
         renderItem={({ item }) => (
-          <View style={styles.deviceCard}>
+          <TouchableOpacity style={styles.deviceCard} onPress={() => router.push({ pathname: '/vehicle-details', params: { device: JSON.stringify(item) } })}>  
             <View style={styles.deviceRow}>
               <View style={styles.deviceIconCircle}>
                 <MaterialIcons name="directions-car" size={22} color="#00B8D4" />
@@ -204,7 +205,7 @@ export default function DevicesScreen() {
                 <MaterialIcons name="edit" size={16} color="#fff" />
               </TouchableOpacity>
             </View>
-          </View>
+          </TouchableOpacity>
         )}
       />
       <TouchableOpacity style={styles.fab} onPress={openAddModal}>

@@ -1,12 +1,36 @@
+import Api from '@/config/Api';
+import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import { Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { Button, TextInput } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useDispatch } from 'react-redux';
+import { setCredentials } from './store/slices/authSlice';
 
 export default function LoginScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [secure, setSecure] = useState(true);
+  const dispatch = useDispatch();
+  const router = useRouter();
+
+  const handleLogin = async () => {
+
+    const response = await Api.call(
+      `/api/session`,
+      'POST',
+      { email, password },
+      ""
+    );
+    console.log(response.data);
+    if (response.data) {
+      dispatch(setCredentials({
+        token: response.data.token || "",
+        user: response.data || {}
+      }));
+      router.replace('/(tabs)');
+    }
+  };
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -44,7 +68,7 @@ export default function LoginScreen() {
           contentStyle={{ paddingVertical: 8 }}
           labelStyle={{ fontWeight: 'bold', fontSize: 16 }}
           buttonColor="#2979FF"
-          onPress={() => {}}
+          onPress={handleLogin}
         >
           Login
         </Button>

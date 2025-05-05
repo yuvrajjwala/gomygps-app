@@ -1,7 +1,7 @@
 import Api from '@/config/Api';
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
-import { Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Image, StyleSheet, Text, View } from 'react-native';
 import { Button, TextInput } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useDispatch } from 'react-redux';
@@ -36,7 +36,7 @@ export default function LoginScreen() {
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.container}>
         {/* Logo or App Icon */}
-        <Image source={require('../assets/images/partial-react-logo.png')} style={styles.logo} />
+        <Image source={require('../assets/images/icon.png')} style={styles.logo} />
         <Text style={styles.heading}>Welcome Back</Text>
         <Text style={styles.subheading}>Login to your account</Text>
         <TextInput
@@ -59,9 +59,9 @@ export default function LoginScreen() {
           right={<TextInput.Icon icon={secure ? 'eye-off' : 'eye'} onPress={() => setSecure(!secure)} />}
           secureTextEntry={secure}
         />
-        <TouchableOpacity style={styles.forgotWrap}>
+        {/* <TouchableOpacity style={styles.forgotWrap}>
           <Text style={styles.forgot}>Forgot Password?</Text>
-        </TouchableOpacity>
+        </TouchableOpacity> */}
         <Button
           mode="contained"
           style={styles.loginBtn}
@@ -72,12 +72,7 @@ export default function LoginScreen() {
         >
           Login
         </Button>
-        <View style={styles.signupWrap}>
-          <Text style={styles.signupText}>Don't have an account?</Text>
-          <TouchableOpacity>
-            <Text style={styles.signupLink}> Sign up</Text>
-          </TouchableOpacity>
-        </View>
+ 
       </View>
     </SafeAreaView>
   );
@@ -95,8 +90,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
   },
   logo: {
-    width: 80,
-    height: 80,
+    width: 100,
+    height: 100,
     marginBottom: 18,
     borderRadius: 20,
   },
@@ -129,6 +124,7 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     marginBottom: 18,
     elevation: 2,
+    marginTop: 20,
   },
   signupWrap: {
     flexDirection: 'row',

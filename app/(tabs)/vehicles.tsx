@@ -1,7 +1,8 @@
+import Api from '@/config/Api';
 import { FontAwesome5, Ionicons, MaterialIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import React from 'react';
-import { ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { FlatList, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 const statusFilters = [
@@ -11,39 +12,72 @@ const statusFilters = [
   { label: 'Idle', count: 1, color: '#FFD600', icon: 'show-chart' },
 ];
 
-const vehicles = [
-  {
-    number: 'UP15CX3953',
-    lastUpdate: '24-04-2025 02:51:58 PM',
-    address: 'Global International Academy, Dhana-Buxer, Road, Simbhali, Uttar Pradesh (SW)',
-    odo: '257.7 km',
-    totalDist: '2.5 km',
-    lastSpeed: '0KMPH',
-    speed: 48,
-  },
-  {
-    number: 'DL9CAB1234',
-    lastUpdate: '24-04-2025 01:45:32 PM',
-    address: 'Connaught Place, New Delhi, Delhi (NE)',
-    odo: '3935.3 km',
-    totalDist: '0 km',
-    lastSpeed: '0KMPH',
-    speed: 48,
-  },
-  {
-    number: 'MH02AB5678',
-    lastUpdate: '24-04-2025 12:30:10 PM',
-    address: 'Bandra Kurla Complex, Mumbai, Maharashtra (W)',
-    odo: '685.8 km',
-    totalDist: '0 km',
-    lastSpeed: '0KMPH',
-    speed: 48,
-  },
-];
 
 export default function VehiclesScreen() {
   const cardColors = ['#FFFFFF', '#FFFFFF', '#FFFFFF', '#FFFFFF'];
   const router = useRouter();
+  const [devicesData, setDevicesData] = useState([]);
+
+  useEffect(() => {
+    getDevices();
+  }, []);
+
+  const getDevices = async () => {
+    const response = await Api.call('/api/devices', 'GET', {}, '');
+    setDevicesData(response.data);
+  }
+
+  const renderVehicleCard = ({ item: device, index }: { item: any; index: number }) => (
+    <TouchableOpacity
+      key={device.id + index}
+      activeOpacity={0.85}
+      onPress={() => router.push({ pathname: '/map', params: { ...device } })}
+    >
+      <View
+        style={[
+          styles.vehicleCard,
+          styles.vehicleCardShadow,
+          { backgroundColor: cardColors[index % cardColors.length] },
+        ]}
+      >
+        <View style={styles.vehicleCardHeader}>
+          <View style={styles.vehicleNumberRow}>
+            <MaterialIcons name="directions-car" size={22} color={index % 2 === 0 ? '#2979FF' : '#43A047'} style={{ marginRight: 8 }} />
+            <Text style={[styles.vehicleNumber, { color: index % 2 === 0 ? '#2979FF' : '#43A047' }]}>{device?.name}</Text>
+          </View>
+          <View style={[styles.speedoWrap, { backgroundColor: index % 2 === 0 ? '#2979FF22' : '#43A04722' }]}>
+            <FontAwesome5 name="tachometer-alt" size={18} color={index % 2 === 0 ? '#2979FF' : '#43A047'} />
+            <Text style={[styles.speedoText, { color: index % 2 === 0 ? '#2979FF' : '#43A047' }]}>{device?.attributes?.speed || 0}</Text>
+          </View>
+        </View>
+        <View style={styles.vehicleCardRow}>
+          <MaterialIcons name="event" size={18} color="#FFD600" style={{ marginRight: 6 }} />
+          <Text style={styles.vehicleCardRowText}>{device?.lastUpdate}</Text>
+        </View>
+        <View style={styles.vehicleCardRow}>
+          <MaterialIcons name="location-on" size={18} color="#2979FF" style={{ marginRight: 6 }} />
+          <Text style={styles.vehicleCardRowText}>{device?.attributes?.address}</Text>
+        </View>
+        {/* Stats Row */}
+        <View style={styles.statsRow}>
+          <View style={styles.statsBoxRow}>
+            <MaterialIcons name="speed" size={20} color="#FF9800" style={{ marginRight: 4 }} />
+            <Text style={[styles.statsValue, { color: '#FF9800' }]}>{device?.attributes?.odometer}</Text>
+          </View>
+          <View style={styles.statsBoxRow}>
+            <MaterialIcons name="alt-route" size={20} color="#43A047" style={{ marginRight: 4 }} />
+            <Text style={[styles.statsValue, { color: '#43A047' }]}>{device?.attributes?.totalDistance}</Text>
+          </View>
+          <View style={styles.statsBoxRow}>
+            <MaterialIcons name="trending-up" size={20} color="#2979FF" style={{ marginRight: 4 }} />
+            <Text style={[styles.statsValue, { color: '#2979FF' }]}>{device?.attributes?.lastSpeed}</Text>
+          </View>
+        </View>
+        <View style={styles.vehicleCardDivider} />
+      </View>
+    </TouchableOpacity>
+  );
+
   return (
     <SafeAreaView style={styles.safeArea}>
       {/* Status Filters */}
@@ -78,58 +112,13 @@ export default function VehiclesScreen() {
         </TouchableOpacity>
       </View>
       {/* Vehicle Cards */}
-      <ScrollView contentContainerStyle={{ paddingBottom: 24 }} showsVerticalScrollIndicator={false}>
-        {vehicles.map((vehicle, idx) => (
-          <TouchableOpacity
-            key={vehicle.number}
-            activeOpacity={0.85}
-            onPress={() => router.push({ pathname: '/map', params: { ...vehicle } })}
-          >
-            <View
-              style={[
-                styles.vehicleCard,
-                styles.vehicleCardShadow,
-                { backgroundColor: cardColors[idx % cardColors.length] },
-              ]}
-            >
-              <View style={styles.vehicleCardHeader}>
-                <View style={styles.vehicleNumberRow}>
-                  <MaterialIcons name="directions-car" size={22} color={idx % 2 === 0 ? '#2979FF' : '#43A047'} style={{ marginRight: 8 }} />
-                  <Text style={[styles.vehicleNumber, { color: idx % 2 === 0 ? '#2979FF' : '#43A047' }]}>{vehicle.number}</Text>
-                </View>
-                <View style={[styles.speedoWrap, { backgroundColor: idx % 2 === 0 ? '#2979FF22' : '#43A04722' }] }>
-                  <FontAwesome5 name="tachometer-alt" size={18} color={idx % 2 === 0 ? '#2979FF' : '#43A047'} />
-                  <Text style={[styles.speedoText, { color: idx % 2 === 0 ? '#2979FF' : '#43A047' }]}>{vehicle.speed}</Text>
-                </View>
-              </View>
-              <View style={styles.vehicleCardRow}>
-                <MaterialIcons name="event" size={18} color="#FFD600" style={{ marginRight: 6 }} />
-                <Text style={styles.vehicleCardRowText}>{vehicle.lastUpdate}</Text>
-              </View>
-              <View style={styles.vehicleCardRow}>
-                <MaterialIcons name="location-on" size={18} color="#2979FF" style={{ marginRight: 6 }} />
-                <Text style={styles.vehicleCardRowText}>{vehicle.address}</Text>
-              </View>
-              {/* Stats Row */}
-              <View style={styles.statsRow}>
-                <View style={styles.statsBoxRow}>
-                  <MaterialIcons name="speed" size={20} color="#FF9800" style={{ marginRight: 4 }} />
-                  <Text style={[styles.statsValue, { color: '#FF9800' }]}>{vehicle.odo}</Text>
-                </View>
-                <View style={styles.statsBoxRow}>
-                  <MaterialIcons name="alt-route" size={20} color="#43A047" style={{ marginRight: 4 }} />
-                  <Text style={[styles.statsValue, { color: '#43A047' }]}>{vehicle.totalDist}</Text>
-                </View>
-                <View style={styles.statsBoxRow}>
-                  <MaterialIcons name="trending-up" size={20} color="#2979FF" style={{ marginRight: 4 }} />
-                  <Text style={[styles.statsValue, { color: '#2979FF' }]}>{vehicle.lastSpeed}</Text>
-                </View>
-              </View>
-              <View style={styles.vehicleCardDivider} />
-            </View>
-          </TouchableOpacity>
-        ))}
-      </ScrollView>
+      <FlatList
+        data={devicesData}
+        renderItem={renderVehicleCard}
+        keyExtractor={(item) => item.id.toString()}
+        contentContainerStyle={{ paddingBottom: 24 }}
+        showsVerticalScrollIndicator={false}
+      />
     </SafeAreaView>
   );
 }

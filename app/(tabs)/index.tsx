@@ -1,42 +1,77 @@
+import Api from '@/config/Api';
 import { MaterialIcons } from '@expo/vector-icons';
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Dimensions, ScrollView, StatusBar, StyleSheet, Text, View } from 'react-native';
 import { PieChart } from 'react-native-chart-kit';
 import { Card, Paragraph, Title, useTheme } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
-
 const screenWidth = Dimensions.get('window').width;
-
-const vehicleStats = [
-  { label: 'Running', count: 120, color: '#00E676' }, // Vibrant Green
-  { label: 'Stopped', count: 45, color: '#FF1744' }, // Vibrant Red
-  { label: 'Idle', count: 30, color: '#FFD600' }, // Vibrant Yellow
-  { label: 'No Data', count: 10, color: '#2979FF' }, // Vibrant Blue
-];
-
-const pieData = vehicleStats.map(stat => ({
-  name: stat.label,
-  population: stat.count,
-  color: stat.color,
-  legendFontColor: '#222',
-  legendFontSize: 16,
-}));
-
-const devices = [
-  { name: 'HR38AE2205', status: 'Online' },
-  { name: 'TN12AX9880', status: 'Offline' },
-  { name: 'KA05AK7893', status: 'Online' },
-  { name: 'KA05AK6882', status: 'Online' },
-  { name: 'KA05AK6883', status: 'Online' },
-];
-
-const groups = [
-  { name: 'Group 1', type: 'Parent' },
-  { name: 'child group', type: 'Child' },
-];
 
 export default function DashboardScreen() {
   const theme = useTheme();
+  const [devicesData, setDevicesData] = useState<any[]>([]);
+  const [groupsData, setGroupsData] = useState([]);
+  const [vehicleStats, setVehicleStats] = useState([
+    { label: 'Running', count: 0, color: '#00E676' },
+    { label: 'Stopped', count: 0, color: '#FF1744' },
+    { label: 'Idle', count: 0, color: '#FFD600' },
+    { label: 'No Data', count: 0, color: '#2979FF' },
+  ]);
+
+  useEffect(() => {
+    getDevicesCount();
+    getGroupsCount();
+  }, []);
+
+  useEffect(() => {
+    if (devicesData.length > 0) {
+      updateVehicleStats();
+    }
+  }, [devicesData]);
+
+  const updateVehicleStats = () => {
+    const stats = [
+      { label: 'Running', count: 0, color: '#00E676' },
+      { label: 'Stopped', count: 0, color: '#FF1744' },
+      { label: 'Idle', count: 0, color: '#FFD600' },
+      { label: 'No Data', count: 0, color: '#2979FF' },
+    ];
+
+    devicesData.forEach(device => {
+      if (device.status === 'online') {
+        if (device.attributes.is_parked) {
+          stats[1].count++;
+        } else {
+          stats[0].count++; 
+        }
+      } else if (device.status === 'offline') {
+        stats[2].count++; 
+      } else {
+        stats[3].count++; 
+      }
+    });
+
+    setVehicleStats(stats);
+  };
+
+  const getDevicesCount = async () => {
+    const response = await Api.call('/api/devices', 'GET', {}, '');
+    setDevicesData(response.data);
+  }
+
+  const getGroupsCount = async () => {
+    const response = await Api.call('/api/groups', 'GET', {}, '');
+    setGroupsData(response.data);
+  }
+
+  const pieData = vehicleStats.map(stat => ({
+    name: stat.label,
+    population: stat.count,
+    color: stat.color,
+    legendFontColor: '#222',
+    legendFontSize: 16,
+  }));
+
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: '#000' }}>
       <StatusBar backgroundColor="#000" barStyle="light-content" />
@@ -47,8 +82,8 @@ export default function DashboardScreen() {
         <Title style={styles.header}>Fleet Dashboard</Title>
         <View style={styles.cardGrid}>
           <View style={styles.cardRow}>
-            {vehicleStats.slice(0, 2).map(stat => (
-              <Card key={stat.label} style={[styles.statCard, { backgroundColor: stat.color + 'CC' }]}> 
+            {vehicleStats.slice(0, 2).map((stat: any, idx: number) => (
+              <Card key={stat.label + idx} style={[styles.statCard, { backgroundColor: stat.color + 'CC' }]}>
                 <Card.Content>
                   <Title style={{ color: '#fff', fontWeight: 'bold' }}>{stat.count}</Title>
                   <Paragraph style={{ color: '#fff', fontWeight: 'bold' }}>{stat.label}</Paragraph>
@@ -58,7 +93,7 @@ export default function DashboardScreen() {
           </View>
           <View style={styles.cardRow}>
             {vehicleStats.slice(2, 4).map(stat => (
-              <Card key={stat.label} style={[styles.statCard, { backgroundColor: stat.color + 'CC' }]}> 
+              <Card key={stat.label} style={[styles.statCard, { backgroundColor: stat.color + 'CC' }]}>
                 <Card.Content>
                   <Title style={{ color: '#fff', fontWeight: 'bold' }}>{stat.count}</Title>
                   <Paragraph style={{ color: '#fff', fontWeight: 'bold' }}>{stat.label}</Paragraph>
@@ -89,17 +124,17 @@ export default function DashboardScreen() {
             <Text style={styles.listHeader}>NAME</Text>
             <Text style={styles.listHeader}>STATUS</Text>
           </View>
-          {devices.map((device, idx) => (
-            <View key={device.name} style={[styles.listRow, idx !== devices.length - 1 && styles.listRowBorder]}> 
+          {devicesData.length > 0 && devicesData.slice(0, 5).map((device: any, idx: number) => (
+            <View key={device.name + idx} style={[styles.listRow, idx !== devicesData.length - 1 && styles.listRowBorder]}>
               <View style={styles.listLeft}>
                 <View style={styles.deviceIconCircle}>
                   <MaterialIcons name="local-shipping" size={24} color="#fff" style={{}} />
                 </View>
                 <Text style={styles.deviceName}>{device.name}</Text>
               </View>
-              <View style={[styles.statusBadge, device.status === 'Online' ? styles.online : styles.offline]}>
-                <View style={[styles.statusDot, device.status === 'Online' ? styles.onlineDot : styles.offlineDot]} />
-                <Text style={[styles.statusText, device.status === 'Online' ? styles.onlineText : styles.offlineText]}>{device.status}</Text>
+              <View style={[styles.statusBadge, device.status === 'online' ? styles.online : styles.offline]}>
+                <View style={[styles.statusDot, device.status === 'online' ? styles.onlineDot : styles.offlineDot]} />
+                <Text style={[styles.statusText, device.status === 'online' ? styles.onlineText : styles.offlineText]}>{device.status}</Text>
               </View>
             </View>
           ))}
@@ -109,18 +144,14 @@ export default function DashboardScreen() {
           <Card.Title title="Groups" titleStyle={styles.listTitle} />
           <View style={styles.listHeaderRow}>
             <Text style={styles.listHeader}>NAME</Text>
-            <Text style={styles.listHeader}>TYPE</Text>
           </View>
-          {groups.map((group, idx) => (
-            <View key={group.name} style={[styles.listRow, idx !== groups.length - 1 && styles.listRowBorder]}> 
+          {groupsData.length > 0 && groupsData.map((group: any, idx: number) => (
+            <View key={group.name} style={[styles.listRow, idx !== groupsData.length - 1 && styles.listRowBorder]}>
               <View style={styles.listLeft}>
                 <View style={styles.groupIconCircle}>
                   <MaterialIcons name="layers" size={22} color="#fff" />
                 </View>
                 <Text style={styles.deviceName}>{group.name}</Text>
-              </View>
-              <View style={[styles.typeBadge, group.type === 'Parent' ? styles.parent : styles.child]}>
-                <Text style={[styles.typeText, group.type === 'Parent' ? styles.parentText : styles.childText]}>{group.type}</Text>
               </View>
             </View>
           ))}
@@ -194,6 +225,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 14,
     backgroundColor: '#fff',
+    borderRadius: 10,
   },
   listRowBorder: {
     borderBottomWidth: 1,

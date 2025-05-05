@@ -1,34 +1,98 @@
+import Api from '@/config/Api';
 import { FontAwesome5, MaterialIcons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import React from 'react';
-import { Dimensions, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import MapView, { Marker } from 'react-native-maps';
+import React, { useEffect, useRef, useState } from 'react';
+import { Dimensions, Image, ImageSourcePropType, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import MapView, { Marker, Region } from 'react-native-maps';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-const fallbackVehicle = {
-  number: 'UP15CX3953',
-  lastUpdate: '24-04-2025 02:51:58 PM',
-  speed: 48,
-  lat: 28.6928,
-  lng: 77.1206,
-  address: 'Global International Academy, Dhana-Buxer, Road, Simbhali, Uttar Pradesh (SW)',
-  power: true,
-  ignition: true,
-  gps: true,
-  battery: '50%',
-  na: false,
-};
-
 export default function MapScreen() {
-  const params = useLocalSearchParams();
   const router = useRouter();
-  const vehicle = {
-    ...fallbackVehicle,
-    ...params,
-    lat: params.lat ? Number(params.lat) : fallbackVehicle.lat,
-    lng: params.lng ? Number(params.lng) : fallbackVehicle.lng,
-    speed: params.speed ? Number(params.speed) : fallbackVehicle.speed,
+  const params = useLocalSearchParams();
+  const [device, setDevice] = useState<any>(null);
+  const mapRef = useRef<MapView>(null);
+  const [zoomLevel, setZoomLevel] = useState(0.0922);
+
+
+  const getVehicleIcon = (): ImageSourcePropType => {
+    if (!device?.lastUpdate) {
+      return require('@/assets/images/cars/car-gray.png');
+    }
+    const lastUpdate = new Date(device.lastUpdate);
+    const fourHoursAgo = new Date(Date.now() - 1000 * 60 * 60 * 4);
+    if (lastUpdate < fourHoursAgo) {
+      return require('@/assets/images/cars/car-gray.png');
+    }
+    if (device.status === 'online' && device.speed === 0) {
+      return require('@/assets/images/cars/car-orange.png');
+    }
+    return device.status === 'online' ? require('@/assets/images/cars/car-green.png') : require('@/assets/images/cars/car-red.png');
   };
+
+  useEffect(() => {
+    getPosition();
+
+    const interval = setInterval(() => {
+      getPosition();
+    }, 5000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const handleZoomIn = () => {
+    const newZoom = zoomLevel / 2;
+    setZoomLevel(newZoom);
+    if (device?.latitude && device?.longitude) {
+      const newRegion: Region = {
+        latitude: device.latitude,
+        longitude: device.longitude,
+        latitudeDelta: newZoom,
+        longitudeDelta: newZoom * 0.5,
+      };
+      mapRef.current?.animateToRegion(newRegion, 300);
+    }
+  };
+
+  const handleZoomOut = () => {
+    const newZoom = zoomLevel * 2;
+    setZoomLevel(newZoom);
+    if (device?.latitude && device?.longitude) {
+      const newRegion: Region = {
+        latitude: device.latitude,
+        longitude: device.longitude,
+        latitudeDelta: newZoom,
+        longitudeDelta: newZoom * 0.5,
+      };
+      mapRef.current?.animateToRegion(newRegion, 300);
+    }
+  };
+
+  const handleCenterMap = () => {
+    if (device?.latitude && device?.longitude) {
+      const newRegion: Region = {
+        latitude: device.latitude,
+        longitude: device.longitude,
+        latitudeDelta: zoomLevel,
+        longitudeDelta: zoomLevel * 0.5,
+      };
+      mapRef.current?.animateToRegion(newRegion, 1000);
+    }
+  };
+
+  const getPosition = async () => {
+    const response = await Api.call(`/api/positions?deviceId=${params.id}`, 'GET', {}, '');
+    const newDevice = { ...params, ...response.data[0] };
+    setDevice(newDevice);
+    if (newDevice.latitude && newDevice.longitude) {
+      const newRegion: Region = {
+        latitude: newDevice.latitude,
+        longitude: newDevice.longitude,
+        latitudeDelta: zoomLevel,
+        longitudeDelta: zoomLevel,
+      };
+      mapRef.current?.animateToRegion(newRegion, 1000);
+    }
+  }
+
   return (
     <SafeAreaView style={styles.safeArea}>
       {/* Header */}
@@ -37,8 +101,8 @@ export default function MapScreen() {
           <MaterialIcons name="arrow-back" size={26} color="#fff" />
         </TouchableOpacity>
         <View style={{ flex: 1, alignItems: 'center' }}>
-          <Text style={styles.headerTitle}>{vehicle.number}</Text>
-          <Text style={styles.headerSubtitle}>Last updated: 10:42 AM</Text>
+          <Text style={styles.headerTitle}>{device?.name}</Text>
+          <Text style={styles.headerSubtitle}>Last updated: {device?.lastUpdate}</Text>
         </View>
         <TouchableOpacity>
           <MaterialIcons name="more-vert" size={26} color="#fff" />
@@ -46,34 +110,60 @@ export default function MapScreen() {
       </View>
       {/* Map */}
       <MapView
+        ref={mapRef}
         style={styles.map}
         initialRegion={{
-          latitude: vehicle.lat,
-          longitude: vehicle.lng,
-          latitudeDelta: 0.0922,
-          longitudeDelta: 0.0421,
+          latitude: device?.latitude || 0,
+          longitude: device?.longitude || 0,
+          latitudeDelta: zoomLevel,
+          longitudeDelta: zoomLevel * 0.5,
         }}
+        zoomEnabled={true}
+        zoomControlEnabled={true}
+        minZoomLevel={0.0001}
+        maxZoomLevel={50}
       >
-        <Marker coordinate={{ latitude: vehicle.lat, longitude: vehicle.lng }}>
-          <MaterialIcons name="directions-car" size={36} color="#43A047" style={{ backgroundColor: '#fff', borderRadius: 18, padding: 2 }} />
+        <Marker coordinate={{ latitude: device?.latitude, longitude: device?.longitude }}>
+          <Image
+            source={getVehicleIcon()}
+            style={[
+              styles.markerImage,
+              {
+                transform: [
+                  { rotate: `${device?.course || 0}deg` }
+                ]
+              }
+            ]}
+          />
         </Marker>
       </MapView>
+
+      {/* Zoom Controls */}
+      <View style={styles.zoomControls}>
+        <TouchableOpacity style={styles.zoomButton} onPress={handleZoomIn}>
+          <MaterialIcons name="add" size={24} color="#2979FF" />
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.zoomButton} onPress={handleZoomOut}>
+          <MaterialIcons name="remove" size={24} color="#2979FF" />
+        </TouchableOpacity>
+      </View>
+
       {/* Bottom Card */}
       <View style={styles.bottomCard}>
         <View style={styles.bottomCardHeader}>
-          <Text style={styles.vehicleNumber}>{vehicle.number}</Text>
+          <Text style={styles.vehicleNumber}>{device?.name}</Text>
           <View style={styles.speedoWrap}>
             <FontAwesome5 name="tachometer-alt" size={18} color="#43A047" />
-            <Text style={styles.speedoText}>{vehicle.speed}</Text>
+            <Text style={styles.speedoText}>{(device?.speed)?.toFixed(0)} km/h</Text>
           </View>
         </View>
         <View style={styles.bottomCardRow}>
           <MaterialIcons name="event" size={18} color="#FFD600" style={{ marginRight: 6 }} />
-          <Text style={styles.bottomCardRowText}>{vehicle.lastUpdate}</Text>
+          <Text style={styles.bottomCardRowText}>{device?.lastUpdate}</Text>
         </View>
         <View style={styles.bottomCardRow}>
           <MaterialIcons name="location-on" size={18} color="#2979FF" style={{ marginRight: 6 }} />
-          <Text style={styles.bottomCardRowText}>{vehicle.address}</Text>
+          <Text style={styles.bottomCardRowText}>{device?.address}</Text>
         </View>
         <View style={styles.bottomCardDivider} />
         <View style={styles.statusIconsRow}>
@@ -91,7 +181,7 @@ export default function MapScreen() {
           </View>
           <View style={styles.statusIconItem}>
             <MaterialIcons name="battery-charging-full" size={20} color="#7C4DFF" />
-            <Text style={styles.statusIconText}>{vehicle.battery}</Text>
+            <Text style={styles.statusIconText}>{device?.battery}</Text>
           </View>
           <View style={styles.statusIconItem}>
             <MaterialIcons name="flash-off" size={20} color="#B0BEC5" />
@@ -99,7 +189,7 @@ export default function MapScreen() {
           </View>
         </View>
         <View style={styles.bottomButtonsRow}>
-          <TouchableOpacity style={styles.centerMapBtn}>
+          <TouchableOpacity style={styles.centerMapBtn} onPress={handleCenterMap}>
             <Text style={styles.centerMapBtnText}>Center Map</Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.viewReportsBtn}>
@@ -246,5 +336,31 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontWeight: 'bold',
     fontSize: 16,
+  },
+  markerImage: {
+    width: 30,
+    height: 30,
+    resizeMode: 'contain',
+  },
+  zoomControls: {
+    position: 'absolute',
+    right: 16,
+    top: '50%',
+    transform: [{ translateY: -40 }],
+    backgroundColor: '#fff',
+    borderRadius: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
+  },
+  zoomButton: {
+    width: 40,
+    height: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
   },
 }); 

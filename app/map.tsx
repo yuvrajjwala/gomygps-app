@@ -315,7 +315,7 @@ export default function MapScreen() {
           <TouchableOpacity style={styles.centerMapBtn} onPress={handleCenterMap}>
             <Text style={styles.centerMapBtnText}>View Details</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.viewReportsBtn}>
+          <TouchableOpacity style={styles.viewReportsBtn} onPress={() => router.push('/reports')}>
             <Text style={styles.viewReportsBtnText}>View Reports</Text>
           </TouchableOpacity>
         </View>
@@ -380,7 +380,7 @@ const styles = StyleSheet.create({
   vehicleNumber: {
     fontWeight: 'bold',
     fontSize: 18,
-    color: '#2979FF',
+    color: '#000000',
   },
   speedoWrap: {
     flexDirection: 'row',

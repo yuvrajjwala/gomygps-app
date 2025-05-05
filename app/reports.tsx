@@ -1,6 +1,6 @@
 import { MaterialIcons } from '@expo/vector-icons';
 import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import { Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -18,7 +18,8 @@ interface Report {
 }
 
 export default function ReportsScreen() {
-  const router = useRouter();
+  const router = useRouter(); 
+  const { deviceId } = useLocalSearchParams();
   const [showFilters, setShowFilters] = useState(false);
   const [selectedVehicle, setSelectedVehicle] = useState('');
   const [selectedGroup, setSelectedGroup] = useState('');
@@ -46,7 +47,7 @@ export default function ReportsScreen() {
       id: 2,
       title: 'Event Report',
       date: '2024-03-19',
-      type: 'event',
+      type: 'events',
       data: [
         { event: 'Engine Start', time: '08:00', location: 'New York', vehicle: 'Truck 001' },
         { event: 'Speed Alert', time: '09:15', location: 'Boston', vehicle: 'Truck 002' },
@@ -57,7 +58,7 @@ export default function ReportsScreen() {
       id: 3,
       title: 'Stop Report',
       date: '2024-03-18',
-      type: 'stop',
+      type: 'stops',
       data: [
         { location: 'New York', duration: '45m', purpose: 'Loading', vehicle: 'Truck 001' },
         { location: 'Boston', duration: '30m', purpose: 'Unloading', vehicle: 'Truck 002' },
@@ -68,7 +69,7 @@ export default function ReportsScreen() {
       id: 4,
       title: 'Trip Report',
       date: '2024-03-17',
-      type: 'trip',
+      type: 'trips',
       data: [
         { trip: 'NY-BOS', start: '08:00', end: '12:00', distance: '350 km', fuel: '45 L' },
         { trip: 'BOS-CHI', start: '13:00', end: '18:00', distance: '400 km', fuel: '50 L' },
@@ -236,7 +237,7 @@ export default function ReportsScreen() {
           <TouchableOpacity 
             key={report.id} 
             style={styles.reportCard}
-            onPress={() => router.push(`/reports/${report.id}`)}
+            onPress={() => router.push(`/reports/${report.type}?deviceId=${deviceId}`)}
           >
             <View style={styles.reportInfo}>
               <Text style={styles.reportTitle}>{report.title}</Text>

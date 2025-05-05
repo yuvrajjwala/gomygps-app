@@ -1,111 +1,218 @@
+import Api from '@/config/Api';
 import { MaterialIcons } from '@expo/vector-icons';
 import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import React, { useState } from 'react';
-import { Modal, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { ActivityIndicator, Modal, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+interface Device {
+  id: string;
+  name: string;
+}
+
+interface Group {
+  id: string;
+  name: string;
+}
+
 interface ReportData {
-  [key: string]: string;
+  [key: string]: string | number;
 }
 
-interface Report {
-  id: number;
-  title: string;
-  date: string;
-  type: string;
-  data: ReportData[];
+interface BaseReport {
+  id: string;
+  name: string;
+  fields: string[];
+  description: string;
 }
 
-// This would typically come from an API
-const reports: Report[] = [
+const baseReports: BaseReport[] = [
   {
-    id: 1,
-    title: 'Route Report',
-    date: '2024-03-20',
-    type: 'route',
-    data: [
-      { route: 'Route 1', distance: '150 km', duration: '2h 30m', stops: '3', fuel: '25 L' },
-      { route: 'Route 2', distance: '200 km', duration: '3h 15m', stops: '4', fuel: '35 L' },
-      { route: 'Route 3', distance: '180 km', duration: '2h 45m', stops: '2', fuel: '30 L' },
-    ]
+    id: 'route',
+    name: 'Route Report',
+    fields: ['Device', 'Start Time', 'End Time', 'Distance', 'Duration', 'Stops', 'Fuel Used'],
+    description: 'Detailed route information including distance, duration, and stops'
   },
   {
-    id: 2,
-    title: 'Event Report',
-    date: '2024-03-19',
-    type: 'event',
-    data: [
-      { event: 'Engine Start', time: '08:00', location: 'New York', vehicle: 'Truck 001' },
-      { event: 'Speed Alert', time: '09:15', location: 'Boston', vehicle: 'Truck 002' },
-      { event: 'Fuel Stop', time: '10:30', location: 'Chicago', vehicle: 'Truck 003' },
-    ]
+    id: 'events',
+    name: 'Events Report',
+    fields: ['Device', 'Event Type', 'Time', 'Location', 'Details'],
+    description: 'All events recorded by the device'
   },
   {
-    id: 3,
-    title: 'Stop Report',
-    date: '2024-03-18',
-    type: 'stop',
-    data: [
-      { location: 'New York', duration: '45m', purpose: 'Loading', vehicle: 'Truck 001' },
-      { location: 'Boston', duration: '30m', purpose: 'Unloading', vehicle: 'Truck 002' },
-      { location: 'Chicago', duration: '60m', purpose: 'Break', vehicle: 'Truck 003' },
-    ]
+    id: 'stops',
+    name: 'Stops Report',
+    fields: ['Device', 'Location', 'Start Time', 'End Time', 'Duration', 'Purpose'],
+    description: 'Information about vehicle stops and idle time'
   },
   {
-    id: 4,
-    title: 'Trip Report',
-    date: '2024-03-17',
-    type: 'trip',
-    data: [
-      { trip: 'NY-BOS', start: '08:00', end: '12:00', distance: '350 km', fuel: '45 L' },
-      { trip: 'BOS-CHI', start: '13:00', end: '18:00', distance: '400 km', fuel: '50 L' },
-      { trip: 'CHI-NY', start: '09:00', end: '15:00', distance: '380 km', fuel: '48 L' },
-    ]
+    id: 'trips',
+    name: 'Trips Report',
+    fields: ['Device', 'Trip ID', 'Start Time', 'End Time', 'Distance', 'Fuel Used', 'Duration'],
+    description: 'Complete trip information with start and end points'
   },
   {
-    id: 5,
-    title: 'Summary Report',
-    date: '2024-03-16',
-    type: 'summary',
-    data: [
-      { metric: 'Total Distance', value: '1,130 km', change: '+5%' },
-      { metric: 'Total Fuel', value: '143 L', change: '-2%' },
-      { metric: 'Total Stops', value: '9', change: '0%' },
-      { metric: 'Avg Speed', value: '65 km/h', change: '+3%' },
-    ]
-  },
+    id: 'summary',
+    name: 'Summary Report',
+    fields: ['Device', 'Total Distance', 'Total Fuel', 'Total Stops', 'Average Speed', 'Change'],
+    description: 'Summary of all activities and metrics'
+  }
 ];
+
+const formatDate = (dateStr: string) => {
+  if (!dateStr) return '';
+  const date = new Date(dateStr);
+  return date.toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true
+  });
+};
+
+const getColumnWidth = (key: string) => {
+  switch (key.toLowerCase()) {
+    case 'device':
+    case 'location':
+    case 'event type':
+    case 'details':
+    case 'purpose':
+      return 2;
+    case 'distance':
+    case 'duration':
+    case 'fuel used':
+    case 'average speed':
+      return 1.5;
+    default:
+      return 1;
+  }
+};
+
+const formatValue = (key: string, value: any) => {
+  if (typeof value === 'string' && value.includes('T')) {
+    return formatDate(value);
+  }
+  
+  if (key.toLowerCase().includes('distance')) {
+    return typeof value === 'number' ? `${value.toFixed(2)} km` : value;
+  }
+  
+  if (key.toLowerCase().includes('fuel')) {
+    return typeof value === 'number' ? `${value.toFixed(2)} L` : value;
+  }
+  
+  if (key.toLowerCase().includes('speed')) {
+    return typeof value === 'number' ? `${value.toFixed(1)} km/h` : value;
+  }
+  
+  if (key.toLowerCase().includes('duration')) {
+    if (typeof value === 'number') {
+      const hours = Math.floor(value / 3600);
+      const minutes = Math.floor((value % 3600) / 60);
+      return `${hours}h ${minutes}m`;
+    }
+    return value;
+  }
+  
+  return value;
+};
 
 export default function ReportDetailScreen() {
   const router = useRouter();
   const { id } = useLocalSearchParams();
-  const report = reports.find(r => r.id === Number(id));
-
-  // Filter state (only for Route Report)
-  const [deviceQuery, setDeviceQuery] = useState('');
-  const [groupQuery, setGroupQuery] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [reportData, setReportData] = useState<ReportData[]>([]);
+  const [devices, setDevices] = useState<Device[]>([]);
+  const [groups, setGroups] = useState<Group[]>([]);
   const [selectedDevice, setSelectedDevice] = useState('');
   const [selectedGroup, setSelectedGroup] = useState('');
+  const [deviceQuery, setDeviceQuery] = useState('');
+  const [groupQuery, setGroupQuery] = useState('');
   const [fromDate, setFromDate] = useState(new Date());
   const [toDate, setToDate] = useState(new Date());
   const [showFromPicker, setShowFromPicker] = useState(false);
   const [showToPicker, setShowToPicker] = useState(false);
-  const devices = ['Truck 001', 'Truck 002', 'Truck 003'];
-  const groups = ['Group A', 'Group B', 'Group C'];
+  const [currentPage, setCurrentPage] = useState(1);
+  const recordsPerPage = 50;
 
-  const filteredDevices = devices.filter(d => d.toLowerCase().includes(deviceQuery.toLowerCase()));
-  const filteredGroups = groups.filter(g => g.toLowerCase().includes(groupQuery.toLowerCase()));
+  const currentReport = baseReports.find(report => report.id === id);
 
-  const handleGenerateReport = () => {
-    // Implement filter logic here
-    // For now, just log selected filters
-    console.log({ selectedDevice, selectedGroup, fromDate, toDate });
+  // Fetch devices and groups on component mount
+  useEffect(() => {
+    fetchDevices();
+    fetchGroups();
+  }, []);
+
+  const fetchDevices = async () => {
+    try {
+      const response = await Api.call('/api/devices', 'GET', {}, '');
+      setDevices(response.data || []);
+    } catch (error) {
+      console.error('Error fetching devices:', error);
+    }
   };
 
-  const handleDownload = () => {
-    if (report) {
-      console.log('Downloading report:', report.title);
+  const fetchGroups = async () => {
+    try {
+      const response = await Api.call('/api/groups', 'GET', {}, '');
+      setGroups(response.data || []);
+    } catch (error) {
+      console.error('Error fetching groups:', error);
+    }
+  };
+
+  const handleGenerateReport = async () => {
+    if (!selectedDevice && !selectedGroup) {
+      alert('Please select a device or group');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const fromDateUTC = new Date(fromDate);
+      fromDateUTC.setHours(fromDateUTC.getHours() - 5, fromDateUTC.getMinutes() - 30);
+      
+      const toDateUTC = new Date(toDate);
+      toDateUTC.setHours(toDateUTC.getHours() - 5, toDateUTC.getMinutes() - 30);
+
+      const params = {
+        from: `${fromDateUTC.toISOString().slice(0, 19)}Z`,
+        to: `${toDateUTC.toISOString().slice(0, 19)}Z`,
+        ...(selectedDevice ? { deviceId: selectedDevice } : {}),
+        ...(selectedGroup ? { groupId: selectedGroup } : {}),
+      };
+
+      const response = await Api.call(`/api/reports/${id}`, 'GET', params, '');
+      setReportData(response.data || []);
+      setCurrentPage(1);
+    } catch (error) {
+      console.error('Error generating report:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDownload = async () => {
+    try {
+      const response = await Api.call(`/api/reports/${id}/export`, 'GET', {
+        from: fromDate.toISOString(),
+        to: toDate.toISOString(),
+        ...(selectedDevice ? { deviceId: selectedDevice } : {}),
+        ...(selectedGroup ? { groupId: selectedGroup } : {}),
+      }, 'blob');
+      
+      // Handle file download
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `${id}_report.xlsx`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+    } catch (error) {
+      console.error('Error downloading report:', error);
     }
   };
 
@@ -113,11 +220,11 @@ export default function ReportDetailScreen() {
     switch (type) {
       case 'route':
         return 'map';
-      case 'event':
+      case 'events':
         return 'event';
-      case 'stop':
+      case 'stops':
         return 'place';
-      case 'trip':
+      case 'trips':
         return 'directions-car';
       case 'summary':
         return 'assessment';
@@ -126,19 +233,19 @@ export default function ReportDetailScreen() {
     }
   };
 
-  if (!report) {
-    return (
-      <SafeAreaView style={styles.container}>
-        <View style={styles.header}>
-          <TouchableOpacity onPress={() => router.back()}>
-            <MaterialIcons name="arrow-back" size={24} color="#fff" />
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>Report Not Found</Text>
-          <View style={{ width: 24 }} />
-        </View>
-      </SafeAreaView>
-    );
-  }
+  const filteredDevices = devices.filter(d => 
+    d.name.toLowerCase().includes(deviceQuery.toLowerCase())
+  );
+
+  const filteredGroups = groups.filter(g => 
+    g.name.toLowerCase().includes(groupQuery.toLowerCase())
+  );
+
+  // Calculate pagination
+  const indexOfLastRecord = currentPage * recordsPerPage;
+  const indexOfFirstRecord = indexOfLastRecord - recordsPerPage;
+  const currentRecords = reportData.slice(indexOfFirstRecord, indexOfLastRecord);
+  const totalPages = Math.ceil(reportData.length / recordsPerPage);
 
   return (
     <SafeAreaView style={styles.containerDark}>
@@ -147,12 +254,38 @@ export default function ReportDetailScreen() {
         <TouchableOpacity onPress={() => router.back()}>
           <MaterialIcons name="arrow-back" size={24} color="#fff" />
         </TouchableOpacity>
-        <Text style={styles.headerTitleDark}>{report.title}</Text>
+        <Text style={styles.headerTitleDark}>
+          {typeof id === 'string' ? id.charAt(0).toUpperCase() + id.slice(1) : id} Report
+        </Text>
         <View style={{ width: 24 }} />
       </View>
 
       <ScrollView contentContainerStyle={styles.scrollContent}>
-        {/* Universal Filter Card */}
+        {/* Report Info Card */}
+        {currentReport && (
+          <View style={styles.reportInfoCardDark}>
+            <View style={styles.reportInfoHeaderDark}>
+              <MaterialIcons name={getReportIcon(currentReport.id)} size={24} color="#fff" />
+              <View style={styles.reportInfoTextDark}>
+                <Text style={styles.reportNameDark}>{currentReport.name}</Text>
+                <Text style={styles.reportDescriptionDark}>{currentReport.description}</Text>
+              </View>
+            </View>
+            <View style={styles.fieldsContainerDark}>
+              <Text style={styles.fieldsTitleDark}>Available Fields:</Text>
+              <View style={styles.fieldsListDark}>
+                {currentReport.fields.map((field, index) => (
+                  <View key={index} style={styles.fieldItemDark}>
+                    <MaterialIcons name="check-circle" size={16} color="#43A047" />
+                    <Text style={styles.fieldTextDark}>{field}</Text>
+                  </View>
+                ))}
+              </View>
+            </View>
+          </View>
+        )}
+
+        {/* Filter Card */}
         <View style={styles.filterCardDark}>
           <View style={styles.filterFieldBlock}>
             <Text style={styles.filterLabelDark}>Device</Text>
@@ -167,9 +300,16 @@ export default function ReportDetailScreen() {
               <Modal visible={!!deviceQuery} transparent animationType="fade">
                 <View style={styles.dropdownModalBg}>
                   <View style={styles.dropdownListDark}>
-                    {filteredDevices.map((d) => (
-                      <TouchableOpacity key={d} onPress={() => { setSelectedDevice(d); setDeviceQuery(''); }}>
-                        <Text style={styles.dropdownItemDark}>{d}</Text>
+                    {filteredDevices.map((device) => (
+                      <TouchableOpacity 
+                        key={device.id} 
+                        onPress={() => { 
+                          setSelectedDevice(device.id); 
+                          setDeviceQuery(''); 
+                          setSelectedGroup('');
+                        }}
+                      >
+                        <Text style={styles.dropdownItemDark}>{device.name}</Text>
                       </TouchableOpacity>
                     ))}
                   </View>
@@ -177,6 +317,7 @@ export default function ReportDetailScreen() {
               </Modal>
             </View>
           </View>
+
           <View style={styles.filterFieldBlock}>
             <Text style={styles.filterLabelDark}>Group</Text>
             <View style={styles.dropdownContainerDark}>
@@ -190,9 +331,16 @@ export default function ReportDetailScreen() {
               <Modal visible={!!groupQuery} transparent animationType="fade">
                 <View style={styles.dropdownModalBg}>
                   <View style={styles.dropdownListDark}>
-                    {filteredGroups.map((g) => (
-                      <TouchableOpacity key={g} onPress={() => { setSelectedGroup(g); setGroupQuery(''); }}>
-                        <Text style={styles.dropdownItemDark}>{g}</Text>
+                    {filteredGroups.map((group) => (
+                      <TouchableOpacity 
+                        key={group.id} 
+                        onPress={() => { 
+                          setSelectedGroup(group.id); 
+                          setGroupQuery(''); 
+                          setSelectedDevice('');
+                        }}
+                      >
+                        <Text style={styles.dropdownItemDark}>{group.name}</Text>
                       </TouchableOpacity>
                     ))}
                   </View>
@@ -200,6 +348,7 @@ export default function ReportDetailScreen() {
               </Modal>
             </View>
           </View>
+
           <View style={styles.filterFieldBlock}>
             <Text style={styles.filterLabelDark}>From</Text>
             <TouchableOpacity style={styles.dateInputDark} onPress={() => setShowFromPicker(true)}>
@@ -218,6 +367,7 @@ export default function ReportDetailScreen() {
               />
             )}
           </View>
+
           <View style={styles.filterFieldBlock}>
             <Text style={styles.filterLabelDark}>To</Text>
             <TouchableOpacity style={styles.dateInputDark} onPress={() => setShowToPicker(true)}>
@@ -236,62 +386,106 @@ export default function ReportDetailScreen() {
               />
             )}
           </View>
-          <TouchableOpacity style={styles.generateButtonDark} onPress={handleGenerateReport}>
-            <MaterialIcons name="search" size={20} color="#fff" />
-            <Text style={styles.generateButtonTextDark}>Generate Report</Text>
-          </TouchableOpacity>
-        </View>
 
-        {/* Report Info */}
-        <View style={styles.reportInfoDark}>
-          <View style={styles.reportInfoHeaderDark}>
-            <MaterialIcons name={getReportIcon(report.type)} size={24} color="#fff" />
-            <View style={styles.reportInfoTextDark}>
-              <Text style={styles.reportDateDark}>{report.date}</Text>
-              <Text style={styles.reportTypeDark}>{report.type.charAt(0).toUpperCase() + report.type.slice(1)} Report</Text>
-            </View>
-          </View>
-        </View>
-
-        {/* Table */}
-        <View style={styles.tableContainerDark}>
-          <View style={styles.tableDark}>
-            {/* Table Header */}
-            {report.data.length > 0 && (
-              <View style={styles.tableRowDark}>
-                {Object.keys(report.data[0]).map((key) => (
-                  <Text key={key} style={styles.tableHeaderDark}>
-                    {key.charAt(0).toUpperCase() + key.slice(1)}
-                  </Text>
-                ))}
-              </View>
+          <TouchableOpacity 
+            style={[styles.generateButtonDark, loading && styles.generateButtonDisabledDark]} 
+            onPress={handleGenerateReport}
+            disabled={loading}
+          >
+            {loading ? (
+              <ActivityIndicator color="#fff" size="small" />
+            ) : (
+              <>
+                <MaterialIcons name="search" size={20} color="#fff" />
+                <Text style={styles.generateButtonTextDark}>Generate Report</Text>
+              </>
             )}
-
-            {/* Table Rows */}
-            {report.data.map((row, index) => (
-              <View key={index} style={styles.tableRowDark}>
-                {Object.values(row).map((value, i) => (
-                  <Text key={i} style={[
-                    styles.tableCellDark,
-                    report.type === 'summary' && i === 2 && {
-                      color: value.startsWith('+') ? '#43A047' : value.startsWith('-') ? '#E53935' : '#aaa'
-                    }
-                  ]}>
-                    {value}
-                  </Text>
-                ))}
-              </View>
-            ))}
-          </View>
-        </View>
-
-        {/* Download Button */}
-        <View style={styles.footerDark}>
-          <TouchableOpacity style={styles.downloadButtonDark} onPress={handleDownload}>
-            <MaterialIcons name="download" size={20} color="#fff" />
-            <Text style={styles.downloadButtonTextDark}>Download Report</Text>
           </TouchableOpacity>
         </View>
+
+        {/* Report Data */}
+        {reportData.length > 0 && (
+          <View style={styles.tableContainerDark}>
+            <View style={styles.tableWrapperDark}>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                <View>
+                  {/* Table Header */}
+                  {reportData[0] && (
+                    <View style={styles.tableRowDark}>
+                      {Object.keys(reportData[0]).map((key) => (
+                        <View 
+                          key={key} 
+                          style={[
+                            styles.tableHeaderCellDark,
+                            { flex: getColumnWidth(key) }
+                          ]}
+                        >
+                          <Text style={styles.tableHeaderTextDark}>
+                            {key.split(/(?=[A-Z])/).join(' ')}
+                          </Text>
+                        </View>
+                      ))}
+                    </View>
+                  )}
+
+                  {/* Table Rows */}
+                  {currentRecords.map((row: any, index: number) => (
+                    <View key={index} style={styles.tableRowDark}>
+                      {Object.entries(row).map(([key, value]: [string, any], i: number) => (
+                        <View 
+                          key={i} 
+                          style={[
+                            styles.tableCellDark,
+                            { flex: getColumnWidth(key) }
+                          ]}
+                        >
+                          <Text style={[
+                            styles.tableCellTextDark,
+                            key.toLowerCase().includes('change') && {
+                              color: String(value).startsWith('+') ? '#43A047' : 
+                                     String(value).startsWith('-') ? '#E53935' : '#aaa'
+                            }
+                          ]}>
+                            {formatValue(key, value)}
+                          </Text>
+                        </View>
+                      ))}
+                    </View>
+                  ))}
+                </View>
+              </ScrollView>
+            </View>
+
+            {/* Pagination */}
+            <View style={styles.paginationContainerDark}>
+              <TouchableOpacity
+                style={[styles.paginationButtonDark, currentPage === 1 && styles.paginationButtonDisabledDark]}
+                onPress={() => setCurrentPage(currentPage - 1)}
+                disabled={currentPage === 1}
+              >
+                <Text style={styles.paginationButtonTextDark}>Previous</Text>
+              </TouchableOpacity>
+
+              <Text style={styles.paginationTextDark}>
+                Page {currentPage} of {totalPages}
+              </Text>
+
+              <TouchableOpacity
+                style={[styles.paginationButtonDark, currentPage === totalPages && styles.paginationButtonDisabledDark]}
+                onPress={() => setCurrentPage(currentPage + 1)}
+                disabled={currentPage === totalPages}
+              >
+                <Text style={styles.paginationButtonTextDark}>Next</Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* Download Button */}
+            <TouchableOpacity style={styles.downloadButtonDark} onPress={handleDownload}>
+              <MaterialIcons name="download" size={20} color="#fff" />
+              <Text style={styles.downloadButtonTextDark}>Download Report</Text>
+            </TouchableOpacity>
+          </View>
+        )}
       </ScrollView>
     </SafeAreaView>
   );
@@ -392,6 +586,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     elevation: 2,
   },
+  generateButtonDisabledDark: {
+    opacity: 0.5,
+  },
   generateButtonTextDark: {
     color: '#fff',
     fontWeight: 'bold',
@@ -399,66 +596,70 @@ const styles = StyleSheet.create({
     fontSize: 16,
     letterSpacing: 0.5,
   },
-  reportInfoDark: {
-    padding: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#222',
-    backgroundColor: '#181818',
-  },
-  reportInfoHeaderDark: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  reportInfoTextDark: {
-    marginLeft: 12,
-  },
-  reportDateDark: {
-    fontSize: 14,
-    color: '#aaa',
-    marginBottom: 4,
-  },
-  reportTypeDark: {
-    fontSize: 16,
-    color: '#fff',
-    fontWeight: '600',
-  },
   tableContainerDark: {
     flex: 1,
     padding: 16,
     backgroundColor: '#181818',
   },
-  tableDark: {
-    borderWidth: 1,
-    borderColor: '#222',
+  tableWrapperDark: {
     borderRadius: 8,
     backgroundColor: '#111',
+    borderWidth: 1,
+    borderColor: '#222',
+    overflow: 'hidden',
   },
   tableRowDark: {
     flexDirection: 'row',
     borderBottomWidth: 1,
     borderBottomColor: '#222',
   },
-  tableHeaderDark: {
-    flex: 1,
+  tableHeaderCellDark: {
     padding: 12,
-    fontWeight: 'bold',
     backgroundColor: '#222',
-    textAlign: 'center',
+    justifyContent: 'center',
+    minWidth: 120,
+  },
+  tableHeaderTextDark: {
     color: '#fff',
-    fontSize: 15,
+    fontWeight: 'bold',
+    fontSize: 14,
+    textTransform: 'capitalize',
   },
   tableCellDark: {
-    flex: 1,
     padding: 12,
-    textAlign: 'center',
-    color: '#fff',
-    fontSize: 15,
+    justifyContent: 'center',
+    minWidth: 120,
   },
-  footerDark: {
+  tableCellTextDark: {
+    color: '#fff',
+    fontSize: 14,
+  },
+  paginationContainerDark: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
     padding: 16,
-    borderTopWidth: 1,
-    borderTopColor: '#222',
     backgroundColor: '#181818',
+  },
+  paginationButtonDark: {
+    backgroundColor: '#000',
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    marginHorizontal: 8,
+  },
+  paginationButtonDisabledDark: {
+    opacity: 0.5,
+  },
+  paginationButtonTextDark: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: 'bold',
+  },
+  paginationTextDark: {
+    color: '#fff',
+    fontSize: 14,
+    marginHorizontal: 16,
   },
   downloadButtonDark: {
     flexDirection: 'row',
@@ -467,6 +668,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#000',
     padding: 16,
     borderRadius: 8,
+    marginTop: 16,
   },
   downloadButtonTextDark: {
     color: '#fff',
@@ -476,11 +678,71 @@ const styles = StyleSheet.create({
   },
   dropdownModalBg: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.1)',
+    backgroundColor: 'rgba(0,0,0,0.5)',
     justifyContent: 'center',
     alignItems: 'center',
   },
   scrollContent: {
     paddingBottom: 32,
+  },
+  reportInfoCardDark: {
+    backgroundColor: '#111',
+    borderRadius: 18,
+    margin: 16,
+    padding: 18,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.18,
+    shadowRadius: 8,
+    borderWidth: 1.5,
+    borderColor: '#222',
+    elevation: 4,
+  },
+  reportInfoHeaderDark: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  reportInfoTextDark: {
+    marginLeft: 12,
+    flex: 1,
+  },
+  reportNameDark: {
+    color: '#fff',
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 4,
+  },
+  reportDescriptionDark: {
+    color: '#aaa',
+    fontSize: 14,
+  },
+  fieldsContainerDark: {
+    marginTop: 8,
+  },
+  fieldsTitleDark: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginBottom: 12,
+  },
+  fieldsListDark: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+  },
+  fieldItemDark: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#181818',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+    marginRight: 8,
+    marginBottom: 8,
+  },
+  fieldTextDark: {
+    color: '#fff',
+    fontSize: 14,
+    marginLeft: 6,
   },
 }); 

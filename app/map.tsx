@@ -318,7 +318,7 @@ export default function MapScreen() {
           >
             <Text style={styles.centerMapBtnText}>View Details</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.viewReportsBtn} onPress={() => router.push('/reports')}>
+          <TouchableOpacity style={styles.viewReportsBtn} onPress={() => router.push({ pathname: '/reports', params: { deviceId: device?.deviceId } })} >
             <Text style={styles.viewReportsBtnText}>View Reports</Text>
           </TouchableOpacity>
         </View>

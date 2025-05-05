@@ -54,9 +54,9 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
-        name="fuel"
+        name="devices"
         options={{
-          title: 'Fuel',
+          title: 'Devices',
           tabBarIcon: ({ color }) => <IconSymbol size={28} name="local-gas-station" color={color} />,
         }}
       />

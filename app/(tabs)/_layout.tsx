@@ -18,13 +18,19 @@ export default function TabLayout() {
         headerShown: false,
         tabBarButton: HapticTab,
         tabBarBackground: TabBarBackground,
-        tabBarStyle: Platform.select({
-          ios: {
-            // Use a transparent background on iOS to show the blur effect
-            position: 'absolute',
+        tabBarStyle: [
+          {
+            backgroundColor: '#000',
+            borderTopWidth: 0,
+            height: 64,
           },
-          default: {},
-        }),
+          Platform.select({
+            ios: {
+              position: 'absolute',
+            },
+            default: {},
+          }),
+        ],
       }}>
       <Tabs.Screen
         name="index"
@@ -34,10 +40,31 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
-        name="explore"
+        name="vehicles"
         options={{
-          title: 'Explore',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="paperplane.fill" color={color} />,
+          title: 'Vehicles',
+          tabBarIcon: ({ color }) => <IconSymbol size={28} name="local-shipping" color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="map"
+        options={{
+          title: 'Map',
+          tabBarIcon: ({ color }) => <IconSymbol size={28} name="map" color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="fuel"
+        options={{
+          title: 'Fuel',
+          tabBarIcon: ({ color }) => <IconSymbol size={28} name="local-gas-station" color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="drivers"
+        options={{
+          title: 'Drivers',
+          tabBarIcon: ({ color }) => <IconSymbol size={28} name="person" color={color} />,
         }}
       />
     </Tabs>

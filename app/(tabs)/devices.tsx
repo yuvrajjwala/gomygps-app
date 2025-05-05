@@ -99,16 +99,18 @@ export default function DevicesScreen() {
 
   const handleAddOrEditDevice = async () => {
     try {
-      const deviceData = {
+      const deviceData =  {
         ...form,
         lastUpdate: new Date().toISOString(),
         positionId: null,
         groupId: null,
-        attributes: {}
+        attributes: {},
+        id: editId
       };
 
       if (editMode && editId) {
-        await Api.call(`/api/devices/${editId}`, 'PUT', deviceData, '');
+        const response = await Api.call(`/api/devices/${editId}`, 'PUT', deviceData, '');
+        console.log("response", response);
       } else {
         await Api.call('/api/devices', 'POST', deviceData, '');
       }

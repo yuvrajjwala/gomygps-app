@@ -11,7 +11,7 @@ export default {
   ): Promise<any> {
     const fullUrl: string = baseUrl + url;
     console.log("bodyData", bodyData);
-    console.log('fullUrl', fullUrl);
+    console.log(method, 'fullUrl', fullUrl);
 
     let headers: Record<string, string> = {
       'Content-Type': 'application/x-www-form-urlencoded',

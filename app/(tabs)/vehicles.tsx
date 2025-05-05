@@ -1,6 +1,7 @@
 import Api from '@/config/Api';
 import { FontAwesome5, Ionicons, MaterialIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import moment from 'moment';
 import React, { useEffect, useMemo, useState } from 'react';
 import { FlatList, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -47,7 +48,7 @@ export default function VehiclesScreen() {
   const filteredDevices = useMemo(() => {
     return devicesData.filter((device: any) => {
       const matchesSearch = device?.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                          device?.address?.toLowerCase().includes(searchQuery.toLowerCase());
+        device?.address?.toLowerCase().includes(searchQuery.toLowerCase());
       const matchesFilter = selectedFilter === 'All' || getDeviceStatus(device) === selectedFilter;
       return matchesSearch && matchesFilter;
     });
@@ -94,7 +95,7 @@ export default function VehiclesScreen() {
         </View>
         <View style={styles.vehicleCardRow}>
           <MaterialIcons name="event" size={18} color="#FFD600" style={{ marginRight: 6 }} />
-          <Text style={styles.vehicleCardRowText}>{device?.lastUpdate}</Text>
+          <Text style={styles.vehicleCardRowText}>{moment(device?.lastUpdate).format('DD/MM/YYYY HH:mm')}</Text>
         </View>
         <View style={styles.vehicleCardRow}>
           <MaterialIcons name="location-on" size={18} color="#2979FF" style={{ marginRight: 6 }} />
@@ -154,9 +155,9 @@ export default function VehiclesScreen() {
       {/* Search Bar */}
       <View style={styles.searchRow}>
         <Ionicons name="search" size={22} color="#888" style={{ marginLeft: 8 }} />
-        <TextInput 
-          placeholder="Search" 
-          placeholderTextColor="#888" 
+        <TextInput
+          placeholder="Search"
+          placeholderTextColor="#888"
           style={styles.searchInput}
           value={searchQuery}
           onChangeText={setSearchQuery}

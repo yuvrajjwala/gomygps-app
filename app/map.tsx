@@ -1,6 +1,7 @@
 import Api from '@/config/Api';
 import { FontAwesome5, MaterialIcons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import moment from 'moment';
 import React, { useEffect, useRef, useState } from 'react';
 import { Dimensions, Image, ImageSourcePropType, StatusBar, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import MapView, { Marker, Region } from 'react-native-maps';
@@ -80,7 +81,7 @@ export default function MapScreen() {
         </TouchableOpacity>
         <View style={{ flex: 1, alignItems: 'center' }}>
           <Text style={styles.headerTitle}>{device?.name}</Text>
-          <Text style={styles.headerSubtitle}>Last updated: {device?.lastUpdate}</Text>
+          <Text style={styles.headerSubtitle}>Last updated: {moment(device?.lastUpdate).format('DD/MM/YYYY HH:mm')  }</Text>
         </View>
         <TouchableOpacity>
           <MaterialIcons name="more-vert" size={26} color="#fff" />
@@ -127,7 +128,7 @@ export default function MapScreen() {
         </View>
         <View style={styles.bottomCardRow}>
           <MaterialIcons name="event" size={18} color="#FFD600" style={{ marginRight: 6 }} />
-          <Text style={styles.bottomCardRowText}>{device?.lastUpdate}</Text>
+          <Text style={styles.bottomCardRowText}>{moment(device?.lastUpdate).format('DD/MM/YYYY HH:mm')}</Text>
         </View>
         <View style={styles.bottomCardRow}>
           <MaterialIcons name="location-on" size={18} color="#2979FF" style={{ marginRight: 6 }} />

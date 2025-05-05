@@ -117,10 +117,18 @@ export default function VehicleDetailsScreen() {
           ))}
         </View>
         {/* Back to Map Button */}
+
+        <TouchableOpacity style={styles.backBtnColorful1} onPress={() => router.push({ pathname: '/history-playback', params: vehicle })}>
+          <MaterialIcons name="map" size={20} color="#fff" />
+          <Text style={styles.backBtnTextColorful}>History Playback</Text>
+        </TouchableOpacity>
+
         <TouchableOpacity style={styles.backBtnColorful} onPress={() => router.back()}>
           <MaterialIcons name="map" size={20} color="#fff" />
           <Text style={styles.backBtnTextColorful}>Back to Map</Text>
         </TouchableOpacity>
+
+        
       </ScrollView>
     </SafeAreaView>
   );
@@ -239,23 +247,41 @@ const styles = StyleSheet.create({
     opacity: 0.85,
     fontWeight: '600',
   },
-  backBtnColorful: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#FF7043',
-    padding: 16,
-    borderRadius: 16,
-    marginTop: 24,
-    marginBottom: 10,
-    alignSelf: 'center',
-    width: '80%',
-    shadowColor: '#FF7043',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.16,
-    shadowRadius: 8,
-    elevation: 4,
-  },
+    backBtnColorful: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: '#FF7043',
+        padding: 16,
+        borderRadius: 16,
+        marginTop: 24,
+        marginBottom: 10,
+        alignSelf: 'center',
+        width: '80%',
+        shadowColor: '#FF7043',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.16,
+        shadowRadius: 8,
+        elevation: 4,
+    },
+    backBtnColorful1: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: '#008fff',
+        padding: 16,
+        borderRadius: 16,
+        marginTop: 24,
+        marginBottom: 10,
+        alignSelf: 'center',
+        width: '80%',
+        shadowColor: '#FF7043',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.16,
+        shadowRadius: 8,
+        elevation: 4,
+    },
+   
   backBtnTextColorful: {
     color: '#fff',
     fontWeight: 'bold',

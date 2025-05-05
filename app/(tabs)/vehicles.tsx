@@ -20,11 +20,22 @@ export default function VehiclesScreen() {
 
   useEffect(() => {
     getDevices();
+
   }, []);
 
   const getDevices = async () => {
-    const response = await Api.call('/api/devices', 'GET', {}, '');
-    setDevicesData(response.data);
+    try {
+      const [responseDevices, responsePositions] = await Promise.all([
+        Api.call('/api/devices', 'GET', {}, ''),
+        Api.call('/api/positions', 'GET', {}, '')
+      ]);
+      setDevicesData(responseDevices.data.map((device: any) => ({
+        ...device,
+        ...responsePositions.data.find((position: any) => position.deviceId === device.id)
+      })));
+    } catch (error) {
+      console.error('Error fetching data:', error);
+    }
   }
 
   const renderVehicleCard = ({ item: device, index }: { item: any; index: number }) => (
@@ -47,7 +58,7 @@ export default function VehiclesScreen() {
           </View>
           <View style={[styles.speedoWrap, { backgroundColor: index % 2 === 0 ? '#2979FF22' : '#43A04722' }]}>
             <FontAwesome5 name="tachometer-alt" size={18} color={index % 2 === 0 ? '#2979FF' : '#43A047'} />
-            <Text style={[styles.speedoText, { color: index % 2 === 0 ? '#2979FF' : '#43A047' }]}>{device?.attributes?.speed || 0}</Text>
+            <Text style={[styles.speedoText, { color: index % 2 === 0 ? '#2979FF' : '#43A047' }]}>{(device?.speed || 0).toFixed(0)}</Text>
           </View>
         </View>
         <View style={styles.vehicleCardRow}>
@@ -56,21 +67,25 @@ export default function VehiclesScreen() {
         </View>
         <View style={styles.vehicleCardRow}>
           <MaterialIcons name="location-on" size={18} color="#2979FF" style={{ marginRight: 6 }} />
-          <Text style={styles.vehicleCardRowText}>{device?.attributes?.address}</Text>
+          <Text style={styles.vehicleCardRowText}>{device?.address}</Text>
         </View>
         {/* Stats Row */}
         <View style={styles.statsRow}>
           <View style={styles.statsBoxRow}>
-            <MaterialIcons name="speed" size={20} color="#FF9800" style={{ marginRight: 4 }} />
-            <Text style={[styles.statsValue, { color: '#FF9800' }]}>{device?.attributes?.odometer}</Text>
+            <MaterialIcons name="speed" size={20} color={device?.attributes?.ignition ? "#FF9800" : "#90A4AE"} style={{ marginRight: 4 }} />
+            <Text style={[styles.statsValue, { color: device?.attributes?.ignition ? "#FF9800" : "#90A4AE" }]}>
+              {device?.attributes?.ignition ? "On" : "Off"}
+            </Text>
           </View>
           <View style={styles.statsBoxRow}>
-            <MaterialIcons name="alt-route" size={20} color="#43A047" style={{ marginRight: 4 }} />
-            <Text style={[styles.statsValue, { color: '#43A047' }]}>{device?.attributes?.totalDistance}</Text>
+            <MaterialIcons name="alt-route" size={20} color={device?.attributes?.motion ? "#43A047" : "#90A4AE"} style={{ marginRight: 4 }} />
+            <Text style={[styles.statsValue, { color: device?.attributes?.motion ? "#43A047" : "#90A4AE" }]}>
+              {device?.attributes?.motion ? "Moving" : "Stopped"}
+            </Text>
           </View>
           <View style={styles.statsBoxRow}>
             <MaterialIcons name="trending-up" size={20} color="#2979FF" style={{ marginRight: 4 }} />
-            <Text style={[styles.statsValue, { color: '#2979FF' }]}>{device?.attributes?.lastSpeed}</Text>
+            <Text style={[styles.statsValue, { color: '#2979FF' }]}>{(device?.attributes?.totalDistance / 1000 || 0).toFixed(0)} KM</Text>
           </View>
         </View>
         <View style={styles.vehicleCardDivider} />
@@ -237,14 +252,13 @@ const styles = StyleSheet.create({
     padding: 8,
     marginTop: 8,
     marginBottom: 8,
+    paddingHorizontal: 15,
   },
   statsBox: {
     flex: 1,
     alignItems: 'center',
   },
   statsBoxRow: {
-    flex: 1,
-    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
   },

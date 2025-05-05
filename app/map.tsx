@@ -9,10 +9,9 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 export default function MapScreen() {
   const router = useRouter();
   const params = useLocalSearchParams();
-  const [device, setDevice] = useState<any>(null);
+  const [device, setDevice] = useState<any>(params);
   const mapRef = useRef<MapView>(null);
   const [zoomLevel, setZoomLevel] = useState(0.0922);
-
 
   const getVehicleIcon = (): ImageSourcePropType => {
     if (!device?.lastUpdate) {
@@ -23,7 +22,7 @@ export default function MapScreen() {
     if (lastUpdate < fourHoursAgo) {
       return require('@/assets/images/cars/car-gray.png');
     }
-    if (device.status === 'online' && device.speed === 0) {
+    if (device.status === 'online' && Number(device.speed) === 0) {
       return require('@/assets/images/cars/car-orange.png');
     }
     return device.status === 'online' ? require('@/assets/images/cars/car-green.png') : require('@/assets/images/cars/car-red.png');
@@ -79,20 +78,26 @@ export default function MapScreen() {
   };
 
   const getPosition = async () => {
-    const response = await Api.call(`/api/positions?deviceId=${params.id}`, 'GET', {}, '');
-    const newDevice = { ...params, ...response.data[0] };
+    const response = await Api.call(`/api/positions?deviceId=${device.id}`, 'GET', {}, '');
+    const newDevice = { ...device, ...response.data[0] };
     setDevice(newDevice);
     if (newDevice.latitude && newDevice.longitude) {
-      const newRegion: Region = {
-        latitude: newDevice.latitude,
-        longitude: newDevice.longitude,
-        latitudeDelta: zoomLevel,
-        longitudeDelta: zoomLevel,
-      };
-      mapRef.current?.animateToRegion(newRegion, 1000);
+      const isSignificantChange = 
+        Math.abs(newDevice.latitude - device.latitude) > 0.0001 || 
+        Math.abs(newDevice.longitude - device.longitude) > 0.0001;
+
+      if (isSignificantChange) {
+        const newRegion: Region = {
+          latitude: newDevice.latitude,
+          longitude: newDevice.longitude,
+          latitudeDelta: zoomLevel,
+          longitudeDelta: zoomLevel * 0.5,
+        };
+        mapRef.current?.animateToRegion(newRegion, 500);
+      }
     }
   }
-
+  
   return (
     <SafeAreaView style={styles.safeArea}>
       {/* Header */}
@@ -113,8 +118,8 @@ export default function MapScreen() {
         ref={mapRef}
         style={styles.map}
         initialRegion={{
-          latitude: device?.latitude || 0,
-          longitude: device?.longitude || 0,
+          latitude: Number(device?.latitude) || 0,
+          longitude: Number(device?.longitude) || 0,
           latitudeDelta: zoomLevel,
           longitudeDelta: zoomLevel * 0.5,
         }}
@@ -123,7 +128,7 @@ export default function MapScreen() {
         minZoomLevel={0.0001}
         maxZoomLevel={50}
       >
-        <Marker coordinate={{ latitude: device?.latitude, longitude: device?.longitude }}>
+        <Marker coordinate={{ latitude: Number(device?.latitude), longitude: Number(device?.longitude) }}>
           <Image
             source={getVehicleIcon()}
             style={[
@@ -154,7 +159,7 @@ export default function MapScreen() {
           <Text style={styles.vehicleNumber}>{device?.name}</Text>
           <View style={styles.speedoWrap}>
             <FontAwesome5 name="tachometer-alt" size={18} color="#43A047" />
-            <Text style={styles.speedoText}>{(device?.speed)?.toFixed(0)} km/h</Text>
+            <Text style={styles.speedoText}>{(Number(device?.speed) || 0)?.toFixed(0)} km/h</Text>
           </View>
         </View>
         <View style={styles.bottomCardRow}>

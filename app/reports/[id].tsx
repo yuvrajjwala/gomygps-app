@@ -1,7 +1,8 @@
 import { MaterialIcons } from '@expo/vector-icons';
+import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import React from 'react';
-import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import React, { useState } from 'react';
+import { Modal, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 interface ReportData {
@@ -81,6 +82,27 @@ export default function ReportDetailScreen() {
   const { id } = useLocalSearchParams();
   const report = reports.find(r => r.id === Number(id));
 
+  // Filter state (only for Route Report)
+  const [deviceQuery, setDeviceQuery] = useState('');
+  const [groupQuery, setGroupQuery] = useState('');
+  const [selectedDevice, setSelectedDevice] = useState('');
+  const [selectedGroup, setSelectedGroup] = useState('');
+  const [fromDate, setFromDate] = useState(new Date());
+  const [toDate, setToDate] = useState(new Date());
+  const [showFromPicker, setShowFromPicker] = useState(false);
+  const [showToPicker, setShowToPicker] = useState(false);
+  const devices = ['Truck 001', 'Truck 002', 'Truck 003'];
+  const groups = ['Group A', 'Group B', 'Group C'];
+
+  const filteredDevices = devices.filter(d => d.toLowerCase().includes(deviceQuery.toLowerCase()));
+  const filteredGroups = groups.filter(g => g.toLowerCase().includes(groupQuery.toLowerCase()));
+
+  const handleGenerateReport = () => {
+    // Implement filter logic here
+    // For now, just log selected filters
+    console.log({ selectedDevice, selectedGroup, fromDate, toDate });
+  };
+
   const handleDownload = () => {
     if (report) {
       console.log('Downloading report:', report.title);
@@ -119,143 +141,326 @@ export default function ReportDetailScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.containerDark}>
       {/* Header */}
-      <View style={styles.header}>
+      <View style={styles.headerDark}>
         <TouchableOpacity onPress={() => router.back()}>
           <MaterialIcons name="arrow-back" size={24} color="#fff" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>{report.title}</Text>
+        <Text style={styles.headerTitleDark}>{report.title}</Text>
         <View style={{ width: 24 }} />
       </View>
 
-      {/* Report Info */}
-      <View style={styles.reportInfo}>
-        <View style={styles.reportInfoHeader}>
-          <MaterialIcons name={getReportIcon(report.type)} size={24} color="#000" />
-          <View style={styles.reportInfoText}>
-            <Text style={styles.reportDate}>{report.date}</Text>
-            <Text style={styles.reportType}>{report.type.charAt(0).toUpperCase() + report.type.slice(1)} Report</Text>
+      <ScrollView contentContainerStyle={styles.scrollContent}>
+        {/* Universal Filter Card */}
+        <View style={styles.filterCardDark}>
+          <View style={styles.filterFieldBlock}>
+            <Text style={styles.filterLabelDark}>Device</Text>
+            <View style={styles.dropdownContainerDark}>
+              <TextInput
+                style={styles.dropdownInputDark}
+                placeholder="Search device..."
+                placeholderTextColor="#aaa"
+                value={deviceQuery || selectedDevice}
+                onChangeText={text => { setDeviceQuery(text); setSelectedDevice(''); }}
+              />
+              <Modal visible={!!deviceQuery} transparent animationType="fade">
+                <View style={styles.dropdownModalBg}>
+                  <View style={styles.dropdownListDark}>
+                    {filteredDevices.map((d) => (
+                      <TouchableOpacity key={d} onPress={() => { setSelectedDevice(d); setDeviceQuery(''); }}>
+                        <Text style={styles.dropdownItemDark}>{d}</Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                </View>
+              </Modal>
+            </View>
+          </View>
+          <View style={styles.filterFieldBlock}>
+            <Text style={styles.filterLabelDark}>Group</Text>
+            <View style={styles.dropdownContainerDark}>
+              <TextInput
+                style={styles.dropdownInputDark}
+                placeholder="Search group..."
+                placeholderTextColor="#aaa"
+                value={groupQuery || selectedGroup}
+                onChangeText={text => { setGroupQuery(text); setSelectedGroup(''); }}
+              />
+              <Modal visible={!!groupQuery} transparent animationType="fade">
+                <View style={styles.dropdownModalBg}>
+                  <View style={styles.dropdownListDark}>
+                    {filteredGroups.map((g) => (
+                      <TouchableOpacity key={g} onPress={() => { setSelectedGroup(g); setGroupQuery(''); }}>
+                        <Text style={styles.dropdownItemDark}>{g}</Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                </View>
+              </Modal>
+            </View>
+          </View>
+          <View style={styles.filterFieldBlock}>
+            <Text style={styles.filterLabelDark}>From</Text>
+            <TouchableOpacity style={styles.dateInputDark} onPress={() => setShowFromPicker(true)}>
+              <Text style={styles.dateInputTextDark}>{fromDate.toLocaleString()}</Text>
+              <MaterialIcons name="calendar-today" size={18} color="#aaa" style={{ marginLeft: 6 }} />
+            </TouchableOpacity>
+            {showFromPicker && (
+              <DateTimePicker
+                value={fromDate}
+                mode="datetime"
+                display={Platform.OS === 'ios' ? 'inline' : 'default'}
+                onChange={(event: DateTimePickerEvent, date?: Date) => {
+                  setShowFromPicker(false);
+                  if (date) setFromDate(date);
+                }}
+              />
+            )}
+          </View>
+          <View style={styles.filterFieldBlock}>
+            <Text style={styles.filterLabelDark}>To</Text>
+            <TouchableOpacity style={styles.dateInputDark} onPress={() => setShowToPicker(true)}>
+              <Text style={styles.dateInputTextDark}>{toDate.toLocaleString()}</Text>
+              <MaterialIcons name="calendar-today" size={18} color="#aaa" style={{ marginLeft: 6 }} />
+            </TouchableOpacity>
+            {showToPicker && (
+              <DateTimePicker
+                value={toDate}
+                mode="datetime"
+                display={Platform.OS === 'ios' ? 'inline' : 'default'}
+                onChange={(event: DateTimePickerEvent, date?: Date) => {
+                  setShowToPicker(false);
+                  if (date) setToDate(date);
+                }}
+              />
+            )}
+          </View>
+          <TouchableOpacity style={styles.generateButtonDark} onPress={handleGenerateReport}>
+            <MaterialIcons name="search" size={20} color="#fff" />
+            <Text style={styles.generateButtonTextDark}>Generate Report</Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* Report Info */}
+        <View style={styles.reportInfoDark}>
+          <View style={styles.reportInfoHeaderDark}>
+            <MaterialIcons name={getReportIcon(report.type)} size={24} color="#fff" />
+            <View style={styles.reportInfoTextDark}>
+              <Text style={styles.reportDateDark}>{report.date}</Text>
+              <Text style={styles.reportTypeDark}>{report.type.charAt(0).toUpperCase() + report.type.slice(1)} Report</Text>
+            </View>
           </View>
         </View>
-      </View>
 
-      {/* Table */}
-      <ScrollView style={styles.tableContainer}>
-        <View style={styles.table}>
-          {/* Table Header */}
-          {report.data.length > 0 && (
-            <View style={styles.tableRow}>
-              {Object.keys(report.data[0]).map((key) => (
-                <Text key={key} style={styles.tableHeader}>
-                  {key.charAt(0).toUpperCase() + key.slice(1)}
-                </Text>
-              ))}
-            </View>
-          )}
+        {/* Table */}
+        <View style={styles.tableContainerDark}>
+          <View style={styles.tableDark}>
+            {/* Table Header */}
+            {report.data.length > 0 && (
+              <View style={styles.tableRowDark}>
+                {Object.keys(report.data[0]).map((key) => (
+                  <Text key={key} style={styles.tableHeaderDark}>
+                    {key.charAt(0).toUpperCase() + key.slice(1)}
+                  </Text>
+                ))}
+              </View>
+            )}
 
-          {/* Table Rows */}
-          {report.data.map((row, index) => (
-            <View key={index} style={styles.tableRow}>
-              {Object.values(row).map((value, i) => (
-                <Text key={i} style={[
-                  styles.tableCell,
-                  report.type === 'summary' && i === 2 && {
-                    color: value.startsWith('+') ? '#43A047' : value.startsWith('-') ? '#E53935' : '#666'
-                  }
-                ]}>
-                  {value}
-                </Text>
-              ))}
-            </View>
-          ))}
+            {/* Table Rows */}
+            {report.data.map((row, index) => (
+              <View key={index} style={styles.tableRowDark}>
+                {Object.values(row).map((value, i) => (
+                  <Text key={i} style={[
+                    styles.tableCellDark,
+                    report.type === 'summary' && i === 2 && {
+                      color: value.startsWith('+') ? '#43A047' : value.startsWith('-') ? '#E53935' : '#aaa'
+                    }
+                  ]}>
+                    {value}
+                  </Text>
+                ))}
+              </View>
+            ))}
+          </View>
+        </View>
+
+        {/* Download Button */}
+        <View style={styles.footerDark}>
+          <TouchableOpacity style={styles.downloadButtonDark} onPress={handleDownload}>
+            <MaterialIcons name="download" size={20} color="#fff" />
+            <Text style={styles.downloadButtonTextDark}>Download Report</Text>
+          </TouchableOpacity>
         </View>
       </ScrollView>
-
-      {/* Download Button */}
-      <View style={styles.footer}>
-        <TouchableOpacity style={styles.downloadButton} onPress={handleDownload}>
-          <MaterialIcons name="download" size={20} color="#fff" />
-          <Text style={styles.downloadButtonText}>Download Report</Text>
-        </TouchableOpacity>
-      </View>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  containerDark: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: '#181818',
   },
-  header: {
+  headerDark: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     backgroundColor: '#000',
     paddingHorizontal: 16,
     paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#222',
   },
-  headerTitle: {
+  headerTitleDark: {
     color: '#fff',
     fontSize: 20,
     fontWeight: 'bold',
   },
-  reportInfo: {
+  filterCardDark: {
+    backgroundColor: '#111',
+    borderRadius: 18,
+    margin: 16,
+    padding: 18,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.18,
+    shadowRadius: 8,
+    borderWidth: 1.5,
+    borderColor: '#222',
+    elevation: 4,
+    marginBottom: 18,
+  },
+  filterFieldBlock: {
+    marginBottom: 18,
+  },
+  filterLabelDark: {
+    color: '#fff',
+    fontWeight: 'bold',
+    marginBottom: 6,
+    fontSize: 15,
+  },
+  dropdownContainerDark: {
+    position: 'relative',
+  },
+  dropdownInputDark: {
+    borderWidth: 1,
+    borderColor: '#333',
+    borderRadius: 10,
+    padding: 12,
+    backgroundColor: '#181818',
+    color: '#fff',
+    fontSize: 15,
+  },
+  dropdownListDark: {
+    backgroundColor: '#181818',
+    borderRadius: 10,
+    padding: 8,
+    minWidth: 180,
+    maxHeight: 200,
+    elevation: 6,
+    borderWidth: 1,
+    borderColor: '#333',
+  },
+  dropdownItemDark: {
+    padding: 10,
+    color: '#fff',
+    fontSize: 15,
+  },
+  dateInputDark: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#333',
+    borderRadius: 10,
+    padding: 12,
+    backgroundColor: '#181818',
+    marginTop: 2,
+  },
+  dateInputTextDark: {
+    color: '#fff',
+    fontSize: 15,
+  },
+  generateButtonDark: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#000',
+    paddingVertical: 16,
+    paddingHorizontal: 18,
+    borderRadius: 10,
+    marginTop: 10,
+    justifyContent: 'center',
+    elevation: 2,
+  },
+  generateButtonTextDark: {
+    color: '#fff',
+    fontWeight: 'bold',
+    marginLeft: 8,
+    fontSize: 16,
+    letterSpacing: 0.5,
+  },
+  reportInfoDark: {
     padding: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
+    borderBottomColor: '#222',
+    backgroundColor: '#181818',
   },
-  reportInfoHeader: {
+  reportInfoHeaderDark: {
     flexDirection: 'row',
     alignItems: 'center',
   },
-  reportInfoText: {
+  reportInfoTextDark: {
     marginLeft: 12,
   },
-  reportDate: {
+  reportDateDark: {
     fontSize: 14,
-    color: '#666',
+    color: '#aaa',
     marginBottom: 4,
   },
-  reportType: {
+  reportTypeDark: {
     fontSize: 16,
-    color: '#000',
+    color: '#fff',
     fontWeight: '600',
   },
-  tableContainer: {
+  tableContainerDark: {
     flex: 1,
     padding: 16,
+    backgroundColor: '#181818',
   },
-  table: {
+  tableDark: {
     borderWidth: 1,
-    borderColor: '#e0e0e0',
+    borderColor: '#222',
     borderRadius: 8,
+    backgroundColor: '#111',
   },
-  tableRow: {
+  tableRowDark: {
     flexDirection: 'row',
     borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
+    borderBottomColor: '#222',
   },
-  tableHeader: {
+  tableHeaderDark: {
     flex: 1,
     padding: 12,
     fontWeight: 'bold',
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#222',
     textAlign: 'center',
+    color: '#fff',
+    fontSize: 15,
   },
-  tableCell: {
+  tableCellDark: {
     flex: 1,
     padding: 12,
     textAlign: 'center',
+    color: '#fff',
+    fontSize: 15,
   },
-  footer: {
+  footerDark: {
     padding: 16,
     borderTopWidth: 1,
-    borderTopColor: '#f0f0f0',
-    backgroundColor: '#fff',
+    borderTopColor: '#222',
+    backgroundColor: '#181818',
   },
-  downloadButton: {
+  downloadButtonDark: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
@@ -263,10 +468,19 @@ const styles = StyleSheet.create({
     padding: 16,
     borderRadius: 8,
   },
-  downloadButtonText: {
+  downloadButtonTextDark: {
     color: '#fff',
     fontSize: 16,
     fontWeight: 'bold',
     marginLeft: 8,
+  },
+  dropdownModalBg: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.1)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  scrollContent: {
+    paddingBottom: 32,
   },
 }); 

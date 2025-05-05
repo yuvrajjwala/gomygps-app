@@ -50,7 +50,7 @@ export default function MapScreen() {
   };
 
   const getPosition = async () => {
-    const response = await Api.call(`/api/positions?deviceId=${device.id}`, 'GET', {}, '');
+    const response = await Api.call(`/api/positions?deviceId=${device.deviceId}`, 'GET', {}, '');
     const newDevice = { ...device, ...response.data[0] };
     setDevice(newDevice);
     if (newDevice.latitude && newDevice.longitude) {

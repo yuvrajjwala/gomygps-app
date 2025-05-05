@@ -1,26 +1,26 @@
 import Api from '@/config/Api';
 import { FontAwesome5, Ionicons, MaterialIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { FlatList, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 const statusFilters = [
-  { label: 'All', count: 5, color: '#2979FF', icon: 'apps' },
-  { label: 'Running', count: 3, color: '#43A047', icon: 'autorenew' },
-  { label: 'Stop', count: 1, color: '#90A4AE', icon: 'stop-circle' },
-  { label: 'Idle', count: 1, color: '#FFD600', icon: 'show-chart' },
+  { label: 'All', color: '#2979FF', icon: 'apps' },
+  { label: 'Running', color: '#43A047', icon: 'autorenew' },
+  { label: 'Stop', color: '#90A4AE', icon: 'stop-circle' },
+  { label: 'Idle', color: '#FFD600', icon: 'show-chart' },
 ];
-
 
 export default function VehiclesScreen() {
   const cardColors = ['#FFFFFF', '#FFFFFF', '#FFFFFF', '#FFFFFF'];
   const router = useRouter();
   const [devicesData, setDevicesData] = useState([]);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedFilter, setSelectedFilter] = useState('All');
 
   useEffect(() => {
     getDevices();
-
   }, []);
 
   const getDevices = async () => {
@@ -37,6 +37,37 @@ export default function VehiclesScreen() {
       console.error('Error fetching data:', error);
     }
   }
+
+  const getDeviceStatus = (device: any) => {
+    if (device?.attributes?.motion) return 'Running';
+    if (device?.attributes?.ignition) return 'Idle';
+    return 'Stop';
+  };
+
+  const filteredDevices = useMemo(() => {
+    return devicesData.filter((device: any) => {
+      const matchesSearch = device?.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                          device?.address?.toLowerCase().includes(searchQuery.toLowerCase());
+      const matchesFilter = selectedFilter === 'All' || getDeviceStatus(device) === selectedFilter;
+      return matchesSearch && matchesFilter;
+    });
+  }, [devicesData, searchQuery, selectedFilter]);
+
+  const filterCounts = useMemo(() => {
+    const counts: Record<string, number> = {
+      All: devicesData.length,
+      Running: 0,
+      Stop: 0,
+      Idle: 0
+    };
+
+    devicesData.forEach((device: any) => {
+      const status = getDeviceStatus(device);
+      counts[status]++;
+    });
+
+    return counts;
+  }, [devicesData]);
 
   const renderVehicleCard = ({ item: device, index }: { item: any; index: number }) => (
     <TouchableOpacity
@@ -97,38 +128,46 @@ export default function VehiclesScreen() {
     <SafeAreaView style={styles.safeArea}>
       {/* Status Filters */}
       <View style={styles.statusRow}>
-        {statusFilters.map((filter, idx) => (
-          <View
+        {statusFilters.map((filter) => (
+          <TouchableOpacity
             key={filter.label}
+            onPress={() => setSelectedFilter(filter.label)}
             style={[
               styles.statusCard,
               filter.label === 'Idle'
-                ? { backgroundColor: '#FF6F00' } // dark orange
+                ? { backgroundColor: '#FF6F00' }
                 : { backgroundColor: filter.color, shadowColor: filter.color },
+              selectedFilter === filter.label && { borderWidth: 2, borderColor: '#fff' }
             ]}
           >
             <MaterialIcons
               name={filter.icon as any}
               size={22}
-              color={filter.label === 'Idle' ? '#fff' : '#fff'}
+              color="#fff"
               style={{ marginBottom: 4 }}
             />
             <Text style={styles.statusLabel}>{filter.label}</Text>
-            <Text style={styles.statusCount}>{filter.count}</Text>
-          </View>
+            <Text style={styles.statusCount}>{filterCounts[filter.label]}</Text>
+          </TouchableOpacity>
         ))}
       </View>
       {/* Search Bar */}
       <View style={styles.searchRow}>
         <Ionicons name="search" size={22} color="#888" style={{ marginLeft: 8 }} />
-        <TextInput placeholder="Search" placeholderTextColor="#888" style={styles.searchInput} />
-        <TouchableOpacity>
-          <Ionicons name="options-outline" size={22} color="#888" style={{ marginRight: 8 }} />
+        <TextInput 
+          placeholder="Search" 
+          placeholderTextColor="#888" 
+          style={styles.searchInput}
+          value={searchQuery}
+          onChangeText={setSearchQuery}
+        />
+        <TouchableOpacity onPress={() => setSearchQuery('')}>
+          <Ionicons name="close-circle" size={22} color="#888" style={{ marginRight: 8 }} />
         </TouchableOpacity>
       </View>
       {/* Vehicle Cards */}
       <FlatList
-        data={devicesData}
+        data={filteredDevices}
         renderItem={renderVehicleCard}
         keyExtractor={(item) => item.id.toString()}
         contentContainerStyle={{ paddingBottom: 24 }}

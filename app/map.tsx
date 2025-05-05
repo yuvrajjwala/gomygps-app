@@ -136,25 +136,25 @@ export default function MapScreen() {
         </View>
         <View style={styles.bottomCardDivider} />
         <View style={styles.statusIconsRow}>
-          <View style={styles.statusIconItem}>
-            <MaterialIcons name="call" size={20} color="#43A047" />
-            <Text style={styles.statusIconText}>Power</Text>
+          {/* Parking */}
+          <View style={[styles.iconCircle, { borderColor: '#A5F3C7' }]}> 
+            <MaterialIcons name="local-parking" size={24} color="#43A047" />
           </View>
-          <View style={styles.statusIconItem}>
-            <MaterialIcons name="waves" size={20} color="#42A5F5" />
-            <Text style={styles.statusIconText}>Ignition</Text>
+          {/* Play (active) */}
+          <View style={[styles.iconCircle, styles.iconCircleActive, { backgroundColor: '#4285F4', borderColor: '#4285F4', shadowColor: '#4285F4' }]}> 
+            <MaterialIcons name="play-arrow" size={24} color="#fff" />
           </View>
-          <View style={styles.statusIconItem}>
-            <MaterialIcons name="gps-fixed" size={20} color="#FFA000" />
-            <Text style={styles.statusIconText}>GPS</Text>
+          {/* Car */}
+          <View style={[styles.iconCircle, { borderColor: '#90CAF9' }]}> 
+            <MaterialIcons name="directions-car" size={24} color="#4285F4" />
           </View>
-          <View style={styles.statusIconItem}>
-            <MaterialIcons name="battery-charging-full" size={20} color="#7C4DFF" />
-            <Text style={styles.statusIconText}>{device?.battery}</Text>
+          {/* Lock */}
+          <View style={[styles.iconCircle, { borderColor: '#FFCDD2' }]}> 
+            <MaterialIcons name="lock" size={24} color="#E53935" />
           </View>
-          <View style={styles.statusIconItem}>
-            <MaterialIcons name="flash-off" size={20} color="#B0BEC5" />
-            <Text style={styles.statusIconText}>NA</Text>
+          {/* Location */}
+          <View style={[styles.iconCircle, { borderColor: '#A5F3C7' }]}> 
+            <MaterialIcons name="location-on" size={24} color="#43A047" />
           </View>
         </View>
         <View style={styles.bottomButtonsRow}>
@@ -265,15 +265,27 @@ const styles = StyleSheet.create({
     marginTop: 4,
     marginBottom: 10,
   },
-  statusIconItem: {
+  iconCircle: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    borderWidth: 2,
+    backgroundColor: '#fff',
     alignItems: 'center',
-    flex: 1,
+    justifyContent: 'center',
+    marginHorizontal: 6,
+    shadowColor: 'transparent',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0,
+    shadowRadius: 0,
   },
-  statusIconText: {
-    fontSize: 12,
-    color: '#888',
-    marginTop: 2,
-    fontWeight: '600',
+  iconCircleActive: {
+    backgroundColor: '#4285F4',
+    borderColor: '#4285F4',
+    shadowColor: '#4285F4',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.18,
+    shadowRadius: 8,
   },
   bottomButtonsRow: {
     flexDirection: 'row',

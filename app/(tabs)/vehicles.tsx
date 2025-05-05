@@ -1,5 +1,6 @@
 import Api from '@/config/Api';
 import { FontAwesome5, Ionicons, MaterialIcons } from '@expo/vector-icons';
+import { useIsFocused } from '@react-navigation/native';
 import { useRouter } from 'expo-router';
 import moment from 'moment';
 import React, { useEffect, useMemo, useState } from 'react';
@@ -19,9 +20,16 @@ export default function VehiclesScreen() {
   const [devicesData, setDevicesData] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedFilter, setSelectedFilter] = useState('All');
+    const isFocused = useIsFocused();
 
   useEffect(() => {
     getDevices();
+    const interval = setInterval(() => {
+      if (isFocused) {
+        getDevices();
+      }
+    }, 5000);
+    return () => clearInterval(interval);
   }, []);
 
   const getDevices = async () => {

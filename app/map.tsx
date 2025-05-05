@@ -12,7 +12,11 @@ export default function MapScreen() {
   const params = useLocalSearchParams();
   const [device, setDevice] = useState<any>(params);
   const mapRef = useRef<MapView>(null);
-  const [zoomLevel, setZoomLevel] = useState(0.0922);
+  const [zoomLevel, setZoomLevel] = useState(0.005);
+  const [isParked, setIsParked] = useState(false);
+  const [isLocked, setIsLocked] = useState(false);
+  const [carMode, setCarMode] = useState(false);
+  const [autoFollow, setAutoFollow] = useState(false);
 
   const getVehicleIcon = (): ImageSourcePropType => {
     if (!device?.lastUpdate) {
@@ -37,6 +41,28 @@ export default function MapScreen() {
     }, 5000);
     return () => clearInterval(interval);
   }, []);
+
+  useEffect(() => {
+    if (autoFollow && device?.latitude && device?.longitude) {
+      const newRegion: Region = {
+        latitude: device.latitude,
+        longitude: device.longitude,
+        latitudeDelta: zoomLevel,
+        longitudeDelta: zoomLevel * 0.5,
+      };
+      mapRef.current?.animateToRegion(newRegion, 500);
+    }
+  }, [device?.latitude, device?.longitude, autoFollow, zoomLevel]);
+
+  useEffect(() => {
+    if (carMode) {
+      // Adjust zoom level for car mode
+      setZoomLevel(0.002);
+    } else {
+      // Reset zoom level when car mode is disabled
+      setZoomLevel(0.005);
+    }
+  }, [carMode]);
 
   const handleCenterMap = () => {
     if (device?.latitude && device?.longitude) {
@@ -66,11 +92,95 @@ export default function MapScreen() {
           latitudeDelta: zoomLevel,
           longitudeDelta: zoomLevel * 0.5,
         };
-        mapRef.current?.animateToRegion(newRegion, 500);
+        if (autoFollow) {
+          mapRef.current?.animateToRegion(newRegion, 500);
+        }
       }
     }
   }
   
+  const createGeofence = async (device: any) => {
+    try {
+      const geofenceData = {
+        name: `High Alert ${device.name}`,
+        description: `Auto-generated high alert zone for ${device.name}`,
+        area: `CIRCLE (${device.latitude} ${device.longitude}, 50)`,
+      };
+      const response = await Api.call('/api/geofences', 'POST', geofenceData, '');
+      let deviceData = await fetchDeviceDetails(device.deviceId);
+      await Api.call('/api/permissions', 'POST', {
+        deviceId: device.deviceId,
+        geofenceId: response.data.id,
+      }, '');
+      let newAttributes = {
+        ...deviceData.attributes,
+        fence_id: response.data.id,
+        parked_time: new Date().toISOString(),
+        is_parked: true,
+      };
+      deviceData.attributes = newAttributes;
+      await Api.call(`/api/devices/${device.deviceId}`, 'PUT', deviceData, '');
+      setIsParked(true);
+    } catch (error) {
+      console.error("Error creating geofence:", error);
+    }
+  };
+
+  const removeGeofence = async (device: any) => {
+    try {
+      let deviceData = await fetchDeviceDetails(device.deviceId);
+      await Api.call(`/api/geofences/${deviceData.attributes.fence_id}`, 'DELETE', {}, '');
+      let newAttributes = {
+        ...deviceData.attributes,
+        fence_id: null,
+        parked_time: null,
+        is_parked: false,
+      };
+      deviceData.attributes = newAttributes;
+      await Api.call(`/api/devices/${device.deviceId}`, 'PUT', deviceData, '');
+      setIsParked(false);
+    } catch (error) {
+      console.error("Error removing geofence:", error);
+    }
+  };
+
+  const fetchDeviceDetails = async (deviceId: string) => {
+    try {
+      const response = await Api.call(`/api/devices?id=${deviceId}`, 'GET', {}, '');
+      if (response.data) {
+        const device = response.data.find((d: any) => d.id === deviceId);
+        return device;
+      }
+    } catch (error) {
+      console.error("Error fetching device details:", error);
+    }
+  };
+
+  const mobilize = async (protocol: string) => {
+    try {
+      let lockStatus = isLocked ? "RELAY,1#" : "RELAY,0#";
+      await Api.call('/api/commands/send', 'POST', {
+        commandId: "",
+        deviceId: device?.deviceId,
+        description: "mobilize",
+        type: "custom",
+        attributes: {
+          data: lockStatus,
+        },
+      }, '');
+      let deviceData = await fetchDeviceDetails(device?.deviceId);
+      let newAttributes = {
+        ...deviceData.attributes,
+        is_mobilized: !isLocked,
+      };
+      deviceData.attributes = newAttributes;
+      await Api.call(`/api/devices/${deviceData.id}`, 'PUT', deviceData, '');
+      setIsLocked(!isLocked);
+    } catch (error) {
+      console.error("Error mobilizing device:", error);
+    }
+  };
+
   return (
     <SafeAreaView style={styles.safeArea}>
       <StatusBar barStyle="light-content" backgroundColor="#2979FF" />
@@ -97,10 +207,14 @@ export default function MapScreen() {
           latitudeDelta: zoomLevel,
           longitudeDelta: zoomLevel * 0.5,
         }}
-        zoomEnabled={true}
-        zoomControlEnabled={true}
-        minZoomLevel={0.0001}
-        maxZoomLevel={50}
+        zoomEnabled={!carMode}
+        zoomControlEnabled={!carMode}
+        minZoomLevel={carMode ? 0.002 : 0.0001}
+        maxZoomLevel={carMode ? 0.005 : 50}
+        showsUserLocation={true}
+        followsUserLocation={carMode}
+        rotateEnabled={!carMode}
+        scrollEnabled={!carMode}
       >
         <Marker coordinate={{ latitude: Number(device?.latitude), longitude: Number(device?.longitude) }}>
           <Image
@@ -137,25 +251,65 @@ export default function MapScreen() {
         <View style={styles.bottomCardDivider} />
         <View style={styles.statusIconsRow}>
           {/* Parking */}
-          <View style={[styles.iconCircle, { borderColor: '#A5F3C7' }]}> 
-            <MaterialIcons name="local-parking" size={24} color="#43A047" />
-          </View>
+          <TouchableOpacity 
+            style={[styles.iconCircle, { borderColor: isParked ? '#43A047' : '#A5F3C7' }]}
+            onPress={() => {
+              if (device) {
+                isParked ? removeGeofence(device) : createGeofence(device);
+              }
+            }}
+          > 
+            <MaterialIcons name="local-parking" size={24} color={isParked ? '#43A047' : '#A5F3C7'} />
+          </TouchableOpacity>
+          
           {/* Play (active) */}
-          <View style={[styles.iconCircle, styles.iconCircleActive, { backgroundColor: '#4285F4', borderColor: '#4285F4', shadowColor: '#4285F4' }]}> 
+          <TouchableOpacity 
+            style={[styles.iconCircle, styles.iconCircleActive, { backgroundColor: '#4285F4', borderColor: '#4285F4', shadowColor: '#4285F4' }]}
+            onPress={() => {
+              // Handle play action
+              const data = btoa(JSON.stringify({
+                deviceId: device?.deviceId,
+                id: device?.deviceId,
+              }));
+            
+            }}
+          > 
             <MaterialIcons name="play-arrow" size={24} color="#fff" />
-          </View>
-          {/* Car */}
-          <View style={[styles.iconCircle, { borderColor: '#90CAF9' }]}> 
-            <MaterialIcons name="directions-car" size={24} color="#4285F4" />
-          </View>
+          </TouchableOpacity>
+          
+          {/* Car Mode */}
+          <TouchableOpacity 
+            style={[styles.iconCircle, { borderColor: carMode ? '#4285F4' : '#90CAF9' }]}
+            onPress={() => setCarMode(!carMode)}
+          > 
+            <MaterialIcons name="directions-car" size={24} color={carMode ? '#4285F4' : '#90CAF9'} />
+          </TouchableOpacity>
+          
           {/* Lock */}
-          <View style={[styles.iconCircle, { borderColor: '#FFCDD2' }]}> 
-            <MaterialIcons name="lock" size={24} color="#E53935" />
-          </View>
-          {/* Location */}
-          <View style={[styles.iconCircle, { borderColor: '#A5F3C7' }]}> 
-            <MaterialIcons name="location-on" size={24} color="#43A047" />
-          </View>
+          <TouchableOpacity 
+            style={[styles.iconCircle, { borderColor: isLocked ? '#E53935' : '#FFCDD2' }]}
+            onPress={() => {
+              if (device) {
+                mobilize(device.protocol);
+              }
+            }}
+          > 
+            <MaterialIcons name="lock" size={24} color={isLocked ? '#E53935' : '#FFCDD2'} />
+          </TouchableOpacity>
+          
+          {/* Auto Follow */}
+          <TouchableOpacity 
+            style={[styles.iconCircle, { borderColor: autoFollow ? '#43A047' : '#A5F3C7' }]}
+            onPress={() => {
+              if (!carMode) {
+                // Show error toast
+                return;
+              }
+              setAutoFollow(!autoFollow);
+            }}
+          > 
+            <MaterialIcons name="location-on" size={24} color={autoFollow ? '#43A047' : '#A5F3C7'} />
+          </TouchableOpacity>
         </View>
         <View style={styles.bottomButtonsRow}>
           <TouchableOpacity style={styles.centerMapBtn} onPress={handleCenterMap}>

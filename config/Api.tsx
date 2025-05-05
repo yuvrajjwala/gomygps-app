@@ -37,7 +37,7 @@ export default {
       };
 
       const response = await axios(config);
-      
+      console.log("response", response.status);
       if (response.status === 201 || response.status === 200) {
         return { status: response.status, data: response.data };
       }

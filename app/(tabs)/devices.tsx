@@ -1,91 +1,143 @@
+import Api from '@/config/Api';
 import { MaterialIcons } from '@expo/vector-icons';
-import { Picker } from '@react-native-picker/picker';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { FlatList, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
-const mockDevices = [
-  { id: '1', vehicleNumber: 'UP15CX3953', name: 'Car 1', imei: '123456789012345', sim: '9876543210', group: 'A', model: 'GT06', driver: 'John', category: 'Car', renewal: '01/01/2025', expiration: '01/01/2026' },
-  { id: '2', vehicleNumber: 'UP16AB1234', name: 'Car 2', imei: '987654321098765', sim: '8765432109', group: 'B', model: 'RDM', driver: 'Jane', category: 'Car', renewal: '01/02/2025', expiration: '01/02/2026' },
-];
-
-const groups = ['A', 'B', 'C'];
-const models = ['GT06', 'RDM', 'MT200'];
-const categories = ['Car', 'Truck', 'Bus'];
+interface Device {
+  id: number;
+  name: string;
+  uniqueId: string;
+  status: string;
+  disabled: boolean;
+  lastUpdate: string | null;
+  positionId: number | null;
+  groupId: number | null;
+  phone: string | null;
+  model: string | null;
+  contact: string | null;
+  category: string | null;
+  attributes: any;
+  latitude?: number;
+  longitude?: number;
+  speed?: number;
+  address?: string;
+}
 
 export default function DevicesScreen() {
-  const [devices, setDevices] = useState(mockDevices);
+  const [devices, setDevices] = useState<Device[]>([]);
   const [modalVisible, setModalVisible] = useState(false);
   const [editMode, setEditMode] = useState(false);
-  const [editIndex, setEditIndex] = useState<number | null>(null);
+  const [editId, setEditId] = useState<number | null>(null);
   const [form, setForm] = useState({
-    vehicleNumber: '',
     name: '',
-    imei: '',
-    identifier: '',
-    sim: '',
+    uniqueId: '',
+    status: 'online',
+    disabled: false,
     phone: '',
-    group: '',
     model: '',
-    driver: '',
+    contact: '',
     category: '',
-    renewal: '',
-    expiration: '',
   });
   const [search, setSearch] = useState('');
 
   const filteredDevices = devices.filter(d =>
-    d.vehicleNumber.toLowerCase().includes(search.toLowerCase()) ||
     d.name.toLowerCase().includes(search.toLowerCase()) ||
-    d.imei.toLowerCase().includes(search.toLowerCase())
+    d.uniqueId.toLowerCase().includes(search.toLowerCase()) ||
+    (d.phone && d.phone.toLowerCase().includes(search.toLowerCase()))
   );
+
+  useEffect(() => {
+    getDevices();
+  }, []);
+
+  const getDevices = async () => {
+    try {
+      const [responseDevices, responsePositions] = await Promise.all([
+        Api.call('/api/devices', 'GET', {}, ''),
+        Api.call('/api/positions', 'GET', {}, '')
+      ]);
+      setDevices(responseDevices.data.map((device: Device) => ({
+        ...device,
+        ...responsePositions.data.find((position: any) => position.deviceId === device.id)
+      })));
+    } catch (error) {
+      console.error('Error fetching data:', error);
+    }
+  }
 
   const openAddModal = () => {
     setEditMode(false);
-    setForm({ vehicleNumber: '', name: '', imei: '', identifier: '', sim: '', phone: '', group: '', model: '', driver: '', category: '', renewal: '', expiration: '' });
-    setModalVisible(true);
-  };
-
-  const openEditModal = (device: any, idx: number) => {
-    setEditMode(true);
-    setEditIndex(idx);
+    setEditId(null);
     setForm({
-      vehicleNumber: device.vehicleNumber || '',
-      name: device.name || '',
-      imei: device.imei || '',
-      identifier: device.identifier || '',
-      sim: device.sim || '',
-      phone: device.phone || '',
-      group: device.group || '',
-      model: device.model || '',
-      driver: device.driver || '',
-      category: device.category || '',
-      renewal: device.renewal || '',
-      expiration: device.expiration || '',
+      name: '',
+      uniqueId: '',
+      status: 'online',
+      disabled: false,
+      phone: '',
+      model: '',
+      contact: '',
+      category: '',
     });
     setModalVisible(true);
   };
 
-  const handleAddOrEditDevice = () => {
-    if (editMode && editIndex !== null) {
-      const updated = [...devices];
-      updated[editIndex] = { ...updated[editIndex], ...form };
-      setDevices(updated);
-    } else {
-      setDevices([...devices, { id: Date.now().toString(), ...form }]);
+  const openEditModal = (device: Device) => {
+    setEditMode(true);
+    setEditId(device.id);
+    setForm({
+      name: device.name || '',
+      uniqueId: device.uniqueId || '',
+      status: device.status || 'online',
+      disabled: device.disabled || false,
+      phone: device.phone || '',
+      model: device.model || '',
+      contact: device.contact || '',
+      category: device.category || '',
+    });
+    setModalVisible(true);
+  };
+
+  const handleAddOrEditDevice = async () => {
+    try {
+      const deviceData = {
+        ...form,
+        lastUpdate: new Date().toISOString(),
+        positionId: null,
+        groupId: null,
+        attributes: {}
+      };
+
+      if (editMode && editId) {
+        await Api.call(`/api/devices/${editId}`, 'PUT', deviceData, '');
+      } else {
+        await Api.call('/api/devices', 'POST', deviceData, '');
+      }
+
+      setModalVisible(false);
+      setEditMode(false);
+      setEditId(null);
+      setForm({
+        name: '',
+        uniqueId: '',
+        status: 'online',
+        disabled: false,
+        phone: '',
+        model: '',
+        contact: '',
+        category: '',
+      });
+      await getDevices();
+
+    } catch (error) {
+      console.error('Error saving device:', error);
     }
-    setModalVisible(false);
-    setEditMode(false);
-    setEditIndex(null);
-    setForm({ vehicleNumber: '', name: '', imei: '', identifier: '', sim: '', phone: '', group: '', model: '', driver: '', category: '', renewal: '', expiration: '' });
   };
 
   return (
     <View style={styles.container}>
-      {/* Sticky Header */}
       <View style={styles.headerWrap}>
         <Text style={styles.header}>Devices</Text>
       </View>
-      {/* Search Bar */}
       <View style={styles.searchBarWrap}>
         <MaterialIcons name="search" size={20} color="#bbb" style={{ marginLeft: 8, marginRight: 4 }} />
         <TextInput
@@ -98,65 +150,67 @@ export default function DevicesScreen() {
       </View>
       <FlatList
         data={filteredDevices}
-        keyExtractor={item => item.id}
+        keyExtractor={item => item.id.toString()}
         contentContainerStyle={{ paddingBottom: 80, paddingTop: 12 }}
-        renderItem={({ item, index }) => (
+        renderItem={({ item }) => (
           <View style={styles.deviceCard}>
             <View style={styles.deviceRow}>
               <View style={styles.deviceIconCircle}>
                 <MaterialIcons name="directions-car" size={22} color="#00B8D4" />
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={styles.deviceNumber}>{item.vehicleNumber}</Text>
-                <Text style={styles.deviceName}>{item.name}</Text>
+                <Text style={styles.deviceNumber}>{item.name}</Text>
+                <Text style={styles.deviceName}>{item.uniqueId}</Text>
               </View>
-              <Text style={styles.deviceModel}>{item.model}</Text>
+              <Text style={[styles.deviceModel, { backgroundColor: item.status === 'online' ? '#43A047' : '#FF7043' }]}>
+                {item.status}
+              </Text>
             </View>
-            <View style={styles.deviceDetailsRow}>
-              <MaterialIcons name="sim-card" size={16} color="#00B8D4" style={{ marginRight: 4 }} />
-              <Text style={styles.deviceDetail}>SIM: {item.sim}</Text>
-            </View>
-            <View style={styles.deviceDetailsRow}>
-              <MaterialIcons name="confirmation-number" size={16} color="#FFD600" style={{ marginRight: 4 }} />
-              <Text style={styles.deviceDetail}>IMEI: {item.imei}</Text>
-            </View>
-            <View style={styles.deviceDetailsRow}>
-              <MaterialIcons name="group" size={16} color="#43A047" style={{ marginRight: 4 }} />
-              <Text style={styles.deviceDetail}>Group: {item.group}</Text>
-            </View>
-            <View style={styles.deviceDetailsRow}>
-              <MaterialIcons name="person" size={16} color="#FF7043" style={{ marginRight: 4 }} />
-              <Text style={styles.deviceDetail}>Driver: {item.driver}</Text>
-            </View>
-            <View style={styles.deviceDetailsRow}>
-              <MaterialIcons name="category" size={16} color="#AB47BC" style={{ marginRight: 4 }} />
-              <Text style={styles.deviceDetail}>Category: {item.category}</Text>
-            </View>
-            <View style={styles.deviceDetailsRow}>
-              <MaterialIcons name="event" size={16} color="#1976D2" style={{ marginRight: 4 }} />
-              <Text style={styles.deviceDetail}>Renewal: {item.renewal} | Expiry: {item.expiration}</Text>
-            </View>
-            {/* Action Buttons */}
+            {item.phone && (
+              <View style={styles.deviceDetailsRow}>
+                <MaterialIcons name="phone" size={16} color="#00B8D4" style={{ marginRight: 4 }} />
+                <Text style={styles.deviceDetail}>Phone: {item.phone}</Text>
+              </View>
+            )}
+            {item.model && (
+              <View style={styles.deviceDetailsRow}>
+                <MaterialIcons name="confirmation-number" size={16} color="#FFD600" style={{ marginRight: 4 }} />
+                <Text style={styles.deviceDetail}>Model: {item.model}</Text>
+              </View>
+            )}
+            {item.category && (
+              <View style={styles.deviceDetailsRow}>
+                <MaterialIcons name="category" size={16} color="#AB47BC" style={{ marginRight: 4 }} />
+                <Text style={styles.deviceDetail}>Category: {item.category}</Text>
+              </View>
+            )}
+            {item.address && (
+              <View style={styles.deviceDetailsRow}>
+                <MaterialIcons name="location-on" size={16} color="#1976D2" style={{ marginRight: 4 }} />
+                <Text style={styles.deviceDetail}>{item.address}</Text>
+              </View>
+            )}
+            {item.speed !== undefined && (
+              <View style={styles.deviceDetailsRow}>
+                <MaterialIcons name="speed" size={16} color="#FF7043" style={{ marginRight: 4 }} />
+                <Text style={styles.deviceDetail}>Speed: {item.speed.toFixed(1)} km/h</Text>
+              </View>
+            )}
             <View style={styles.deviceActionsRow}>
-              <TouchableOpacity style={[styles.deviceActionBtn, { backgroundColor: '#00B8D4' }]}> 
-                <MaterialIcons name="wifi" size={16} color="#fff" />
-              </TouchableOpacity>
-              <TouchableOpacity style={[styles.deviceActionBtn, { backgroundColor: '#FF7043' }]} onPress={() => openEditModal(item, index)}> 
+
+              <TouchableOpacity style={[styles.deviceActionBtn, { backgroundColor: '#FF7043' }]} onPress={() => openEditModal(item)}>
                 <MaterialIcons name="edit" size={16} color="#fff" />
               </TouchableOpacity>
             </View>
           </View>
         )}
       />
-      {/* Add Device Button */}
       <TouchableOpacity style={styles.fab} onPress={openAddModal}>
         <MaterialIcons name="add" size={28} color="#fff" />
       </TouchableOpacity>
-      {/* Add/Edit Device Modal */}
       <Modal visible={modalVisible} animationType="slide" transparent>
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
-            {/* Modal Header with Close Button */}
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>{editMode ? 'Edit Device' : 'Add Device'}</Text>
               <Pressable onPress={() => setModalVisible(false)} style={styles.closeBtn}>
@@ -164,69 +218,41 @@ export default function DevicesScreen() {
               </Pressable>
             </View>
             <ScrollView showsVerticalScrollIndicator={false}>
-              {/* Form Fields */}
               <View style={styles.formField}>
-                <Text style={styles.label}>Vehicle Number <Text style={styles.required}>*</Text></Text>
-                <TextInput style={styles.input} placeholder="Enter vehicle number" placeholderTextColor="#888" value={form.vehicleNumber} onChangeText={t => setForm(f => ({ ...f, vehicleNumber: t }))} />
-              </View>
-              <View style={styles.formField}>
-                <Text style={styles.label}>Name</Text>
+                <Text style={styles.label}>Name <Text style={styles.required}>*</Text></Text>
                 <TextInput style={styles.input} placeholder="Enter name" placeholderTextColor="#888" value={form.name} onChangeText={t => setForm(f => ({ ...f, name: t }))} />
               </View>
               <View style={styles.formField}>
-                <Text style={styles.label}>IMEI / ID <Text style={styles.required}>*</Text></Text>
-                <TextInput style={styles.input} placeholder="Enter IMEI or ID" placeholderTextColor="#888" value={form.imei} onChangeText={t => setForm(f => ({ ...f, imei: t }))} />
-              </View>
-              <View style={styles.formField}>
-                <Text style={styles.label}>Identifier</Text>
-                <TextInput style={styles.input} placeholder="Enter identifier" placeholderTextColor="#888" value={form.identifier} onChangeText={t => setForm(f => ({ ...f, identifier: t }))} />
-              </View>
-              <View style={styles.formField}>
-                <Text style={styles.label}>Sim Number</Text>
-                <TextInput style={styles.input} placeholder="Enter sim number" placeholderTextColor="#888" value={form.sim} onChangeText={t => setForm(f => ({ ...f, sim: t }))} />
+                <Text style={styles.label}>Unique ID <Text style={styles.required}>*</Text></Text>
+                <TextInput style={styles.input} placeholder="Enter unique ID" placeholderTextColor="#888" value={form.uniqueId} onChangeText={t => setForm(f => ({ ...f, uniqueId: t }))} />
               </View>
               <View style={styles.formField}>
                 <Text style={styles.label}>Phone</Text>
                 <TextInput style={styles.input} placeholder="Enter phone" placeholderTextColor="#888" value={form.phone} onChangeText={t => setForm(f => ({ ...f, phone: t }))} />
               </View>
               <View style={styles.formField}>
-                <Text style={styles.label}>Group</Text>
-                <View style={styles.pickerWrap}>
-                  <Picker selectedValue={form.group} onValueChange={(v: string) => setForm(f => ({ ...f, group: v }))} style={styles.picker} dropdownIconColor="#00B8D4">
-                    <Picker.Item label="Select group" value="" />
-                    {groups.map(g => <Picker.Item key={g} label={g} value={g} />)}
-                  </Picker>
-                </View>
+                <Text style={styles.label}>Model</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder="Enter model"
+                  placeholderTextColor="#888"
+                  value={form.model}
+                  onChangeText={t => setForm(f => ({ ...f, model: t }))}
+                />
               </View>
               <View style={styles.formField}>
-                <Text style={styles.label}>Model <Text style={styles.required}>*</Text></Text>
-                <View style={styles.pickerWrap}>
-                  <Picker selectedValue={form.model} onValueChange={(v: string) => setForm(f => ({ ...f, model: v }))} style={styles.picker} dropdownIconColor="#00B8D4">
-                    <Picker.Item label="Select a model" value="" />
-                    {models.map(m => <Picker.Item key={m} label={m} value={m} />)}
-                  </Picker>
-                </View>
-              </View>
-              <View style={styles.formField}>
-                <Text style={styles.label}>Driver Contact</Text>
-                <TextInput style={styles.input} placeholder="Enter contact" placeholderTextColor="#888" value={form.driver} onChangeText={t => setForm(f => ({ ...f, driver: t }))} />
+                <Text style={styles.label}>Contact</Text>
+                <TextInput style={styles.input} placeholder="Enter contact" placeholderTextColor="#888" value={form.contact} onChangeText={t => setForm(f => ({ ...f, contact: t }))} />
               </View>
               <View style={styles.formField}>
                 <Text style={styles.label}>Category</Text>
-                <View style={styles.pickerWrap}>
-                  <Picker selectedValue={form.category} onValueChange={(v: string) => setForm(f => ({ ...f, category: v }))} style={styles.picker} dropdownIconColor="#00B8D4">
-                    <Picker.Item label="Car" value="Car" />
-                    {categories.map(c => c !== 'Car' && <Picker.Item key={c} label={c} value={c} />)}
-                  </Picker>
-                </View>
-              </View>
-              <View style={styles.formField}>
-                <Text style={styles.label}>Next Renewal</Text>
-                <TextInput style={styles.input} placeholder="dd/mm/yyyy" placeholderTextColor="#888" value={form.renewal} onChangeText={t => setForm(f => ({ ...f, renewal: t }))} />
-              </View>
-              <View style={styles.formField}>
-                <Text style={styles.label}>Expiration Date</Text>
-                <TextInput style={styles.input} placeholder="dd/mm/yyyy" placeholderTextColor="#888" value={form.expiration} onChangeText={t => setForm(f => ({ ...f, expiration: t }))} />
+                <TextInput
+                  style={styles.input}
+                  placeholder="Enter category"
+                  placeholderTextColor="#888"
+                  value={form.category}
+                  onChangeText={t => setForm(f => ({ ...f, category: t }))}
+                />
               </View>
               <TouchableOpacity style={styles.addBtn} onPress={handleAddOrEditDevice}>
                 <Text style={styles.addBtnText}>{editMode ? 'Save Changes' : 'Add Device'}</Text>

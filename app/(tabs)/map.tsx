@@ -1,8 +1,8 @@
 import { FontAwesome5, MaterialIcons } from '@expo/vector-icons';
-import { MapView, Marker } from 'expo-maps';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React from 'react';
 import { Dimensions, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import MapView, { Marker } from 'react-native-maps';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 const fallbackVehicle = {
@@ -47,9 +47,11 @@ export default function MapScreen() {
       {/* Map */}
       <MapView
         style={styles.map}
-        initialCamera={{
-          center: { latitude: vehicle.lat, longitude: vehicle.lng },
-          zoom: 15,
+        initialRegion={{
+          latitude: vehicle.lat,
+          longitude: vehicle.lng,
+          latitudeDelta: 0.0922,
+          longitudeDelta: 0.0421,
         }}
       >
         <Marker coordinate={{ latitude: vehicle.lat, longitude: vehicle.lng }}>

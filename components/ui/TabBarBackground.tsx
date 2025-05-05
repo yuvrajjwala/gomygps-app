@@ -1,6 +1,8 @@
+import { View } from 'react-native';
+
 // This is a shim for web and Android where the tab bar is generally opaque.
 export default function TabBarBackground() {
-  return <div style={{ flex: 1, background: '#000' }} />;
+  return <View style={{ flex: 1, backgroundColor: '#000' }} />;
 }
 
 export function useBottomTabOverflow() {

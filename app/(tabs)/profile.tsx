@@ -3,20 +3,11 @@ import { Picker } from '@react-native-picker/picker';
 import { router } from 'expo-router';
 import React, { useState } from 'react';
 import { Dimensions, FlatList, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
-import MapView, { Circle, Polygon } from 'react-native-maps';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useDispatch } from 'react-redux';
 import { logout } from '../store/slices/authSlice';
 const { width, height } = Dimensions.get('window');
 
-const mockGeofences = [
-  { id: '1', name: 'Office Zone', type: 'circle', center: { latitude: 22.57, longitude: 88.36 }, radius: 300 },
-  { id: '2', name: 'Warehouse', type: 'polygon', coordinates: [
-    { latitude: 22.572, longitude: 88.362 },
-    { latitude: 22.573, longitude: 88.363 },
-    { latitude: 22.574, longitude: 88.361 },
-  ] },
-];
 
 const mockGroups = [
   { id: '1', name: 'Fleet A', parentId: null },
@@ -49,147 +40,6 @@ const mockUsers = [
   },
 ];
 
-function GeofencingScreen({ onBack }: { onBack: () => void }) {
-  const [mode, setMode] = useState<'list' | 'add'>('list');
-  const [geofences, setGeofences] = useState(mockGeofences);
-  const [drawingType, setDrawingType] = useState<'circle' | 'polygon'>('circle');
-  const [circle, setCircle] = useState<any>(null);
-  const [polygon, setPolygon] = useState<any[]>([]);
-  const [radius, setRadius] = useState('300');
-  const [geofenceName, setGeofenceName] = useState('');
-
-  const handleAddGeofence = () => {
-    setMode('add');
-    setCircle(null);
-    setPolygon([]);
-    setDrawingType('circle');
-    setRadius('300');
-    setGeofenceName('');
-  };
-
-  const handleSaveGeofence = () => {
-    if (drawingType === 'circle' && circle) {
-      setGeofences([...geofences, { id: Date.now().toString(), name: geofenceName || 'New Circle', type: 'circle', center: circle.center, radius: Number(radius) }]);
-    } else if (drawingType === 'polygon' && polygon.length > 2) {
-      setGeofences([...geofences, { id: Date.now().toString(), name: geofenceName || 'New Polygon', type: 'polygon', coordinates: polygon }]);
-    }
-    setMode('list');
-  };
-
-  return (
-    <View style={{ flex: 1 }}>
-      <View style={styles.headerBar}>
-        <TouchableOpacity style={{ position: 'absolute', left: 0, top: 0, height: '100%', justifyContent: 'center', paddingLeft: 12 }} onPress={onBack}>
-          <MaterialIcons name="arrow-back" size={26} color="#fff" />
-        </TouchableOpacity>
-        <Text style={[styles.headerText, { textAlign: 'center' }]}>Geofencing</Text>
-      </View>
-      {mode === 'list' ? (
-        <View style={{ flex: 1, paddingBottom: 50 }}>
-          <FlatList
-            data={geofences}
-            keyExtractor={item => item.id}
-            contentContainerStyle={{ padding: 18 }}
-            renderItem={({ item }) => (
-              <View style={styles.geofenceCard}>
-                <MaterialIcons name={item.type === 'circle' ? 'radio-button-checked' : 'polyline'} size={28} color={item.type === 'circle' ? '#43A047' : '#2979FF'} />
-                <Text style={styles.geofenceName}>{item.name}</Text>
-              </View>
-            )}
-            ListEmptyComponent={<Text style={{ color: '#888', textAlign: 'center', marginTop: 40 }}>No geofences found.</Text>}
-          />
-          <TouchableOpacity style={styles.addBtn} onPress={handleAddGeofence}>
-            <MaterialIcons name="add-location-alt" size={26} color="#fff" />
-            <Text style={styles.addBtnText}>Add Geofence</Text>
-          </TouchableOpacity>
-        </View>
-      ) : (
-        <View style={{ flex: 1, paddingBottom: 0, marginTop: 0 }}>
-          <MapView
-            style={[styles.map, { height: height - 280, marginTop: 0 }]}
-            initialRegion={{ latitude: 22.5726, longitude: 88.3639, latitudeDelta: 0.01, longitudeDelta: 0.01 }}
-            onPress={e => {
-              if (drawingType === 'circle') {
-                setCircle({ center: e.nativeEvent.coordinate, radius: Number(radius) });
-              } else {
-                setPolygon([...polygon, e.nativeEvent.coordinate]);
-              }
-            }}
-          >
-            {circle && (
-              <Circle
-                center={circle.center}
-                radius={Number(radius)}
-                strokeColor="#43A047"
-                fillColor="#43A04722"
-              />
-            )}
-            {polygon.length > 1 && (
-              <Polygon
-                coordinates={polygon}
-                strokeColor="#2979FF"
-                fillColor="#2979FF22"
-              />
-            )}
-          </MapView>
-          {/* Vertical Add Geofence Panel */}
-          <View style={styles.geoAddPanel}>
-            <Text style={styles.geoAddLabel}>Name</Text>
-            <TextInput
-              style={styles.geoAddInput}
-              value={geofenceName}
-              onChangeText={setGeofenceName}
-              placeholder="Geofence Name"
-              placeholderTextColor="#888"
-              maxLength={32}
-            />
-            <Text style={styles.geoAddLabel}>Geofencing Type</Text>
-            <View style={styles.geoAddTypeRow}>
-              <TouchableOpacity
-                style={[styles.geoAddTypeBtn, drawingType === 'circle' && styles.geoAddTypeBtnActive]}
-                onPress={() => setDrawingType('circle')}
-              >
-                <MaterialIcons name="radio-button-checked" size={22} color="#43A047" />
-                <Text style={styles.geoAddTypeText}>Circle</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.geoAddTypeBtn, drawingType === 'polygon' && styles.geoAddTypeBtnActive]}
-                onPress={() => setDrawingType('polygon')}
-              >
-                <MaterialIcons name="polyline" size={22} color="#2979FF" />
-                <Text style={styles.geoAddTypeText}>Polygon</Text>
-              </TouchableOpacity>
-            </View>
-            {drawingType === 'circle' && (
-              <View style={styles.geoAddRadiusRow}>
-                <Text style={styles.geoAddLabel}>Radius (meters)</Text>
-                <TextInput
-                  style={styles.geoAddInput}
-                  value={radius}
-                  onChangeText={setRadius}
-                  keyboardType="numeric"
-                  placeholder="Radius"
-                  placeholderTextColor="#888"
-                  maxLength={6}
-                />
-              </View>
-            )}
-            <View style={styles.geoAddBtnRow}>
-              <TouchableOpacity style={styles.geoAddSaveBtn} onPress={handleSaveGeofence}>
-                <MaterialIcons name="save" size={22} color="#fff" />
-                <Text style={styles.geoAddSaveText}>Save</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.geoAddCancelBtn} onPress={() => setMode('list')}>
-                <MaterialIcons name="close" size={22} color="#fff" />
-                <Text style={styles.geoAddCancelText}>Cancel</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      )}
-    </View>
-  );
-}
 
 function GroupManagementScreen({ onBack }: { onBack: () => void }) {
   const [mode, setMode] = useState<'list' | 'add'>('list');
@@ -535,7 +385,6 @@ function UserManagementScreen({ onBack }: { onBack: () => void }) {
 }
 
 export default function DriversScreen() {
-  const [showGeofencing, setShowGeofencing] = useState(false);
   const [showGroupManagement, setShowGroupManagement] = useState(false);
   const [showUserManagement, setShowUserManagement] = useState(false);
   const dispatch = useDispatch();
@@ -544,7 +393,7 @@ export default function DriversScreen() {
       label: 'Geofencing',
       icon: 'my-location',
       color: '#43A047',
-      onPress: () => setShowGeofencing(true),
+      onPress: () => router.push('/geofencing'),
     },
     {
       label: 'User Management',
@@ -580,9 +429,7 @@ export default function DriversScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      {showGeofencing ? (
-        <GeofencingScreen onBack={() => setShowGeofencing(false)} />
-      ) : showGroupManagement ? (
+      { showGroupManagement ? (
         <GroupManagementScreen onBack={() => setShowGroupManagement(false)} />
       ) : showUserManagement ? (
         <UserManagementScreen onBack={() => setShowUserManagement(false)} />

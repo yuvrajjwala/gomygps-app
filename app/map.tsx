@@ -4,9 +4,13 @@ import { useIsFocused } from '@react-navigation/native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import moment from 'moment';
 import React, { useEffect, useRef, useState } from 'react';
-import { Dimensions, Image, ImageSourcePropType, StatusBar, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Animated, Dimensions, Image, ImageSourcePropType, PanResponder, StatusBar, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import MapView, { Marker, Region } from 'react-native-maps';
 import { SafeAreaView } from 'react-native-safe-area-context';
+
+const { height: SCREEN_HEIGHT } = Dimensions.get('window');
+const BOTTOM_SHEET_MIN_HEIGHT = 300;
+const BOTTOM_SHEET_MAX_HEIGHT = SCREEN_HEIGHT * 0.5;
 
 export default function MapScreen() {
   const router = useRouter();
@@ -19,6 +23,53 @@ export default function MapScreen() {
   const [carMode, setCarMode] = useState(false);
   const [autoFollow, setAutoFollow] = useState(false);
   const isFocused = useIsFocused();
+
+  // Bottom Sheet Animation
+  const pan = useRef(new Animated.ValueXY()).current;
+  const bottomSheetHeight = useRef(new Animated.Value(BOTTOM_SHEET_MIN_HEIGHT)).current;
+  const [isBottomSheetExpanded, setIsBottomSheetExpanded] = useState(false);
+
+  const panResponder = useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => true,
+      onMoveShouldSetPanResponder: () => true,
+      onPanResponderMove: (_, gestureState) => {
+        if (gestureState.dy > 0) {
+          // Dragging down
+          bottomSheetHeight.setValue(BOTTOM_SHEET_MAX_HEIGHT - gestureState.dy);
+        } else {
+          // Dragging up
+          bottomSheetHeight.setValue(BOTTOM_SHEET_MIN_HEIGHT - gestureState.dy);
+        }
+      },
+      onPanResponderRelease: (_, gestureState) => {
+        if (gestureState.dy > 50) {
+          // Dragged down significantly
+          Animated.spring(bottomSheetHeight, {
+            toValue: BOTTOM_SHEET_MIN_HEIGHT,
+            useNativeDriver: false,
+            bounciness: 0,
+          }).start();
+          setIsBottomSheetExpanded(false);
+        } else if (gestureState.dy < -50) {
+          // Dragged up significantly
+          Animated.spring(bottomSheetHeight, {
+            toValue: BOTTOM_SHEET_MAX_HEIGHT,
+            useNativeDriver: false,
+            bounciness: 0,
+          }).start();
+          setIsBottomSheetExpanded(true);
+        } else {
+          // Return to previous position
+          Animated.spring(bottomSheetHeight, {
+            toValue: isBottomSheetExpanded ? BOTTOM_SHEET_MAX_HEIGHT : BOTTOM_SHEET_MIN_HEIGHT,
+            useNativeDriver: false,
+            bounciness: 0,
+          }).start();
+        }
+      },
+    })
+  ).current;
 
   const getVehicleIcon = (): ImageSourcePropType => {
     if (!device?.lastUpdate) {
@@ -186,9 +237,6 @@ export default function MapScreen() {
           <Text style={styles.headerTitle}>{device?.name}</Text>
           <Text style={styles.headerSubtitle}>Last updated: {moment(device?.lastUpdate).format('DD/MM/YYYY HH:mm')}</Text>
         </View>
-        {/* <TouchableOpacity>
-          <MaterialIcons name="more-vert" size={26} color="#fff" />
-        </TouchableOpacity> */}
       </View>
       {/* Map */}
       <MapView
@@ -224,98 +272,110 @@ export default function MapScreen() {
         </Marker>
       </MapView>
 
-      {/* Bottom Card */}
-      <View style={styles.bottomCard}>
-        <View style={styles.bottomCardHeader}>
-          <Text style={styles.vehicleNumber}>{device?.name}</Text>
-          <View style={styles.speedoWrap}>
-            <FontAwesome5 name="tachometer-alt" size={18} color="#43A047" />
-            <Text style={styles.speedoText}>{(Number(device?.speed) || 0)?.toFixed(0)} km/h</Text>
+      {/* Custom Bottom Sheet */}
+      <Animated.View
+        style={[
+          styles.bottomSheet,
+          {
+            height: bottomSheetHeight,
+          },
+        ]}
+      >
+        <View {...panResponder.panHandlers} style={styles.bottomSheetHandle}>
+          <View style={styles.handleBar} />
+        </View>
+        <View style={styles.bottomSheetContent}>
+          <View style={styles.bottomCardHeader}>
+            <Text style={styles.vehicleNumber}>{device?.name}</Text>
+            <View style={styles.speedoWrap}>
+              <FontAwesome5 name="tachometer-alt" size={18} color="#43A047" />
+              <Text style={styles.speedoText}>{(Number(device?.speed) || 0)?.toFixed(0)} km/h</Text>
+            </View>
+          </View>
+          <View style={styles.bottomCardRow}>
+            <MaterialIcons name="event" size={18} color="#FFD600" style={{ marginRight: 6 }} />
+            <Text style={styles.bottomCardRowText}>{moment(device?.lastUpdate).format('DD/MM/YYYY HH:mm')}</Text>
+          </View>
+          <View style={styles.bottomCardRow}>
+            <MaterialIcons name="location-on" size={18} color="#2979FF" style={{ marginRight: 6 }} />
+            <Text style={styles.bottomCardRowText}>{device?.address}</Text>
+          </View>
+          <View style={styles.bottomCardDivider} />
+          <View style={styles.statusIconsRow}>
+            {/* Parking */}
+            <TouchableOpacity
+              style={[styles.iconCircle, { borderColor: isParked ? '#43A047' : '#A5F3C7' }]}
+              onPress={() => {
+                if (device) {
+                  isParked ? removeGeofence(device) : createGeofence(device);
+                }
+              }}
+            >
+              <MaterialIcons name="local-parking" size={24} color={isParked ? '#43A047' : '#A5F3C7'} />
+            </TouchableOpacity>
+
+            {/* Play (active) */}
+            <TouchableOpacity
+              style={[styles.iconCircle, styles.iconCircleActive, { backgroundColor: '#4285F4', borderColor: '#4285F4', shadowColor: '#4285F4' }]}
+              onPress={() => {
+                const data = btoa(JSON.stringify({
+                  deviceId: device?.deviceId,
+                  id: device?.deviceId,
+                }));
+              }}
+            >
+              <MaterialIcons name="play-arrow" size={24} color="#fff" />
+            </TouchableOpacity>
+
+            {/* Car Mode */}
+            <TouchableOpacity
+              style={[styles.iconCircle, { borderColor: carMode ? '#4285F4' : '#90CAF9' }]}
+              onPress={() => setCarMode(!carMode)}
+            >
+              <MaterialIcons name="directions-car" size={24} color={carMode ? '#4285F4' : '#90CAF9'} />
+            </TouchableOpacity>
+
+            {/* Lock */}
+            <TouchableOpacity
+              style={[styles.iconCircle, { borderColor: isLocked ? '#E53935' : '#FFCDD2' }]}
+              onPress={() => {
+                if (device) {
+                  mobilize(device.protocol);
+                }
+              }}
+            >
+              <MaterialIcons name="lock" size={24} color={isLocked ? '#E53935' : '#FFCDD2'} />
+            </TouchableOpacity>
+
+            {/* Auto Follow */}
+            <TouchableOpacity
+              style={[styles.iconCircle, { borderColor: autoFollow ? '#43A047' : '#A5F3C7' }]}
+              onPress={() => {
+                if (!carMode) {
+                  return;
+                }
+                setAutoFollow(!autoFollow);
+              }}
+            >
+              <MaterialIcons name="location-on" size={24} color={autoFollow ? '#43A047' : '#A5F3C7'} />
+            </TouchableOpacity>
+          </View>
+          <View style={styles.bottomButtonsRow}>
+            <TouchableOpacity
+              style={styles.centerMapBtn}
+              onPress={() => router.push({ pathname: '/vehicle-details', params: { device: JSON.stringify(device) } })}
+            >
+              <Text style={styles.centerMapBtnText}>View Details</Text>
+            </TouchableOpacity>
+            <TouchableOpacity 
+              style={styles.viewReportsBtn} 
+              onPress={() => router.push({ pathname: '/reports', params: { deviceId: device?.deviceId } })}
+            >
+              <Text style={styles.viewReportsBtnText}>View Reports</Text>
+            </TouchableOpacity>
           </View>
         </View>
-        <View style={styles.bottomCardRow}>
-          <MaterialIcons name="event" size={18} color="#FFD600" style={{ marginRight: 6 }} />
-          <Text style={styles.bottomCardRowText}>{moment(device?.lastUpdate).format('DD/MM/YYYY HH:mm')}</Text>
-        </View>
-        <View style={styles.bottomCardRow}>
-          <MaterialIcons name="location-on" size={18} color="#2979FF" style={{ marginRight: 6 }} />
-          <Text style={styles.bottomCardRowText}>{device?.address}</Text>
-        </View>
-        <View style={styles.bottomCardDivider} />
-        <View style={styles.statusIconsRow}>
-          {/* Parking */}
-          <TouchableOpacity
-            style={[styles.iconCircle, { borderColor: isParked ? '#43A047' : '#A5F3C7' }]}
-            onPress={() => {
-              if (device) {
-                isParked ? removeGeofence(device) : createGeofence(device);
-              }
-            }}
-          >
-            <MaterialIcons name="local-parking" size={24} color={isParked ? '#43A047' : '#A5F3C7'} />
-          </TouchableOpacity>
-
-          {/* Play (active) */}
-          <TouchableOpacity
-            style={[styles.iconCircle, styles.iconCircleActive, { backgroundColor: '#4285F4', borderColor: '#4285F4', shadowColor: '#4285F4' }]}
-            onPress={() => {
-              // Handle play action
-              const data = btoa(JSON.stringify({
-                deviceId: device?.deviceId,
-                id: device?.deviceId,
-              }));
-
-            }}
-          >
-            <MaterialIcons name="play-arrow" size={24} color="#fff" />
-          </TouchableOpacity>
-
-          {/* Car Mode */}
-          <TouchableOpacity
-            style={[styles.iconCircle, { borderColor: carMode ? '#4285F4' : '#90CAF9' }]}
-            onPress={() => setCarMode(!carMode)}
-          >
-            <MaterialIcons name="directions-car" size={24} color={carMode ? '#4285F4' : '#90CAF9'} />
-          </TouchableOpacity>
-
-          {/* Lock */}
-          <TouchableOpacity
-            style={[styles.iconCircle, { borderColor: isLocked ? '#E53935' : '#FFCDD2' }]}
-            onPress={() => {
-              if (device) {
-                mobilize(device.protocol);
-              }
-            }}
-          >
-            <MaterialIcons name="lock" size={24} color={isLocked ? '#E53935' : '#FFCDD2'} />
-          </TouchableOpacity>
-
-          {/* Auto Follow */}
-          <TouchableOpacity
-            style={[styles.iconCircle, { borderColor: autoFollow ? '#43A047' : '#A5F3C7' }]}
-            onPress={() => {
-              if (!carMode) {
-                // Show error toast
-                return;
-              }
-              setAutoFollow(!autoFollow);
-            }}
-          >
-            <MaterialIcons name="location-on" size={24} color={autoFollow ? '#43A047' : '#A5F3C7'} />
-          </TouchableOpacity>
-        </View>
-        <View style={styles.bottomButtonsRow}>
-          <TouchableOpacity
-            style={styles.centerMapBtn}
-            onPress={() => router.push({ pathname: '/vehicle-details', params: { device: JSON.stringify(device) } })}
-          >
-            <Text style={styles.centerMapBtnText}>View Details</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.viewReportsBtn} onPress={() => router.push({ pathname: '/reports', params: { deviceId: device?.deviceId } })} >
-            <Text style={styles.viewReportsBtnText}>View Reports</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
+      </Animated.View>
     </SafeAreaView>
   );
 }
@@ -351,21 +411,36 @@ const styles = StyleSheet.create({
     width: '100%',
     zIndex: 1,
   },
-  bottomCard: {
+  bottomSheet: {
     position: 'absolute',
     bottom: 0,
     left: 0,
-    width: width,
+    right: 0,
     backgroundColor: '#fff',
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
-    padding: 18,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: -2 },
     shadowOpacity: 0.12,
     shadowRadius: 8,
     elevation: 8,
     zIndex: 3,
+  },
+  bottomSheetHandle: {
+    width: '100%',
+    height: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  handleBar: {
+    width: 40,
+    height: 4,
+    backgroundColor: '#E0E0E0',
+    borderRadius: 2,
+  },
+  bottomSheetContent: {
+    flex: 1,
+    padding: 18,
   },
   bottomCardHeader: {
     flexDirection: 'row',

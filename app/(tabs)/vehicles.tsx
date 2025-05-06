@@ -41,6 +41,7 @@ export default function VehiclesScreen() {
 
   const getDevices = async () => {
     if (!isFocused) return;
+    console.log('isFocused',isFocused);
     try {
       const [responseDevices, responsePositions] = await Promise.all([
         Api.call('/api/devices', 'GET', {}, ''),

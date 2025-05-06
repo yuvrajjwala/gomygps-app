@@ -1,5 +1,6 @@
 import Api from '@/config/Api';
 import { MaterialIcons } from '@expo/vector-icons';
+import { useIsFocused } from '@react-navigation/native';
 import { router } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { FlatList, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
@@ -40,6 +41,7 @@ export default function DevicesScreen() {
     category: '',
   });
   const [search, setSearch] = useState('');
+  const isFocused = useIsFocused();
 
   const filteredDevices = devices.filter(d =>
     d.name.toLowerCase().includes(search.toLowerCase()) ||
@@ -52,6 +54,7 @@ export default function DevicesScreen() {
   }, []);
 
   const getDevices = async () => {
+    if (!isFocused) return;
     try {
       const [responseDevices, responsePositions] = await Promise.all([
         Api.call('/api/devices', 'GET', {}, ''),

@@ -159,7 +159,16 @@ export default function DevicesScreen() {
         keyExtractor={item => item.id.toString()}
         contentContainerStyle={{ paddingBottom: 80, paddingTop: 12 }}
         renderItem={({ item }) => (
-          <TouchableOpacity style={styles.deviceCard} onPress={() => router.push({ pathname: '/vehicle-details', params: { device: JSON.stringify(item) } })}>  
+          <TouchableOpacity style={styles.deviceCard} 
+          onPress={() => router.push({ 
+            pathname: '/map', 
+            params: { 
+              ...item,
+              disabled: item.disabled.toString()
+            } 
+          })}
+          activeOpacity={0.85}
+          >  
             <View style={styles.deviceRow}>
               <View style={styles.deviceIconCircle}>
                 <MaterialIcons name="directions-car" size={22} color="#00B8D4" />

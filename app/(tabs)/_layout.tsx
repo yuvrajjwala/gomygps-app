@@ -1,36 +1,45 @@
-import { Tabs } from 'expo-router';
+import { router, Tabs } from 'expo-router';
 import React from 'react';
-import { Platform } from 'react-native';
+import { useSelector } from 'react-redux';
 
 import { HapticTab } from '@/components/HapticTab';
 import { IconSymbol } from '@/components/ui/IconSymbol';
-import TabBarBackground from '@/components/ui/TabBarBackground';
-import { Colors } from '@/constants/Colors';
-import { useColorScheme } from '@/hooks/useColorScheme';
+import { MaterialIcons } from '@expo/vector-icons';
 
 export default function TabLayout() {
-  const colorScheme = useColorScheme();
+  const isAuthenticated = useSelector((state: any) => state.auth.isAuthenticated);
+
+  if (!isAuthenticated) {
+    return router.replace('/login');
+  }
 
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: Colors[colorScheme ?? 'light'].tint,
+        tabBarActiveTintColor: 'white',
         headerShown: false,
         tabBarButton: HapticTab,
-        tabBarBackground: TabBarBackground,
         tabBarStyle: [
           {
-            backgroundColor: '#000',
-            borderTopWidth: 0,
-            height: 64,
+            backgroundColor: 'black',
+            alignItems: 'center',
+            justifyContent: 'center',
+            height: 70,
           },
-          Platform.select({
-            ios: {
-              position: 'absolute',
-            },
-            default: {},
-          }),
         ],
+        tabBarLabelStyle: {
+          fontSize: 12,
+          fontWeight: 'bold',
+          textAlign: 'center',
+        },
+        tabBarIconStyle: {
+          alignItems: 'center',
+          justifyContent: 'center',
+        },
+        tabBarItemStyle: {
+          alignItems: 'center',
+          justifyContent: 'center',
+        },
       }}>
       <Tabs.Screen
         name="index"
@@ -42,28 +51,30 @@ export default function TabLayout() {
       <Tabs.Screen
         name="vehicles"
         options={{
-          title: 'Vehicles',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="local-shipping" color={color} />,
+          title: 'Tracking',
+          tabBarIcon: ({ color }) => <MaterialIcons name="gps-fixed" size={24} color={color} />,
         }}
       />
-      <Tabs.Screen
-        name="map"
-        options={{
-          title: 'Map',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="map" color={color} />,
-        }}
-      />
+
       <Tabs.Screen
         name="devices"
         options={{
           title: 'Devices',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="local-gas-station" color={color} />,
+          tabBarIcon: ({ color }) => <MaterialIcons name="devices" size={24} color={color} />,
+        }}
+      />
+
+      <Tabs.Screen
+        name="reports"
+        options={{
+          title: 'Reports',
+          tabBarIcon: ({ color }) => <MaterialIcons name="content-paste-search" size={24} color={color} />,
         }}
       />
       <Tabs.Screen
-        name="settings"
+        name="profile"
         options={{
-          title: 'Settings',
+          title: 'Profile',
           tabBarIcon: ({ color }) => <IconSymbol size={28} name="person" color={color} />,
         }}
       />

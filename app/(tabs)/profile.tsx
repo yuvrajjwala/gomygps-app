@@ -1,10 +1,12 @@
 import { MaterialIcons } from '@expo/vector-icons';
 import { Picker } from '@react-native-picker/picker';
+import { router } from 'expo-router';
 import React, { useState } from 'react';
 import { Dimensions, FlatList, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import MapView, { Circle, Polygon } from 'react-native-maps';
 import { SafeAreaView } from 'react-native-safe-area-context';
-
+import { useDispatch } from 'react-redux';
+import { logout } from '../store/slices/authSlice';
 const { width, height } = Dimensions.get('window');
 
 const mockGeofences = [
@@ -536,6 +538,7 @@ export default function DriversScreen() {
   const [showGeofencing, setShowGeofencing] = useState(false);
   const [showGroupManagement, setShowGroupManagement] = useState(false);
   const [showUserManagement, setShowUserManagement] = useState(false);
+  const dispatch = useDispatch();
   const options = [
     {
       label: 'Geofencing',
@@ -566,6 +569,9 @@ export default function DriversScreen() {
       icon: 'logout',
       color: '#FF3D00',
       onPress: () => {
+
+        dispatch(logout()); 
+        router.replace('/login');
         // Add your logout logic here
         console.log('Logout pressed');
       },

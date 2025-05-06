@@ -1,3 +1,4 @@
+import { useColorScheme } from '@/hooks/useColorScheme';
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
@@ -7,8 +8,6 @@ import 'react-native-reanimated';
 import { Provider, useSelector } from 'react-redux';
 import { PersistGate } from 'redux-persist/integration/react';
 import { persistor, store } from './store/store';
-
-import { useColorScheme } from '@/hooks/useColorScheme';
 
 function RootLayoutNav() {
   const colorScheme = useColorScheme();

@@ -1,5 +1,4 @@
 import axios from 'axios';
-import { Alert } from 'react-native';
 import { baseUrl } from './Constants';
 
 export default {
@@ -44,13 +43,9 @@ export default {
     } catch (error: any) {
       if (error.response) {
         if (error.response.status === 401) {
-          Alert.alert('Error', error.response.data?.message);
         }
         if (error.response.status === 400) {
-          Alert.alert('Error', error.response.data?.message);
         }
-      } else {
-        Alert.alert('Error', 'Network error occurred');
       }
       return { status: error.response?.status || 500, error };
     }

@@ -1,7 +1,7 @@
 import Api from '@/config/Api';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useIsFocused } from '@react-navigation/native';
-import { router } from 'expo-router';
+import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { FlatList, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
@@ -23,6 +23,8 @@ interface Device {
   longitude?: number;
   speed?: number;
   address?: string;
+  expirationTime?: string;
+  imei?: string;
 }
 
 export default function DevicesScreen() {
@@ -41,6 +43,7 @@ export default function DevicesScreen() {
     category: '',
   });
   const [search, setSearch] = useState('');
+  const router = useRouter();
   const isFocused = useIsFocused();
 
   const filteredDevices = devices.filter(d =>
@@ -170,51 +173,40 @@ export default function DevicesScreen() {
           activeOpacity={0.85}
           >  
             <View style={styles.deviceRow}>
-              <View style={styles.deviceIconCircle}>
-                <MaterialIcons name="directions-car" size={22} color="#00B8D4" />
-              </View>
               <View style={{ flex: 1 }}>
                 <Text style={styles.deviceNumber}>{item.name}</Text>
-                <Text style={styles.deviceName}>{item.uniqueId}</Text>
               </View>
-              <Text style={[styles.deviceModel, { backgroundColor: item.status === 'online' ? '#43A047' : '#FF7043' }]}>
+              <Text style={[styles.deviceModel, { backgroundColor: item.status === 'online' ? '#43A047' : '#FF7043' }]}> 
                 {item.status}
               </Text>
             </View>
-            {item.phone && (
-              <View style={styles.deviceDetailsRow}>
-                <MaterialIcons name="phone" size={16} color="#00B8D4" style={{ marginRight: 4 }} />
-                <Text style={styles.deviceDetail}>Phone: {item.phone}</Text>
-              </View>
-            )}
-            {item.model && (
-              <View style={styles.deviceDetailsRow}>
-                <MaterialIcons name="confirmation-number" size={16} color="#FFD600" style={{ marginRight: 4 }} />
-                <Text style={styles.deviceDetail}>Model: {item.model}</Text>
-              </View>
-            )}
-            {item.category && (
-              <View style={styles.deviceDetailsRow}>
-                <MaterialIcons name="category" size={16} color="#AB47BC" style={{ marginRight: 4 }} />
-                <Text style={styles.deviceDetail}>Category: {item.category}</Text>
-              </View>
-            )}
-            {item.address && (
-              <View style={styles.deviceDetailsRow}>
-                <MaterialIcons name="location-on" size={16} color="#1976D2" style={{ marginRight: 4 }} />
-                <Text style={styles.deviceDetail}>{item.address}</Text>
-              </View>
-            )}
-            {item.speed !== undefined && (
-              <View style={styles.deviceDetailsRow}>
-                <MaterialIcons name="speed" size={16} color="#FF7043" style={{ marginRight: 4 }} />
-                <Text style={styles.deviceDetail}>Speed: {item.speed.toFixed(1)} km/h</Text>
-              </View>
-            )}
+            <View style={styles.deviceDetailsRow}>
+              <Text style={styles.deviceDetail}>Model: {item.model || '-'}</Text>
+            </View>
+            <View style={styles.deviceDetailsRow}>
+              <Text style={styles.deviceDetail}>Category: {item.category || '-'}</Text>
+            </View>
+            <View style={styles.deviceDetailsRow}>
+              <Text style={styles.deviceDetail}>Contact: {item.phone || '-'}</Text>
+            </View>
+            <View style={styles.deviceDetailsRow}>
+              <Text style={styles.deviceDetail}>IMEI: {item.uniqueId || '-'}</Text>
+            </View>
+            <View style={styles.deviceDetailsRow}>
+              <Text style={styles.deviceDetail}>Last Update: {item.lastUpdate ? new Date(item.lastUpdate).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : '-'}</Text>
+            </View>
+            <View style={styles.deviceDetailsRow}>
+              <Text style={styles.deviceDetail}>Creation Time: {item.lastUpdate ? new Date(item.lastUpdate).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : '-'}</Text>
+            </View>
+            <View style={styles.deviceDetailsRow}>
+              <Text style={styles.deviceDetail}>Expiration Time: {item.expirationTime ? new Date(item.expirationTime).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : '-'}</Text>
+            </View>
             <View style={styles.deviceActionsRow}>
-
-              <TouchableOpacity style={[styles.deviceActionBtn, { backgroundColor: '#FF7043' }]} onPress={() => openEditModal(item)}>
-                <MaterialIcons name="edit" size={16} color="#fff" />
+              <TouchableOpacity style={[styles.deviceActionBtn, { backgroundColor: '#43A047', flex: 1, marginRight: 6 }]} onPress={() => openEditModal(item)}>
+                <Text style={styles.deviceActionBtnText}>EDIT</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={[styles.deviceActionBtn, { backgroundColor: '#FF7043', flex: 1, marginLeft: 6 }]} onPress={() => {}}>
+                <Text style={[styles.deviceActionBtnText, { color: 'white' }]}>USERS</Text>
               </TouchableOpacity>
             </View>
           </TouchableOpacity>
@@ -284,55 +276,99 @@ export default function DevicesScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#111' },
-  headerWrap: { backgroundColor: '#111', paddingTop: 36, paddingBottom: 12, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 6, elevation: 4, zIndex: 10 },
-  header: { fontSize: 28, fontWeight: 'bold', alignSelf: 'center', color: '#fff', letterSpacing: 1 },
-  deviceCard: { backgroundColor: '#181A20', borderRadius: 18, marginHorizontal: 14, marginBottom: 16, padding: 18, elevation: 3, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 6 },
-  deviceRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 6 },
-  deviceIconCircle: { width: 38, height: 38, borderRadius: 19, backgroundColor: '#222', justifyContent: 'center', alignItems: 'center', marginRight: 12 },
-  deviceNumber: { fontWeight: 'bold', fontSize: 17, color: '#fff' },
-  deviceName: { fontWeight: '600', fontSize: 15, color: '#fff', marginBottom: 2 },
-  deviceModel: { fontWeight: 'bold', fontSize: 13, color: '#fff', backgroundColor: '#00B8D4', borderRadius: 8, paddingHorizontal: 10, paddingVertical: 3, overflow: 'hidden' },
-  deviceDetailsRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 2 },
-  deviceDetail: { color: '#bbb', fontSize: 13 },
-  fab: { position: 'absolute', right: 24, bottom: 32, backgroundColor: '#00B8D4', borderRadius: 32, width: 56, height: 56, alignItems: 'center', justifyContent: 'center', elevation: 6, shadowColor: '#00B8D4', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.18, shadowRadius: 8 },
-  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.7)', justifyContent: 'center', alignItems: 'center' },
-  modalContent: { backgroundColor: '#181A20', borderRadius: 20, padding: 20, width: '92%', maxHeight: '92%', shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.12, shadowRadius: 12, elevation: 8 },
+  container: { flex: 1, backgroundColor: '#F7F8FA' },
+  headerWrap: { backgroundColor: '#fff', paddingTop: 36, paddingBottom: 12, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 6, elevation: 4, zIndex: 10 },
+  header: { fontSize: 28, fontWeight: 'bold', alignSelf: 'center', color: '#222', letterSpacing: 1 },
+  deviceCard: {
+    backgroundColor: '#fff',
+    borderRadius: 18,
+    marginHorizontal: 14,
+    marginBottom: 16,
+    padding: 18,
+    elevation: 3,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 6,
+  },
+  deviceRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  deviceIconCircle: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: '#E3F2FD',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 12,
+  },
+  deviceNumber: {
+    fontWeight: 'bold',
+    fontSize: 19,
+    color: '#222',
+  },
+  deviceName: {
+    fontSize: 15,
+    color: '#444',
+  },
+  deviceModel: {
+    fontWeight: 'bold',
+    fontSize: 15,
+    color: '#fff',
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+    borderRadius: 8,
+  },
+  deviceDetailsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 2,
+  },
+  deviceDetail: {
+    color: '#444',
+    fontSize: 15,
+  },
+  deviceActionsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 14,
+    gap: 0,
+  },
+  deviceActionBtn: {
+    borderRadius: 10,
+    paddingVertical: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    elevation: 1,
+  },
+  deviceActionBtnText: {
+    color: '#fff',
+    fontWeight: 'bold',
+    fontSize: 15,
+    letterSpacing: 1,
+  },
+  fab: { position: 'absolute', right: 24, bottom: 32, backgroundColor: '#000', borderRadius: 32, width: 56, height: 56, alignItems: 'center', justifyContent: 'center', elevation: 6, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.18, shadowRadius: 8 },
+  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.18)', justifyContent: 'center', alignItems: 'center' },
+  modalContent: { backgroundColor: '#fff', borderRadius: 20, padding: 20, width: '92%', maxHeight: '92%', shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.12, shadowRadius: 12, elevation: 8 },
   modalHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 },
   modalTitle: { fontSize: 22, fontWeight: 'bold', color: '#00B8D4', alignSelf: 'center', flex: 1, textAlign: 'center' },
   closeBtn: { padding: 4, marginLeft: 8 },
   formField: { marginBottom: 12 },
-  label: { fontWeight: '600', color: '#fff', marginBottom: 4, fontSize: 15 },
+  label: { fontWeight: '600', color: '#222', marginBottom: 4, fontSize: 15 },
   required: { color: '#FF7043', fontWeight: 'bold' },
-  input: { backgroundColor: '#23242a', borderRadius: 8, padding: 12, fontSize: 15, borderWidth: 1, borderColor: '#222', color: '#fff' },
-  pickerWrap: { backgroundColor: '#23242a', borderRadius: 8, borderWidth: 1, borderColor: '#222' },
-  picker: { height: 44, width: '100%', color: '#fff' },
+  input: { backgroundColor: '#F7F8FA', borderRadius: 8, padding: 12, fontSize: 15, borderWidth: 1, borderColor: '#E3F2FD', color: '#222' },
+  pickerWrap: { backgroundColor: '#F7F8FA', borderRadius: 8, borderWidth: 1, borderColor: '#E3F2FD' },
+  picker: { height: 44, width: '100%', color: '#222' },
   addBtn: { backgroundColor: '#00B8D4', borderRadius: 8, padding: 16, marginTop: 10, alignItems: 'center', shadowColor: '#00B8D4', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.12, shadowRadius: 4, elevation: 2 },
   addBtnText: { color: '#fff', fontWeight: 'bold', fontSize: 16 },
   cancelBtn: { marginTop: 8, alignItems: 'center' },
   cancelBtnText: { color: '#00B8D4', fontWeight: 'bold', fontSize: 15 },
-  deviceActionsRow: {
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
-    marginTop: 10,
-    gap: 10,
-  },
-  deviceActionBtn: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-    alignItems: 'center',
-    justifyContent: 'center',
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.08,
-    shadowRadius: 2,
-  },
   searchBarWrap: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#181A20',
+    backgroundColor: '#fff',
     borderRadius: 10,
     marginHorizontal: 16,
     marginTop: 16,
@@ -340,11 +376,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderWidth: 1,
-    borderColor: '#23242a',
+    borderColor: '#E3F2FD',
   },
   searchInput: {
     flex: 1,
-    color: '#fff',
+    color: '#222',
     fontSize: 16,
     paddingVertical: 6,
     paddingHorizontal: 8,

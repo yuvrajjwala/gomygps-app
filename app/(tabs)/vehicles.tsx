@@ -23,12 +23,11 @@ const carImages = {
 };
 
 export default function VehiclesScreen() {
-  const cardColors = ['#FFFFFF', '#FFFFFF', '#FFFFFF', '#FFFFFF'];
   const router = useRouter();
   const [devicesData, setDevicesData] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedFilter, setSelectedFilter] = useState('All');
-    const isFocused = useIsFocused();
+  const isFocused = useIsFocused();
 
   useEffect(() => {
     getDevices();
@@ -41,6 +40,7 @@ export default function VehiclesScreen() {
   }, []);
 
   const getDevices = async () => {
+    if (!isFocused) return;
     try {
       const [responseDevices, responsePositions] = await Promise.all([
         Api.call('/api/devices', 'GET', {}, ''),

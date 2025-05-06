@@ -1,5 +1,6 @@
 import Api from '@/config/Api';
 import { FontAwesome5, MaterialIcons } from '@expo/vector-icons';
+import { useIsFocused } from '@react-navigation/native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import moment from 'moment';
 import React, { useEffect, useRef, useState } from 'react';
@@ -17,20 +18,21 @@ export default function MapScreen() {
   const [isLocked, setIsLocked] = useState(false);
   const [carMode, setCarMode] = useState(false);
   const [autoFollow, setAutoFollow] = useState(false);
+  const isFocused = useIsFocused();
 
   const getVehicleIcon = (): ImageSourcePropType => {
     if (!device?.lastUpdate) {
-      return require('@/assets/images/cars/car-gray.png');
+      return require('@/assets/images/cars/white.png');
     }
     const lastUpdate = new Date(device.lastUpdate);
     const fourHoursAgo = new Date(Date.now() - 1000 * 60 * 60 * 4);
     if (lastUpdate < fourHoursAgo) {
-      return require('@/assets/images/cars/car-gray.png');
+      return require('@/assets/images/cars/white.png');
     }
     if (device.status === 'online' && Number(device.speed) === 0) {
-      return require('@/assets/images/cars/car-orange.png');
+      return require('@/assets/images/cars/orange.png');
     }
-    return device.status === 'online' ? require('@/assets/images/cars/car-green.png') : require('@/assets/images/cars/car-red.png');
+    return device.status === 'online' ? require('@/assets/images/cars/green.png') : require('@/assets/images/cars/red.png');
   };
 
   useEffect(() => {
@@ -56,33 +58,21 @@ export default function MapScreen() {
 
   useEffect(() => {
     if (carMode) {
-      // Adjust zoom level for car mode
       setZoomLevel(0.002);
     } else {
-      // Reset zoom level when car mode is disabled
       setZoomLevel(0.005);
     }
   }, [carMode]);
 
-  const handleCenterMap = () => {
-    if (device?.latitude && device?.longitude) {
-      const newRegion: Region = {
-        latitude: device.latitude,
-        longitude: device.longitude,
-        latitudeDelta: zoomLevel,
-        longitudeDelta: zoomLevel * 0.5,
-      };
-      mapRef.current?.animateToRegion(newRegion, 1000);
-    }
-  };
 
   const getPosition = async () => {
+    if (!isFocused) return;
     const response = await Api.call(`/api/positions?deviceId=${device.deviceId}`, 'GET', {}, '');
     const newDevice = { ...device, ...response.data[0] };
     setDevice(newDevice);
     if (newDevice.latitude && newDevice.longitude) {
-      const isSignificantChange = 
-        Math.abs(newDevice.latitude - device.latitude) > 0.0001 || 
+      const isSignificantChange =
+        Math.abs(newDevice.latitude - device.latitude) > 0.0001 ||
         Math.abs(newDevice.longitude - device.longitude) > 0.0001;
 
       if (isSignificantChange) {
@@ -92,13 +82,16 @@ export default function MapScreen() {
           latitudeDelta: zoomLevel,
           longitudeDelta: zoomLevel * 0.5,
         };
+        
         if (autoFollow) {
           mapRef.current?.animateToRegion(newRegion, 500);
+        } else {
+          mapRef.current?.animateToRegion(newRegion, 1000);
         }
       }
     }
   }
-  
+
   const createGeofence = async (device: any) => {
     try {
       const geofenceData = {
@@ -183,7 +176,7 @@ export default function MapScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <StatusBar barStyle="light-content" backgroundColor="#2979FF" />
+      <StatusBar barStyle="dark-content" backgroundColor="#000"  />
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()}>
@@ -191,11 +184,11 @@ export default function MapScreen() {
         </TouchableOpacity>
         <View style={{ flex: 1, alignItems: 'center' }}>
           <Text style={styles.headerTitle}>{device?.name}</Text>
-          <Text style={styles.headerSubtitle}>Last updated: {moment(device?.lastUpdate).format('DD/MM/YYYY HH:mm')  }</Text>
+          <Text style={styles.headerSubtitle}>Last updated: {moment(device?.lastUpdate).format('DD/MM/YYYY HH:mm')}</Text>
         </View>
-        <TouchableOpacity>
+        {/* <TouchableOpacity>
           <MaterialIcons name="more-vert" size={26} color="#fff" />
-        </TouchableOpacity>
+        </TouchableOpacity> */}
       </View>
       {/* Map */}
       <MapView
@@ -251,19 +244,19 @@ export default function MapScreen() {
         <View style={styles.bottomCardDivider} />
         <View style={styles.statusIconsRow}>
           {/* Parking */}
-          <TouchableOpacity 
+          <TouchableOpacity
             style={[styles.iconCircle, { borderColor: isParked ? '#43A047' : '#A5F3C7' }]}
             onPress={() => {
               if (device) {
                 isParked ? removeGeofence(device) : createGeofence(device);
               }
             }}
-          > 
+          >
             <MaterialIcons name="local-parking" size={24} color={isParked ? '#43A047' : '#A5F3C7'} />
           </TouchableOpacity>
-          
+
           {/* Play (active) */}
-          <TouchableOpacity 
+          <TouchableOpacity
             style={[styles.iconCircle, styles.iconCircleActive, { backgroundColor: '#4285F4', borderColor: '#4285F4', shadowColor: '#4285F4' }]}
             onPress={() => {
               // Handle play action
@@ -271,34 +264,34 @@ export default function MapScreen() {
                 deviceId: device?.deviceId,
                 id: device?.deviceId,
               }));
-            
+
             }}
-          > 
+          >
             <MaterialIcons name="play-arrow" size={24} color="#fff" />
           </TouchableOpacity>
-          
+
           {/* Car Mode */}
-          <TouchableOpacity 
+          <TouchableOpacity
             style={[styles.iconCircle, { borderColor: carMode ? '#4285F4' : '#90CAF9' }]}
             onPress={() => setCarMode(!carMode)}
-          > 
+          >
             <MaterialIcons name="directions-car" size={24} color={carMode ? '#4285F4' : '#90CAF9'} />
           </TouchableOpacity>
-          
+
           {/* Lock */}
-          <TouchableOpacity 
+          <TouchableOpacity
             style={[styles.iconCircle, { borderColor: isLocked ? '#E53935' : '#FFCDD2' }]}
             onPress={() => {
               if (device) {
                 mobilize(device.protocol);
               }
             }}
-          > 
+          >
             <MaterialIcons name="lock" size={24} color={isLocked ? '#E53935' : '#FFCDD2'} />
           </TouchableOpacity>
-          
+
           {/* Auto Follow */}
-          <TouchableOpacity 
+          <TouchableOpacity
             style={[styles.iconCircle, { borderColor: autoFollow ? '#43A047' : '#A5F3C7' }]}
             onPress={() => {
               if (!carMode) {
@@ -307,7 +300,7 @@ export default function MapScreen() {
               }
               setAutoFollow(!autoFollow);
             }}
-          > 
+          >
             <MaterialIcons name="location-on" size={24} color={autoFollow ? '#43A047' : '#A5F3C7'} />
           </TouchableOpacity>
         </View>

@@ -1,10 +1,10 @@
 import Api from '@/config/Api';
-import { FontAwesome5, Ionicons, MaterialIcons } from '@expo/vector-icons';
+import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import { useIsFocused } from '@react-navigation/native';
 import { useRouter } from 'expo-router';
 import moment from 'moment';
 import React, { useEffect, useMemo, useState } from 'react';
-import { FlatList, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { FlatList, Image, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 const statusFilters = [
@@ -13,6 +13,14 @@ const statusFilters = [
   { label: 'Stop', color: '#90A4AE', icon: 'stop-circle' },
   { label: 'Idle', color: '#FFD600', icon: 'show-chart' },
 ];
+
+// Car images
+const carImages = {
+  Running: require('@/assets/images/cars/car-green.png'),
+  Idle: require('@/assets/images/cars/car-orange.png'),
+  Stop: require('@/assets/images/cars/car-red.png'),
+  Default: require('@/assets/images/cars/car-blue.png'),
+};
 
 export default function VehiclesScreen() {
   const cardColors = ['#FFFFFF', '#FFFFFF', '#FFFFFF', '#FFFFFF'];
@@ -78,60 +86,77 @@ export default function VehiclesScreen() {
     return counts;
   }, [devicesData]);
 
-  const renderVehicleCard = ({ item: device, index }: { item: any; index: number }) => (
-    <TouchableOpacity
-      key={device.id + index}
-      activeOpacity={0.85}
-      onPress={() => router.push({ pathname: '/map', params: { ...device } })}
-    >
-      <View
-        style={[
-          styles.vehicleCard,
-          styles.vehicleCardShadow,
-          { backgroundColor: cardColors[index % cardColors.length] },
-        ]}
+  const renderVehicleCard = ({ item: device, index }: { item: any; index: number }) => {
+    // Determine vehicle icon and color
+    const isTruck = device?.category === 'truck';
+    const vehicleIcon = isTruck ? 'local-shipping' : 'directions-car';
+    const vehicleColor = isTruck ? '#F44336' : (index % 2 === 0 ? '#F44336' : '#FFA726');
+    // Vehicle number color
+    const vehicleNumberColor = '#2EAD4B';
+    // Icon row colors
+    const iconColors = [
+      '#EF5350', // key - red
+      '#EF5350', // lock - red
+      '#29B6F6', // ac-unit - sky blue
+      '#FFB74D', // local-gas-station - orange (a bit darker)
+      '#66BB6A', // battery-full - green
+    ];
+    const iconNames = [
+      'vpn-key', 'lock', 'ac-unit', 'local-gas-station', 'battery-full',
+    ];
+    return (
+      <TouchableOpacity
+        key={device.id + index}
+        activeOpacity={0.85}
+        onPress={() => router.push({ pathname: '/map', params: { ...device } })}
       >
-        <View style={styles.vehicleCardHeader}>
-          <View style={styles.vehicleNumberRow}>
-            <MaterialIcons name="directions-car" size={22} color={index % 2 === 0 ? '#2979FF' : '#43A047'} style={{ marginRight: 8 }} />
-            <Text style={[styles.vehicleNumber, { color: index % 2 === 0 ? '#2979FF' : '#43A047' }]}>{device?.name}</Text>
+        <View style={styles.vehicleCardNew}>
+          <View style={{ flex: 1, flexDirection: 'row', alignItems: 'stretch' }}>
+            {/* Left: Icon and Info */}
+            <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center' }}>
+              <View style={styles.vehicleIconWrap}>
+                <Image
+                  source={carImages[getDeviceStatus(device)] || carImages.Default}
+                  style={{ width: 72, height: 72, marginRight: 20, resizeMode: 'contain' }}
+                />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.vehicleNumberNew, { color: vehicleNumberColor }]}>{device?.name}</Text>
+                <View style={{ height: 8 }} />
+                <Text style={styles.vehicleAddressNew}>{device?.address}</Text>
+                <Text style={styles.vehicleDateNew}>{moment(device?.lastUpdate).format('D MMM YY, hh:mm A')}</Text>
+              </View>
+            </View>
+            {/* Right: Stats */}
+            <View style={styles.statsColNew}>
+              <View style={styles.statRowCompact}>
+                <Text style={styles.statValueNew}>{(device?.speed || 0).toFixed(0)}</Text>
+                <Text style={styles.statUnitNew}> kmh</Text>
+              </View>
+              <Text style={styles.statLabelNew}>Speed</Text>
+              <View style={styles.statRowCompact}>
+                <Text style={styles.statValueNew}>{((device?.attributes?.totalDistance || 0) / 1000).toFixed(0)}</Text>
+                <Text style={styles.statUnitNew}> km</Text>
+              </View>
+              <Text style={styles.statLabelNew}>Distance</Text>
+            </View>
           </View>
-          <View style={[styles.speedoWrap, { backgroundColor: index % 2 === 0 ? '#2979FF22' : '#43A04722' }]}>
-            <FontAwesome5 name="tachometer-alt" size={18} color={index % 2 === 0 ? '#2979FF' : '#43A047'} />
-            <Text style={[styles.speedoText, { color: index % 2 === 0 ? '#2979FF' : '#43A047' }]}>{(device?.speed || 0).toFixed(0)}</Text>
+          {/* Bottom Icon Row */}
+          <View style={styles.iconRowNew}>
+            {iconNames.map((icon, i) => (
+              <MaterialIcons
+                key={icon + i}
+                name={icon as any}
+                size={22}
+                color={iconColors[i]}
+                style={{ marginHorizontal: 4 }}
+              />
+            ))}
           </View>
         </View>
-        <View style={styles.vehicleCardRow}>
-          <MaterialIcons name="event" size={18} color="#FFD600" style={{ marginRight: 6 }} />
-          <Text style={styles.vehicleCardRowText}>{moment(device?.lastUpdate).format('DD/MM/YYYY HH:mm')}</Text>
-        </View>
-        <View style={styles.vehicleCardRow}>
-          <MaterialIcons name="location-on" size={18} color="#2979FF" style={{ marginRight: 6 }} />
-          <Text style={styles.vehicleCardRowText}>{device?.address}</Text>
-        </View>
-        {/* Stats Row */}
-        <View style={styles.statsRow}>
-          <View style={styles.statsBoxRow}>
-            <MaterialIcons name="speed" size={20} color={device?.attributes?.ignition ? "#FF9800" : "#90A4AE"} style={{ marginRight: 4 }} />
-            <Text style={[styles.statsValue, { color: device?.attributes?.ignition ? "#FF9800" : "#90A4AE" }]}>
-              {device?.attributes?.ignition ? "On" : "Off"}
-            </Text>
-          </View>
-          <View style={styles.statsBoxRow}>
-            <MaterialIcons name="alt-route" size={20} color={device?.attributes?.motion ? "#43A047" : "#90A4AE"} style={{ marginRight: 4 }} />
-            <Text style={[styles.statsValue, { color: device?.attributes?.motion ? "#43A047" : "#90A4AE" }]}>
-              {device?.attributes?.motion ? "Moving" : "Stopped"}
-            </Text>
-          </View>
-          <View style={styles.statsBoxRow}>
-            <MaterialIcons name="trending-up" size={20} color="#2979FF" style={{ marginRight: 4 }} />
-            <Text style={[styles.statsValue, { color: '#2979FF' }]}>{(device?.attributes?.totalDistance / 1000 || 0).toFixed(0)} KM</Text>
-          </View>
-        </View>
-        <View style={styles.vehicleCardDivider} />
-      </View>
-    </TouchableOpacity>
-  );
+      </TouchableOpacity>
+    );
+  };
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -236,88 +261,80 @@ const styles = StyleSheet.create({
     color: '#222',
     marginLeft: 8,
   },
-  vehicleCard: {
-    borderRadius: 20,
-    marginHorizontal: 12,
-    marginBottom: 20,
-    padding: 18,
-    minHeight: 140,
-    justifyContent: 'center',
-  },
-  vehicleCardShadow: {
-    elevation: 6,
-    shadowColor: '#2979FF',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.18,
-    shadowRadius: 10,
-  },
-  vehicleCardHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+  vehicleCardNew: {
+    backgroundColor: '#fff',
+    borderRadius: 14,
+    marginHorizontal: 6,
     marginBottom: 6,
+    padding: 7,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.08,
+    shadowRadius: 3,
+    elevation: 1,
   },
-  vehicleNumberRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  vehicleNumber: {
+  vehicleNumberNew: {
     fontWeight: 'bold',
-    fontSize: 18,
-    color: '#2979FF',
-  },
-  speedoWrap: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#F7F8FA',
-    borderRadius: 16,
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-  },
-  speedoText: {
-    fontWeight: 'bold',
-    color: '#43A047',
-    marginLeft: 4,
     fontSize: 16,
+    marginBottom: 1,
   },
-  vehicleCardRow: {
+  vehicleAddressNew: {
+    color: '#888',
+    fontSize: 12,
+    fontWeight: '500',
+    marginBottom: 1,
+  },
+  vehicleDateNew: {
+    color: '#888',
+    fontSize: 10,
+    fontWeight: '400',
+    marginBottom: 1,
+  },
+  statsColNew: {
+    alignItems: 'flex-end',
+    minWidth: 38,
+    marginLeft: 4,
+    marginTop: 0,
+  },
+  statRowCompact: {
     flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 2,
-    marginTop: 2,
+    alignItems: 'flex-end',
+    marginBottom: 0,
   },
-  vehicleCardRowText: {
-    color: '#444',
-    fontSize: 14,
-    flex: 1,
-    flexWrap: 'wrap',
-  },
-  statsRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    backgroundColor: '#F7F8FA',
-    borderRadius: 10,
-    padding: 8,
-    marginTop: 8,
-    marginBottom: 8,
-    paddingHorizontal: 15,
-  },
-  statsBox: {
-    flex: 1,
-    alignItems: 'center',
-  },
-  statsBoxRow: {
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  statsValue: {
-    color: '#2979FF',
+  statValueNew: {
+    color: '#2EAD4B',
     fontWeight: 'bold',
-    fontSize: 14,
+    fontSize: 15,
+    textAlign: 'right',
+    marginBottom: 0,
   },
-  vehicleCardDivider: {
-    height: 1,
-    backgroundColor: '#F0F0F0',
-    marginVertical: 10,
+  statUnitNew: {
+    color: '#2EAD4B',
+    fontSize: 12,
+    fontWeight: '600',
+    textAlign: 'right',
+    marginBottom: 0,
+  },
+  statLabelNew: {
+    color: '#888',
+    fontSize: 10,
+    fontWeight: '500',
+    textAlign: 'right',
+    marginBottom: 0,
+  },
+  iconRowNew: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'flex-start',
+    marginTop: 0,
+    marginLeft: 0,
+    paddingLeft: 100,
+  },
+  vehicleIconWrap: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    alignSelf: 'stretch',
+    marginRight: 10,
+    marginTop: 30,
   },
 }); 

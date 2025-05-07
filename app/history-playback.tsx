@@ -1,44 +1,122 @@
+import Api from '@/config/Api';
 import { MaterialIcons } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import React, { useRef, useState } from 'react';
-import { Dimensions, Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import moment from 'moment';
+import React, { useEffect, useRef, useState } from 'react';
+import { ActivityIndicator, Dimensions, Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import MapView, { Marker, Polyline } from 'react-native-maps';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-const carIcon = require('@/assets/images/cars/car-green.png'); // Use the green car icon as in map.tsx
+const carIcon = require('@/assets/images/cars/green.png');
 const { width, height } = Dimensions.get('window');
-
-const mockRoute = [
-  { latitude: -12.158, longitude: -76.998 },
-  { latitude: -12.157, longitude: -76.997 },
-  { latitude: -12.156, longitude: -76.996 },
-  { latitude: -12.155, longitude: -76.995 },
-  { latitude: -12.154, longitude: -76.994 },
-  { latitude: -12.153, longitude: -76.993 },
-  { latitude: -12.152, longitude: -76.992 },
-];
 
 const speeds = [1, 2, 3, 4, 5, 6];
 
 export default function HistoryPlaybackScreen() {
   const router = useRouter();
   const params = useLocalSearchParams();
+  const device = params?.device ? JSON.parse(params.device as string) : null;
+  const mapRef = useRef<MapView>(null);
   const [playbackIndex, setPlaybackIndex] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
   const [speed, setSpeed] = useState(1);
+  const [zoomLevel, setZoomLevel] = useState(0.01);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
-  const [startDate, setStartDate] = useState(new Date());
+  const [startDate, setStartDate] = useState(() => {
+    const date = new Date();
+    date.setHours(0, 0, 0, 0);
+    return date;
+  });
   const [endDate, setEndDate] = useState(new Date());
   const [showStartPicker, setShowStartPicker] = useState(false);
   const [showEndPicker, setShowEndPicker] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [routeData, setRouteData] = useState<any[]>([]);
+  const [deviceDetails, setDeviceDetails] = useState<any>(null);
+  const [summaryData, setSummaryData] = useState<any>(null);
 
-  // Simulate playback
-  React.useEffect(() => {
-    if (isPlaying) {
+  // Fetch device details
+  useEffect(() => {
+    if (device?.deviceId) {
+      fetchDeviceDetails(device.deviceId);
+    }
+  }, [device?.deviceId]);
+
+  // Fetch initial route data
+  useEffect(() => {
+    if (device?.deviceId) {
+      const fetchData = async () => {
+        setLoading(true);
+        try {
+          // Convert local time to UTC with +5:30 offset
+          const fromDateUTC = new Date(startDate);
+          fromDateUTC.setHours(fromDateUTC.getHours() - 5, fromDateUTC.getMinutes() - 30);
+          
+          const toDateUTC = new Date(endDate);
+          toDateUTC.setHours(toDateUTC.getHours() - 5, toDateUTC.getMinutes() - 30);
+
+          // Fetch route data
+          const routeResponse = await Api.call('/api/reports/route?from=' + fromDateUTC.toISOString().slice(0, 19) + 'Z&to=' + toDateUTC.toISOString().slice(0, 19) + 'Z&deviceId=' + device.deviceId, 'GET', {}, '');
+          setRouteData(routeResponse.data || []);
+          setPlaybackIndex(0);
+          setIsPlaying(false);
+
+          // Fetch summary data in parallel
+          const summaryResponse = await Api.call('/api/reports/summary?from=' + startDate.toISOString() + '&to=' + endDate.toISOString() + '&deviceId=' + device.deviceId + '&daily=false', 'GET', {}, '');
+          setSummaryData(summaryResponse.data[0]);
+        } catch (error) {
+          console.error('Error fetching data:', error);
+        } finally {
+          setLoading(false);
+        }
+      };
+
+      fetchData();
+    }
+  }, [device?.deviceId, startDate, endDate]);
+
+  const fetchDeviceDetails = async (deviceId: string) => {
+    try {
+      const response = await Api.call(`/api/devices?id=${deviceId}`, 'GET', {}, '');
+      if (response.data) {
+        const device = response.data.find((d: any) => d.id === deviceId);
+        setDeviceDetails(device);
+      }
+    } catch (error) {
+      console.error("Error fetching device details:", error);
+    }
+  };
+
+  // Calculate zoom level based on speed
+  const getZoomLevel = (speed: number) => {
+    if (speed > 80) return 0.05; // Far zoom for high speed
+    if (speed > 40) return 0.02; // Medium zoom for medium speed
+    return 0.01; // Close zoom for low speed
+  };
+
+  // Playback effect
+  useEffect(() => {
+    if (isPlaying && routeData.length > 0) {
       intervalRef.current = setInterval(() => {
         setPlaybackIndex((prev) => {
-          if (prev < mockRoute.length - 1) return prev + 1;
+          if (prev < routeData.length - 1) {
+            const nextIndex = prev + 1;
+            // Animate map to follow current position with dynamic zoom
+            if (mapRef.current && routeData[nextIndex]) {
+              const currentSpeed = routeData[nextIndex].speed || 0;
+              const newZoomLevel = getZoomLevel(currentSpeed);
+              setZoomLevel(newZoomLevel);
+              
+              mapRef.current.animateToRegion({
+                latitude: routeData[nextIndex].latitude,
+                longitude: routeData[nextIndex].longitude,
+                latitudeDelta: newZoomLevel,
+                longitudeDelta: newZoomLevel,
+              }, 500);
+            }
+            return nextIndex;
+          }
           setIsPlaying(false);
           return prev;
         });
@@ -49,21 +127,21 @@ export default function HistoryPlaybackScreen() {
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current as any);
     };
-  }, [isPlaying, speed]);
+  }, [isPlaying, speed, routeData]);
 
-  const carPosition = mockRoute[playbackIndex];
+  const currentPosition = routeData[playbackIndex];
 
-  // For the summary card (mock data)
+  // For the summary card
   const data = {
-    number: params?.name || 'ABC-123 Auto',
-    date: '11/01/2022 20:00:37',
-    status: 'Engine Off',
-    address: 'Mariano Pastor Sevilla Avenue, Villa El Salvador',
-    odometer: '71753 Km',
-    altitude: '0 m',
-    lastTransmission: '5 minutes ago',
-    battery: '100 %',
-    speed: '0 km/h',
+    number: device?.name || 'N/A',
+    date: currentPosition ? moment(currentPosition.deviceTime).format('DD/MM/YYYY HH:mm:ss') : 'N/A',
+    status: currentPosition?.attributes?.ignition ? 'Engine On' : 'Engine Off',
+    address: currentPosition?.address || 'N/A',
+    odometer: `${((currentPosition?.attributes?.totalDistance || 0) / 1000).toFixed(0)} Km`,
+    altitude: `${currentPosition?.altitude || 0} m`,
+    lastTransmission: moment(currentPosition?.deviceTime).fromNow(),
+    battery: `${currentPosition?.attributes?.battery || 0} %`,
+    speed: currentPosition?.speed || 0,
   };
 
   return (
@@ -78,37 +156,65 @@ export default function HistoryPlaybackScreen() {
       </View>
       {/* Map (full page) */}
       <View style={{ flex: 1 }}>
-        <MapView
-          style={StyleSheet.absoluteFillObject}
-          initialRegion={{
-            latitude: mockRoute[0].latitude,
-            longitude: mockRoute[0].longitude,
-            latitudeDelta: 0.01,
-            longitudeDelta: 0.01,
-          }}
-          pointerEvents="none"
-        >
-          <Polyline
-            coordinates={mockRoute}
-            strokeColor="#2979FF"
-            strokeWidth={5}
-          />
-          {mockRoute.map((point, idx) => (
-            idx < mockRoute.length - 1 && (
-              <Marker
-                key={idx}
-                coordinate={point}
-                anchor={{ x: 0.5, y: 0.5 }}
-                style={{ zIndex: 2 }}
+        {loading ? (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color="#FFD600" />
+          </View>
+        ) : (
+          <MapView
+            ref={mapRef}
+            style={StyleSheet.absoluteFillObject}
+            initialRegion={{
+              latitude: routeData[0]?.latitude || 0,
+              longitude: routeData[0]?.longitude || 0,
+              latitudeDelta: zoomLevel,
+              longitudeDelta: zoomLevel,
+            }}
+            pointerEvents="none"
+          >
+            <Polyline
+              coordinates={routeData.map(pos => ({
+                latitude: pos.latitude,
+                longitude: pos.longitude
+              }))}
+              strokeColor="#2979FF"
+              strokeWidth={5}
+            />
+            {routeData.map((point, idx) => (
+              idx < routeData.length - 1 && (
+                <Marker
+                  key={idx}
+                  coordinate={{
+                    latitude: point.latitude,
+                    longitude: point.longitude
+                  }}
+                  anchor={{ x: 0.5, y: 0.5 }}
+                  style={{ zIndex: 2 }}
+                >
+                  <MaterialIcons name="arrow-forward" size={22} color="#2979FF" style={{ transform: [{ rotate: `${point.course || 0}deg` }] }} />
+                </Marker>
+              )
+            ))}
+            {currentPosition && (
+              <Marker 
+                coordinate={{
+                  latitude: currentPosition.latitude,
+                  longitude: currentPosition.longitude
+                }} 
+                anchor={{ x: 0.5, y: 0.5 }} 
+                style={{ zIndex: 3 }}
               >
-                <MaterialIcons name="arrow-forward" size={22} color="#2979FF" style={{ transform: [{ rotate: `${45 * idx}deg` }] }} />
+                <Image 
+                  source={carIcon} 
+                  style={[
+                    { width: 30, height: 30, resizeMode: 'contain' },
+                    { transform: [{ rotate: `${currentPosition.course || 0}deg` }] }
+                  ]} 
+                />
               </Marker>
-            )
-          ))}
-          <Marker coordinate={carPosition} anchor={{ x: 0.5, y: 0.5 }} style={{ zIndex: 3 }}>
-            <Image source={carIcon} style={{ width: 36, height: 36 }} />
-          </Marker>
-        </MapView>
+            )}
+          </MapView>
+        )}
         {/* Overlay: Filter Bar */}
         <View style={styles.overlayFilterBar}>
           <View style={styles.filterBar}>
@@ -168,7 +274,7 @@ export default function HistoryPlaybackScreen() {
         {/* Overlay: Playback Controls */}
         <View style={styles.overlayPlaybackBar}>
           <View style={styles.playbackBar}>
-            <Text style={styles.timeText}>{playbackIndex + 1} / {mockRoute.length}</Text>
+            <Text style={styles.timeText}>{playbackIndex + 1} / {routeData.length}</Text>
           </View>
         </View>
         {/* Overlay: Bottom Card */}
@@ -185,7 +291,7 @@ export default function HistoryPlaybackScreen() {
                 <Text style={styles.bottomCardStatus}>Status: {data.status}</Text>
               </View>
               <View style={styles.speedBadge}>
-                <Text style={styles.speedBadgeText}>{data.speed}</Text>
+                <Text style={styles.speedBadgeText}>{(Number(data.speed)).toFixed(0)} km/h</Text>
               </View>
             </View>
             {/* Stats Rows with gap and center alignment */}
@@ -194,6 +300,45 @@ export default function HistoryPlaybackScreen() {
             <View style={styles.statRow}><MaterialIcons name="height" size={18} color="#FFD600" style={styles.statIcon} /><Text style={styles.statLabel}><Text style={{ color: '#FFD600' }}>Altitude:</Text> {data.altitude}</Text></View>
             <View style={styles.statRow}><MaterialIcons name="update" size={18} color="#00B8D4" style={styles.statIcon} /><Text style={styles.statLabel}><Text style={{ color: '#00B8D4' }}>Last Transmission:</Text> {data.lastTransmission}</Text></View>
             <View style={styles.statRow}><MaterialIcons name="battery-full" size={18} color="#FF7043" style={styles.statIcon} /><Text style={styles.statLabel}><Text style={{ color: '#FF7043' }}>Battery:</Text> {data.battery}</Text></View>
+          </View>
+        </View>
+        {/* Overlay: Zoom Controls */}
+        <View style={styles.overlayZoomControls}>
+          <View style={styles.zoomControls}>
+            <TouchableOpacity 
+              style={styles.zoomButton}
+              onPress={() => {
+                if (mapRef.current) {
+                  const newZoom = zoomLevel * 0.5;
+                  setZoomLevel(newZoom);
+                  mapRef.current.animateToRegion({
+                    latitude: currentPosition?.latitude || 0,
+                    longitude: currentPosition?.longitude || 0,
+                    latitudeDelta: newZoom,
+                    longitudeDelta: newZoom,
+                  }, 300);
+                }
+              }}
+            >
+              <MaterialIcons name="add" size={24} color="#fff" />
+            </TouchableOpacity>
+            <TouchableOpacity 
+              style={styles.zoomButton}
+              onPress={() => {
+                if (mapRef.current) {
+                  const newZoom = zoomLevel * 2;
+                  setZoomLevel(newZoom);
+                  mapRef.current.animateToRegion({
+                    latitude: currentPosition?.latitude || 0,
+                    longitude: currentPosition?.longitude || 0,
+                    latitudeDelta: newZoom,
+                    longitudeDelta: newZoom,
+                  }, 300);
+                }
+              }}
+            >
+              <MaterialIcons name="remove" size={24} color="#fff" />
+            </TouchableOpacity>
           </View>
         </View>
       </View>
@@ -205,6 +350,12 @@ const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
     backgroundColor: '#fff',
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#1E1E1E',
   },
   header: {
     flexDirection: 'row',
@@ -354,7 +505,7 @@ const styles = StyleSheet.create({
     left: 0,
     width: '100%',
     zIndex: 10,
-    marginTop: 0, // header height
+    marginTop: 0,
   },
   overlayPlaybackBar: {
     position: 'absolute',
@@ -371,8 +522,7 @@ const styles = StyleSheet.create({
     zIndex: 20,
   },
   overlaySpeedSelectorBar: {
-    // position: 'absolute',
-    top: 42, // header + filterBar height
+    top: 42,
     left: 0,
     borderRadius: 0,
     width: '100%',
@@ -440,6 +590,26 @@ const styles = StyleSheet.create({
     backgroundColor: 'transparent',
     borderRadius: 20,
     padding: 4,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  overlayZoomControls: {
+    position: 'absolute',
+    right: 16,
+    bottom: 140,
+    zIndex: 10,
+  },
+  zoomControls: {
+    backgroundColor: '#181818',
+    borderRadius: 12,
+    padding: 8,
+    gap: 8,
+  },
+  zoomButton: {
+    backgroundColor: '#222',
+    borderRadius: 8,
+    width: 40,
+    height: 40,
     alignItems: 'center',
     justifyContent: 'center',
   },

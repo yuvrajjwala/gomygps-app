@@ -318,10 +318,7 @@ export default function MapScreen() {
             <TouchableOpacity
               style={[styles.iconCircle, styles.iconCircleActive, { backgroundColor: '#4285F4', borderColor: '#4285F4', shadowColor: '#4285F4' }]}
               onPress={() => {
-                const data = btoa(JSON.stringify({
-                  deviceId: device?.deviceId,
-                  id: device?.deviceId,
-                }));
+                router.push({ pathname: '/history-playback', params: { device: JSON.stringify(device) } });
               }}
             >
               <MaterialIcons name="play-arrow" size={24} color="#fff" />

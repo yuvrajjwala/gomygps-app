@@ -8,6 +8,7 @@ type Report = {
   id: number;
   title: string;
   type: 'route' | 'event' | 'stop' | 'summary' | 'tips';
+  icon: keyof typeof MaterialIcons.glyphMap;
 };
 
 export default function ReportsScreen() {
@@ -19,26 +20,31 @@ export default function ReportsScreen() {
       id: 1,
       title: 'Route Report',
       type: 'route',
+      icon: 'map',
     },
     {
       id: 2,
       title: 'Event Report',
       type: 'event',
+      icon: 'event',
     },
     {
       id: 3,
       title: 'Stop Report',
       type: 'stop',
+      icon: 'location-on',
     },
     {
       id: 4,
       title: 'Summary Report',
       type: 'summary',
+      icon: 'assessment',
     },
     {
       id: 5,
       title: 'Tips Report',
       type: 'tips',
+      icon: 'lightbulb',
     },
   ];
 
@@ -68,7 +74,10 @@ export default function ReportsScreen() {
             })}
           >
             <View style={styles.reportInfo}>
-              <Text style={styles.reportTitle}>{report.title}</Text>
+              <View style={styles.reportHeader}>
+                <MaterialIcons name={report.icon} size={24} color="#000" style={styles.reportIcon} />
+                <Text style={styles.reportTitle}>{report.title}</Text>
+              </View>
             </View>
             <MaterialIcons name="chevron-right" size={24} color="#666" />
           </TouchableOpacity>
@@ -137,6 +146,13 @@ const styles = StyleSheet.create({
   },
   reportInfo: {
     flex: 1,
+  },
+  reportHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  reportIcon: {
+    marginRight: 12,
   },
   reportTitle: {
     fontSize: 16,

@@ -516,7 +516,7 @@ const styles = StyleSheet.create({
   },
   centerMapBtn: {
     flex: 1,
-    backgroundColor: '#000000',
+    backgroundColor: '#43A047',
     borderRadius: 10,
     paddingVertical: 12,
     alignItems: 'center',
@@ -529,7 +529,7 @@ const styles = StyleSheet.create({
   },
   viewReportsBtn: {
     flex: 1,
-    backgroundColor: '#000000',
+    backgroundColor: '#FF7043',
     borderRadius: 10,
     paddingVertical: 12,
     alignItems: 'center',

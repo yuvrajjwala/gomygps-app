@@ -387,20 +387,31 @@ export default function EventReportScreen() {
             )}
           </View>
 
-          <TouchableOpacity 
-            style={[styles.generateButtonDark, loading && styles.generateButtonDisabledDark]} 
-            disabled={loading}
-            onPress={fetchReport}
-          >
-            {loading ? (
-              <ActivityIndicator color="#fff" size="small" />
-            ) : (
-              <>
-                <MaterialIcons name="search" size={20} color="#fff" />
-                <Text style={styles.generateButtonTextDark}>Generate Report</Text>
-              </>
-            )}
-          </TouchableOpacity>
+          <View style={styles.buttonContainer}>
+            <TouchableOpacity 
+              style={[styles.generateButtonDark, loading && styles.generateButtonDisabledDark]} 
+              disabled={loading}
+              onPress={fetchReport}
+            >
+              {loading ? (
+                <ActivityIndicator color="#fff" size="small" />
+              ) : (
+                <>
+                  <MaterialIcons name="search" size={20} color="#fff" />
+                  <Text style={styles.generateButtonTextDark}>Generate Report</Text>
+                </>
+              )}
+            </TouchableOpacity>
+
+            <TouchableOpacity 
+              style={[styles.downloadButtonDark, styles.filterDownloadButton]}
+              onPress={exportToExcel}
+              disabled={reportData.length === 0}
+            >
+              <MaterialIcons name="download" size={20} color="#fff" />
+              <Text style={styles.downloadButtonTextDark}>Excel</Text>
+            </TouchableOpacity>
+          </View>
         </View>
 
         {/* Report Data */}
@@ -502,15 +513,6 @@ export default function EventReportScreen() {
                 <Text style={styles.paginationButtonTextDark}>Next</Text>
               </TouchableOpacity>
             </View>
-
-            {/* Download Button */}
-            <TouchableOpacity 
-              style={styles.downloadButtonDark}
-              onPress={exportToExcel}
-            >
-              <MaterialIcons name="download" size={20} color="#fff" />
-              <Text style={styles.downloadButtonTextDark}>Download Report</Text>
-            </TouchableOpacity>
           </View>
         )}
       </ScrollView>
@@ -521,34 +523,34 @@ export default function EventReportScreen() {
 const styles = StyleSheet.create({
   containerDark: {
     flex: 1,
-    backgroundColor: '#181818',
+    backgroundColor: '#fff',
   },
   headerDark: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: '#000',
+    backgroundColor: '#fff',
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#222',
+    borderBottomColor: '#e0e0e0',
   },
   headerTitleDark: {
-    color: '#fff',
+    color: '#000',
     fontSize: 20,
     fontWeight: 'bold',
   },
   filterCardDark: {
-    backgroundColor: '#111',
+    backgroundColor: '#fff',
     borderRadius: 18,
     margin: 16,
     padding: 18,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.18,
+    shadowOpacity: 0.1,
     shadowRadius: 8,
-    borderWidth: 1.5,
-    borderColor: '#222',
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
     elevation: 4,
     marginBottom: 18,
   },
@@ -556,65 +558,65 @@ const styles = StyleSheet.create({
     marginBottom: 18,
   },
   filterLabelDark: {
-    color: '#fff',
+    color: '#000',
     fontWeight: 'bold',
     marginBottom: 6,
     fontSize: 15,
   },
   dropdown: {
-    backgroundColor: '#181818',
-    borderColor: '#333',
+    backgroundColor: '#fff',
+    borderColor: '#e0e0e0',
     borderRadius: 10,
     minHeight: 45,
   },
   dropdownText: {
-    color: '#fff',
+    color: '#000',
     fontSize: 15,
   },
   dropdownPlaceholder: {
-    color: '#aaa',
+    color: '#666',
   },
   dropdownContainer: {
-    backgroundColor: '#111',
-    borderColor: '#222',
+    backgroundColor: '#fff',
+    borderColor: '#e0e0e0',
     borderRadius: 10,
   },
   dropdownItemText: {
-    color: '#fff',
+    color: '#000',
     fontSize: 14,
   },
   dropdownSearchContainer: {
-    borderBottomColor: '#222',
+    borderBottomColor: '#e0e0e0',
   },
   dropdownSearchInput: {
-    color: '#fff',
-    borderColor: '#333',
-    backgroundColor: '#181818',
+    color: '#000',
+    borderColor: '#e0e0e0',
+    backgroundColor: '#fff',
   },
   dateInputDark: {
     flexDirection: 'row',
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#333',
+    borderColor: '#e0e0e0',
     borderRadius: 10,
     padding: 12,
-    backgroundColor: '#181818',
+    backgroundColor: '#fff',
     marginTop: 2,
   },
   dateInputTextDark: {
-    color: '#fff',
+    color: '#000',
     fontSize: 15,
   },
   generateButtonDark: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#000',
+    backgroundColor: '#FF7043',
     paddingVertical: 16,
     paddingHorizontal: 18,
     borderRadius: 10,
-    marginTop: 10,
     justifyContent: 'center',
     elevation: 2,
+    flex: 1,
   },
   generateButtonDisabledDark: {
     opacity: 0.5,
@@ -629,28 +631,28 @@ const styles = StyleSheet.create({
   tableContainerDark: {
     flex: 1,
     padding: 16,
-    backgroundColor: '#181818',
+    backgroundColor: '#fff',
   },
   tableWrapperDark: {
     borderRadius: 8,
-    backgroundColor: '#111',
+    backgroundColor: '#fff',
     borderWidth: 1,
-    borderColor: '#222',
+    borderColor: '#e0e0e0',
     overflow: 'hidden',
   },
   tableRowDark: {
     flexDirection: 'row',
     borderBottomWidth: 1,
-    borderBottomColor: '#222',
+    borderBottomColor: '#e0e0e0',
   },
   tableHeaderCellDark: {
     padding: 12,
-    backgroundColor: '#222',
+    backgroundColor: '#f5f5f5',
     justifyContent: 'center',
     minWidth: 120,
   },
   tableHeaderTextDark: {
-    color: '#fff',
+    color: '#000',
     fontWeight: 'bold',
     fontSize: 14,
     textTransform: 'capitalize',
@@ -661,7 +663,7 @@ const styles = StyleSheet.create({
     minWidth: 120,
   },
   tableCellTextDark: {
-    color: '#fff',
+    color: '#000',
     fontSize: 14,
   },
   paginationContainerDark: {
@@ -669,10 +671,10 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     padding: 16,
-    backgroundColor: '#181818',
+    backgroundColor: '#fff',
   },
   paginationButtonDark: {
-    backgroundColor: '#000',
+    backgroundColor: '#f5f5f5',
     paddingVertical: 8,
     paddingHorizontal: 16,
     borderRadius: 8,
@@ -682,12 +684,12 @@ const styles = StyleSheet.create({
     opacity: 0.5,
   },
   paginationButtonTextDark: {
-    color: '#fff',
+    color: '#000',
     fontSize: 14,
     fontWeight: 'bold',
   },
   paginationTextDark: {
-    color: '#fff',
+    color: '#000',
     fontSize: 14,
     marginHorizontal: 16,
   },
@@ -695,10 +697,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#000',
-    padding: 16,
+    backgroundColor: '#43A047',
+    padding: 0,
     borderRadius: 8,
-    marginTop: 16,
+    height: 52,
+    width: 100,
   },
   downloadButtonTextDark: {
     color: '#fff',
@@ -708,5 +711,14 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     paddingBottom: 32,
+  },
+  buttonContainer: {
+    flexDirection: 'row',
+    gap: 10,
+    marginTop: 10,
+    alignItems: 'center',
+  },
+  filterDownloadButton: {
+    // Add any specific styles for the filter download button
   },
 }); 

@@ -318,7 +318,7 @@ export default function MapScreen() {
             <TouchableOpacity
               style={[styles.iconCircle, styles.iconCircleActive, { backgroundColor: '#4285F4', borderColor: '#4285F4', shadowColor: '#4285F4' }]}
               onPress={() => {
-                router.push({ pathname: '/history-playback', params: { device: JSON.stringify(device) } });
+                router.replace({ pathname: '/history-playback', params: { device: JSON.stringify(device) } });
               }}
             >
               <MaterialIcons name="play-arrow" size={24} color="#fff" />
@@ -360,13 +360,13 @@ export default function MapScreen() {
           <View style={styles.bottomButtonsRow}>
             <TouchableOpacity
               style={styles.centerMapBtn}
-              onPress={() => router.push({ pathname: '/vehicle-details', params: { device: JSON.stringify(device) } })}
+              onPress={() => router.replace({ pathname: '/vehicle-details', params: { device: JSON.stringify(device) } })}
             >
               <Text style={styles.centerMapBtnText}>View Details</Text>
             </TouchableOpacity>
             <TouchableOpacity 
               style={styles.viewReportsBtn} 
-              onPress={() => router.push({ pathname: '/reports', params: { deviceId: device?.deviceId } })}
+              onPress={() => router.replace({ pathname: '/reports', params: { deviceId: device?.deviceId } })}
             >
               <Text style={styles.viewReportsBtnText}>View Reports</Text>
             </TouchableOpacity>

@@ -393,7 +393,7 @@ export default function DriversScreen() {
       label: 'Geofencing',
       icon: 'my-location',
       color: '#43A047',
-      onPress: () => router.push('/geofencing'),
+      onPress: () => router.replace('/geofencing'),
     },
     {
       label: 'User Management',

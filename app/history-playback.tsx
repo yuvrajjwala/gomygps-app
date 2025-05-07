@@ -90,9 +90,9 @@ export default function HistoryPlaybackScreen() {
 
   // Calculate zoom level based on speed
   const getZoomLevel = (speed: number) => {
-    if (speed > 80) return 0.05; // Far zoom for high speed
-    if (speed > 40) return 0.02; // Medium zoom for medium speed
-    return 0.01; // Close zoom for low speed
+    if (speed > 80) return 0.08; // Far zoom for high speed
+    if (speed > 40) return 0.04; // Medium zoom for medium speed
+    return 0.02; // Close zoom for low speed
   };
 
   // Playback effect
@@ -106,14 +106,20 @@ export default function HistoryPlaybackScreen() {
             if (mapRef.current && routeData[nextIndex]) {
               const currentSpeed = routeData[nextIndex].speed || 0;
               const newZoomLevel = getZoomLevel(currentSpeed);
-              setZoomLevel(newZoomLevel);
               
-              mapRef.current.animateToRegion({
-                latitude: routeData[nextIndex].latitude,
-                longitude: routeData[nextIndex].longitude,
-                latitudeDelta: newZoomLevel,
-                longitudeDelta: newZoomLevel,
-              }, 500);
+              // Validate coordinates before animating
+              const lat = routeData[nextIndex].latitude;
+              const lng = routeData[nextIndex].longitude;
+              
+              if (lat && lng && !isNaN(lat) && !isNaN(lng)) {
+                setZoomLevel(newZoomLevel);
+                mapRef.current.animateToRegion({
+                  latitude: lat,
+                  longitude: lng,
+                  latitudeDelta: newZoomLevel,
+                  longitudeDelta: newZoomLevel,
+                }, 500);
+              }
             }
             return nextIndex;
           }
@@ -170,7 +176,11 @@ export default function HistoryPlaybackScreen() {
               latitudeDelta: zoomLevel,
               longitudeDelta: zoomLevel,
             }}
-            pointerEvents="none"
+            minZoomLevel={0.001}
+            maxZoomLevel={0.1}
+            onRegionChangeComplete={(region) => {
+              setZoomLevel(region.latitudeDelta);
+            }}
           >
             <Polyline
               coordinates={routeData.map(pos => ({
@@ -297,9 +307,6 @@ export default function HistoryPlaybackScreen() {
             {/* Stats Rows with gap and center alignment */}
             <View style={styles.statRow}><MaterialIcons name="location-on" size={18} color="#2979FF" style={styles.statIcon} /><Text style={styles.statLabel}><Text style={{ color: '#2979FF' }}>Address:</Text> {data.address}</Text></View>
             <View style={styles.statRow}><MaterialIcons name="speed" size={18} color="#43A047" style={styles.statIcon} /><Text style={styles.statLabel}><Text style={{ color: '#43A047' }}>Odometer:</Text> {data.odometer}</Text></View>
-            <View style={styles.statRow}><MaterialIcons name="height" size={18} color="#FFD600" style={styles.statIcon} /><Text style={styles.statLabel}><Text style={{ color: '#FFD600' }}>Altitude:</Text> {data.altitude}</Text></View>
-            <View style={styles.statRow}><MaterialIcons name="update" size={18} color="#00B8D4" style={styles.statIcon} /><Text style={styles.statLabel}><Text style={{ color: '#00B8D4' }}>Last Transmission:</Text> {data.lastTransmission}</Text></View>
-            <View style={styles.statRow}><MaterialIcons name="battery-full" size={18} color="#FF7043" style={styles.statIcon} /><Text style={styles.statLabel}><Text style={{ color: '#FF7043' }}>Battery:</Text> {data.battery}</Text></View>
           </View>
         </View>
         {/* Overlay: Zoom Controls */}
@@ -309,14 +316,16 @@ export default function HistoryPlaybackScreen() {
               style={styles.zoomButton}
               onPress={() => {
                 if (mapRef.current) {
-                  const newZoom = zoomLevel * 0.5;
+                  const newZoom = Math.min(zoomLevel * 0.5, 0.1);
                   setZoomLevel(newZoom);
-                  mapRef.current.animateToRegion({
-                    latitude: currentPosition?.latitude || 0,
-                    longitude: currentPosition?.longitude || 0,
-                    latitudeDelta: newZoom,
-                    longitudeDelta: newZoom,
-                  }, 300);
+                  if (currentPosition?.latitude && currentPosition?.longitude) {
+                    mapRef.current.animateToRegion({
+                      latitude: currentPosition.latitude,
+                      longitude: currentPosition.longitude,
+                      latitudeDelta: newZoom,
+                      longitudeDelta: newZoom,
+                    }, 300);
+                  }
                 }
               }}
             >
@@ -326,14 +335,16 @@ export default function HistoryPlaybackScreen() {
               style={styles.zoomButton}
               onPress={() => {
                 if (mapRef.current) {
-                  const newZoom = zoomLevel * 2;
+                  const newZoom = Math.max(zoomLevel * 2, 0.001);
                   setZoomLevel(newZoom);
-                  mapRef.current.animateToRegion({
-                    latitude: currentPosition?.latitude || 0,
-                    longitude: currentPosition?.longitude || 0,
-                    latitudeDelta: newZoom,
-                    longitudeDelta: newZoom,
-                  }, 300);
+                  if (currentPosition?.latitude && currentPosition?.longitude) {
+                    mapRef.current.animateToRegion({
+                      latitude: currentPosition.latitude,
+                      longitude: currentPosition.longitude,
+                      latitudeDelta: newZoom,
+                      longitudeDelta: newZoom,
+                    }, 300);
+                  }
                 }
               }}
             >

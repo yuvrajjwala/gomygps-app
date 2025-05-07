@@ -68,7 +68,7 @@ export default function ReportsScreen() {
           <TouchableOpacity
             key={report.id}
             style={styles.reportCard}
-            onPress={() => router.push({
+            onPress={() => router.replace({
               pathname: `/reports/${report.type}`,
               params: { deviceId }
             })}

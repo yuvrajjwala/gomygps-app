@@ -7,7 +7,7 @@ export async function updateNotificationToken() {
     if (!token) return;
 
     // Get current user data
-    const response = await Api.call('/api/session', 'GET', {}, false);
+    const response = await Api.call('/api/session', 'GET', {}, true);
     if (!response.data) return;
 
     const userData = response.data;
@@ -17,7 +17,6 @@ export async function updateNotificationToken() {
     if (!oldTokens.includes(token)) {
       const newTokens = oldTokens.length > 0 ? `${token},${oldTokens.join(',')}` : token;
       
-      // Update user data with new token
       const updatedData = {
         ...userData,
         attributes: {
@@ -25,8 +24,8 @@ export async function updateNotificationToken() {
           notificationTokens: newTokens
         }
       };
-
-      await Api.call(`/api/users/${userData.id}`, 'PUT', updatedData, true);
+      console.log("updatedData", updatedData);
+      await Api.call(`/api/users/${userData.id}`, 'PUT', updatedData, false);
     }
   } catch (error) {
     console.error('Error updating notification token:', error);
@@ -49,7 +48,7 @@ export async function removeNotificationToken() {
     if (oldTokens.includes(token)) {
       const newTokens = oldTokens.filter((t: string) => t !== token).join(',');
       
-      // Update user data with removed token
+      // Create update object with all user data but update only notificationTokens
       const updatedData = {
         ...userData,
         attributes: {
@@ -58,7 +57,7 @@ export async function removeNotificationToken() {
         }
       };
 
-      await Api.call(`/api/users/${userData.id}`, 'PUT', updatedData, true);
+      await Api.call(`/api/users/${userData.id}`, 'PUT', updatedData, false);
     }
   } catch (error) {
     console.error('Error removing notification token:', error);

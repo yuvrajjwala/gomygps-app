@@ -41,7 +41,6 @@ export default function VehiclesScreen() {
 
   const getDevices = async () => {
     if (!isFocused) return;
-    console.log('isFocused',isFocused);
     try {
       const [responseDevices, responsePositions] = await Promise.all([
         Api.call('/api/devices', 'GET', {}, false),
@@ -57,9 +56,18 @@ export default function VehiclesScreen() {
   }
 
   const getDeviceStatus = (device: any) => {
-    if (device?.attributes?.motion) return 'Running';
-    if (device?.attributes?.ignition) return 'Idle';
-    return 'Stop';
+    if (!device?.lastUpdate) {
+      return 'Stop';
+    }
+    const lastUpdate = new Date(device.lastUpdate);
+    const fourHoursAgo = new Date(Date.now() - 1000 * 60 * 60 * 4);
+    if (lastUpdate < fourHoursAgo) {
+      return 'Stop';
+    }
+    if (device.status === 'online' && Number(device.speed) === 0) {
+      return 'Idle';
+    }
+    return 'Running';
   };
 
   const filteredDevices = useMemo(() => {
@@ -88,13 +96,7 @@ export default function VehiclesScreen() {
   }, [devicesData]);
 
   const renderVehicleCard = ({ item: device, index }: { item: any; index: number }) => {
-    // Determine vehicle icon and color
-    const isTruck = device?.category === 'truck';
-    const vehicleIcon = isTruck ? 'local-shipping' : 'directions-car';
-    const vehicleColor = isTruck ? '#F44336' : (index % 2 === 0 ? '#F44336' : '#FFA726');
-    // Vehicle number color
     const vehicleNumberColor = '#2EAD4B';
-    // Icon row colors
     const iconColors = [
       '#EF5350', // key - red
       '#EF5350', // lock - red

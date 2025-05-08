@@ -31,32 +31,45 @@ export default function DashboardScreen() {
 
   const updateVehicleStats = () => {
     const stats = [
+      { label: 'All', count: 0, color: '#2979FF' },
       { label: 'Running', count: 0, color: '#00E676' },
       { label: 'Stopped', count: 0, color: '#FF1744' },
       { label: 'Idle', count: 0, color: '#FFD600' },
-      { label: 'No Data', count: 0, color: '#2979FF' },
     ];
 
     devicesData.forEach(device => {
-      if (device.status === 'online') {
-        if (device.attributes.is_parked) {
-          stats[1].count++;
-        } else {
-          stats[0].count++; 
-        }
-      } else if (device.status === 'offline') {
-        stats[2].count++; 
-      } else {
-        stats[3].count++; 
+      if (!device?.lastUpdate) {
+        stats[2].count++;
+        return;
       }
+      const lastUpdate = new Date(device.lastUpdate);
+      const fourHoursAgo = new Date(Date.now() - 1000 * 60 * 60 * 4);
+      if (lastUpdate < fourHoursAgo) {
+        stats[2].count++;
+        return;
+      }
+      if (device.status === 'online' && Number(device.speed) === 0) {
+        stats[3].count++;
+        return;
+      }
+      stats[1].count++;
     });
 
+    stats[0].count = stats[1].count + stats[2].count + stats[3].count;
+  
     setVehicleStats(stats);
   };
 
   const getDevicesCount = async () => {
-    const response = await Api.call('/api/devices', 'GET', {}, false);
-    setDevicesData(response.data);
+    const [responseDevices, responsePositions] = await Promise.all([
+      Api.call('/api/devices', 'GET', {}, false),
+      Api.call('/api/positions', 'GET', {}, false)
+    ]);
+    setDevicesData(responseDevices.data.map((device: any) => ({
+      ...device,
+      ...responsePositions.data.find((position: any) => position.deviceId === device.id)
+    })));
+ 
   }
 
   const getGroupsCount = async () => {

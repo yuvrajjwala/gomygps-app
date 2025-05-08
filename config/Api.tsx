@@ -34,12 +34,13 @@ export default {
       };
 
       const response = await axios(config);
+      console.log("response", response.status);
       if (response.status === 201 || response.status === 200) {
         return { status: response.status, data: response.data };
       }
     } catch (error: any) {
       if (error.response) {
-        console.log("error.response", error.response.data);
+        console.log("error.response", error.response);
       }
       return { status: error.response?.status || 500, error };
     }

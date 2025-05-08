@@ -1,3 +1,4 @@
+import UsersModal from '@/app/components/UsersModal';
 import Api from '@/config/Api';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useIsFocused } from '@react-navigation/native';
@@ -13,6 +14,7 @@ interface Device {
   disabled: boolean;
   lastUpdate: string | null;
   positionId: number | null;
+  deviceId: number | null;
   groupId: number | null;
   phone: string | null;
   model: string | null;
@@ -32,6 +34,8 @@ export default function DevicesScreen() {
   const [modalVisible, setModalVisible] = useState(false);
   const [editMode, setEditMode] = useState(false);
   const [editId, setEditId] = useState<number | null>(null);
+  const [usersModalVisible, setUsersModalVisible] = useState(false);
+  const [selectedDeviceId, setSelectedDeviceId] = useState<number | null>(null);
   const [form, setForm] = useState({
     name: '',
     uniqueId: '',
@@ -205,7 +209,13 @@ export default function DevicesScreen() {
               <TouchableOpacity style={[styles.deviceActionBtn, { backgroundColor: '#43A047', flex: 1, marginRight: 6 }]} onPress={() => openEditModal(item)}>
                 <Text style={styles.deviceActionBtnText}>EDIT</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={[styles.deviceActionBtn, { backgroundColor: '#FF7043', flex: 1, marginLeft: 6 }]} onPress={() => {}}>
+              <TouchableOpacity 
+                style={[styles.deviceActionBtn, { backgroundColor: '#FF7043', flex: 1, marginLeft: 6 }]} 
+                onPress={() => {
+                  setSelectedDeviceId(item.deviceId);
+                  setUsersModalVisible(true);
+                }}
+              >
                 <Text style={[styles.deviceActionBtnText, { color: 'white' }]}>USERS</Text>
               </TouchableOpacity>
             </View>
@@ -271,6 +281,16 @@ export default function DevicesScreen() {
           </View>
         </View>
       </Modal>
+      {usersModalVisible && (
+        <UsersModal
+          deviceId={selectedDeviceId}
+          visible={usersModalVisible}
+        onClose={() => {
+          setUsersModalVisible(false);
+          setSelectedDeviceId(null);
+        }}
+      />
+      )}
     </View>
   );
 }

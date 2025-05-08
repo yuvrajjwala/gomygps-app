@@ -73,13 +73,13 @@ export default function DashboardScreen() {
   }));
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: '#000' }}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: '#ffffff' }}>
       <StatusBar backgroundColor="#000" barStyle="light-content" />
       <View style={styles.blackHeader}>
         <Text style={styles.blackHeaderText}>Dashboard</Text>
       </View>
       <ScrollView>
-        <Title style={styles.header}>Fleet Dashboard</Title>
+        {/* <Title style={styles.header}>Fleet Dashboard</Title> */}
         <View style={styles.cardGrid}>
           <View style={styles.cardRow}>
             {vehicleStats.slice(0, 2).map((stat: any, idx: number) => (
@@ -321,14 +321,14 @@ const styles = StyleSheet.create({
   },
   blackHeader: {
     width: '100%',
-    backgroundColor: '#000',
+    backgroundColor: '#ffffff',
     paddingTop: 18,
     paddingBottom: 18,
     alignItems: 'center',
     justifyContent: 'center',
   },
   blackHeaderText: {
-    color: '#fff',
+    color: '#000',
     fontSize: 24,
     fontWeight: 'bold',
     letterSpacing: 1,

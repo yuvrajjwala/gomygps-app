@@ -478,7 +478,7 @@ export default function MapScreen() {
           <View style={styles.bottomButtonsRow}>
             <TouchableOpacity
               style={styles.centerMapBtn}
-              onPress={() => router.replace({ pathname: '/vehicle-details', params: { device: JSON.stringify(device) } })}
+              onPress={() => setShowDetails((prev) => !prev)}
             >
               <Text style={styles.centerMapBtnText}>{showDetails ? 'Hide Details' : 'View Details'}</Text>
             </TouchableOpacity>

@@ -6,21 +6,19 @@ export default {
     url: string,
     method: string = 'POST',
     bodyData: any = null,
-    token?: string,
+    isLogin: boolean = false
   ): Promise<any> {
     const fullUrl: string = baseUrl + url;
     console.log("bodyData", bodyData);
     console.log(method, 'fullUrl', fullUrl);
 
     let headers: Record<string, string> = {
-      'Content-Type': 'application/x-www-form-urlencoded',
+      'Content-Type': isLogin ? 'application/x-www-form-urlencoded' : 'application/json',
     };
 
-    if (token) {
-      headers['Authorization'] = 'Bearer ' + token;
-    } else {
-      headers['Accept'] = 'application/json';
-    }
+
+    headers['Accept'] = 'application/json';
+
 
     if (bodyData instanceof FormData) {
       headers['Content-Type'] = 'multipart/form-data';
@@ -36,7 +34,6 @@ export default {
       };
 
       const response = await axios(config);
-      console.log("response", response.status);
       if (response.status === 201 || response.status === 200) {
         return { status: response.status, data: response.data };
       }

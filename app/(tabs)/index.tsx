@@ -55,12 +55,12 @@ export default function DashboardScreen() {
   };
 
   const getDevicesCount = async () => {
-    const response = await Api.call('/api/devices', 'GET', {}, '');
+    const response = await Api.call('/api/devices', 'GET', {}, false);
     setDevicesData(response.data);
   }
 
   const getGroupsCount = async () => {
-    const response = await Api.call('/api/groups', 'GET', {}, '');
+    const response = await Api.call('/api/groups', 'GET', {}, false);
     setGroupsData(response.data);
   }
 

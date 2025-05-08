@@ -44,8 +44,8 @@ export default function VehiclesScreen() {
     console.log('isFocused',isFocused);
     try {
       const [responseDevices, responsePositions] = await Promise.all([
-        Api.call('/api/devices', 'GET', {}, ''),
-        Api.call('/api/positions', 'GET', {}, '')
+        Api.call('/api/devices', 'GET', {}, false),
+        Api.call('/api/positions', 'GET', {}, false)
       ]);
       setDevicesData(responseDevices.data.map((device: any) => ({
         ...device,

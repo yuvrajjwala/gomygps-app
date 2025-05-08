@@ -133,7 +133,7 @@ export default function SummaryReportScreen() {
 
   const fetchDevices = async () => {
     try {
-      const response = await Api.call('/api/devices', 'GET', {}, '');
+      const response = await Api.call('/api/devices', 'GET', {}, false); 
       setDevices(response.data || []);
     } catch (error) {
       console.error('Error fetching devices:', error);
@@ -142,7 +142,7 @@ export default function SummaryReportScreen() {
 
   const fetchGroups = async () => {
     try {
-      const response = await Api.call('/api/groups', 'GET', {}, '');
+      const response = await Api.call('/api/groups', 'GET', {}, false);
       setGroups(response.data || []);
     } catch (error) {
       console.error('Error fetching groups:', error);
@@ -165,7 +165,7 @@ export default function SummaryReportScreen() {
       const toDateUTC = new Date(toDate);
       toDateUTC.setHours(toDateUTC.getHours() - 5, toDateUTC.getMinutes() - 30);
 
-      const response = await Api.call('/api/reports/summary?from=' + fromDateUTC.toISOString().slice(0, 19) + 'Z&to=' + toDateUTC.toISOString().slice(0, 19) + 'Z' + (deviceValue ? '&deviceId=' + deviceValue : '') + (groupValue ? '&groupId=' + groupValue : ''), 'GET', {}, '');
+      const response = await Api.call('/api/reports/summary?from=' + fromDateUTC.toISOString().slice(0, 19) + 'Z&to=' + toDateUTC.toISOString().slice(0, 19) + 'Z' + (deviceValue ? '&deviceId=' + deviceValue : '') + (groupValue ? '&groupId=' + groupValue : ''), 'GET', {}, false);
       setReportData(response.data || []);
       setCurrentPage(1); // Reset to first page after fetching new data
     } catch (error) {

@@ -105,7 +105,7 @@ export default function GeofencingScreen({ onBack }: { onBack: () => void }) {
 
   const getGeofences = async () => {
     try {
-        const res = await Api.call('/api/geofences', 'GET', {}, '');
+        const res = await Api.call('/api/geofences', 'GET', {}, false);
       setGeofences(res.data);
     } catch (error) {
       console.error(error);
@@ -115,7 +115,7 @@ export default function GeofencingScreen({ onBack }: { onBack: () => void }) {
 
   const getCalendars = async () => {
     try {
-      const res = await Api.call('/api/calendars', 'GET', {}, '');
+      const res = await Api.call('/api/calendars', 'GET', {}, false);
       setCalendars(res.data);
     } catch (error) {
       console.error(error);
@@ -163,7 +163,7 @@ export default function GeofencingScreen({ onBack }: { onBack: () => void }) {
 
   const handleDeleteGeofence = async (id: string) => {
     try {
-      await Api.call(`/api/geofences/${id}`, 'DELETE', {}, '');
+      await Api.call(`/api/geofences/${id}`, 'DELETE', {}, false);
       getGeofences();
       Alert.alert("Success", "Geofence deleted successfully");
     } catch (error) {
@@ -257,12 +257,12 @@ export default function GeofencingScreen({ onBack }: { onBack: () => void }) {
 
       if (selectedGeofence) {
         console.log('Updating geofence:', selectedGeofence.id);
-        const response = await Api.call(`/api/geofences/${selectedGeofence.id}`, 'PUT', geofenceData, '');
+        const response = await Api.call(`/api/geofences/${selectedGeofence.id}`, 'PUT', geofenceData, false);
         console.log('Update response:', response);
         Alert.alert("Success", "Geofence updated successfully");
       } else {
         console.log('Creating new geofence');
-        const response = await Api.call("/api/geofences", 'POST', geofenceData, '');
+        const response = await Api.call("/api/geofences", 'POST', geofenceData, false);
         console.log('Create response:', response);
         Alert.alert("Success", "Geofence created successfully");
       }

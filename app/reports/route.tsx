@@ -118,7 +118,7 @@ export default function RouteReportScreen() {
 
   const fetchDevices = async () => {
     try {
-      const response = await Api.call('/api/devices', 'GET', {}, '');
+      const response = await Api.call('/api/devices', 'GET', {}, false);   
       setDevices(response.data || []);
     } catch (error) {
       console.error('Error fetching devices:', error);
@@ -127,7 +127,7 @@ export default function RouteReportScreen() {
 
   const fetchGroups = async () => {
     try {
-      const response = await Api.call('/api/groups', 'GET', {}, '');
+      const response = await Api.call('/api/groups', 'GET', {}, false);
       setGroups(response.data || []);
     } catch (error) {
       console.error('Error fetching groups:', error);
@@ -148,7 +148,7 @@ export default function RouteReportScreen() {
       
       const toDateUTC = new Date(toDate);
       toDateUTC.setHours(toDateUTC.getHours() - 5, toDateUTC.getMinutes() - 30);
-      const response = await Api.call('/api/reports/route?from=' + fromDateUTC.toISOString().slice(0, 19) + 'Z&to=' + toDateUTC.toISOString().slice(0, 19) + 'Z&deviceId=' + deviceValue, 'GET', {}, '');
+      const response = await Api.call('/api/reports/route?from=' + fromDateUTC.toISOString().slice(0, 19) + 'Z&to=' + toDateUTC.toISOString().slice(0, 19) + 'Z&deviceId=' + deviceValue, 'GET', {}, false);
       console.log(response.data);
       setReportData(response.data || []);
       setCurrentPage(1); // Reset to first page after fetching new data

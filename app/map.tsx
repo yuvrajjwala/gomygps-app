@@ -123,7 +123,7 @@ export default function MapScreen() {
 
   const getPosition = async () => {
     if (!isFocused) return;
-    const response = await Api.call(`/api/positions?deviceId=${device.deviceId}`, 'GET', {}, '');
+    const response = await Api.call(`/api/positions?deviceId=${device.deviceId}`, 'GET', {}, false);
     const newDevice = { ...device, ...response.data[0] };
     setDevice(newDevice);
     if (newDevice.latitude && newDevice.longitude) {
@@ -214,12 +214,12 @@ export default function MapScreen() {
         description: `Auto-generated high alert zone for ${device.name}`,
         area: `CIRCLE (${device.latitude} ${device.longitude}, 50)`,
       };
-      const response = await Api.call('/api/geofences', 'POST', geofenceData, '');
+      const response = await Api.call('/api/geofences', 'POST', geofenceData, false);
       let deviceData = await fetchDeviceDetails(device.deviceId);
       await Api.call('/api/permissions', 'POST', {
         deviceId: device.deviceId,
         geofenceId: response.data.id,
-      }, '');
+      }, false);
       let newAttributes = {
         ...deviceData.attributes,
         fence_id: response.data.id,
@@ -227,7 +227,7 @@ export default function MapScreen() {
         is_parked: true,
       };
       deviceData.attributes = newAttributes;
-      await Api.call(`/api/devices/${device.deviceId}`, 'PUT', deviceData, '');
+      await Api.call(`/api/devices/${device.deviceId}`, 'PUT', deviceData, false);
       setIsParked(true);
     } catch (error) {
       console.error("Error creating geofence:", error);
@@ -237,7 +237,7 @@ export default function MapScreen() {
   const removeGeofence = async (device: any) => {
     try {
       let deviceData = await fetchDeviceDetails(device.deviceId);
-      await Api.call(`/api/geofences/${deviceData.attributes.fence_id}`, 'DELETE', {}, '');
+      await Api.call(`/api/geofences/${deviceData.attributes.fence_id}`, 'DELETE', {}, false);
       let newAttributes = {
         ...deviceData.attributes,
         fence_id: null,
@@ -245,7 +245,7 @@ export default function MapScreen() {
         is_parked: false,
       };
       deviceData.attributes = newAttributes;
-      await Api.call(`/api/devices/${device.deviceId}`, 'PUT', deviceData, '');
+      await Api.call(`/api/devices/${device.deviceId}`, 'PUT', deviceData, false);
       setIsParked(false);
     } catch (error) {
       console.error("Error removing geofence:", error);
@@ -254,7 +254,7 @@ export default function MapScreen() {
 
   const fetchDeviceDetails = async (deviceId: string) => {
     try {
-      const response = await Api.call(`/api/devices?id=${deviceId}`, 'GET', {}, '');
+      const response = await Api.call(`/api/devices?id=${deviceId}`, 'GET', {}, false);
       if (response.data) {
         const device = response.data.find((d: any) => d.id === deviceId);
         return device;
@@ -275,14 +275,14 @@ export default function MapScreen() {
         attributes: {
           data: lockStatus,
         },
-      }, '');
+      }, false);
       let deviceData = await fetchDeviceDetails(device?.deviceId);
       let newAttributes = {
         ...deviceData.attributes,
         is_mobilized: !isLocked,
       };
       deviceData.attributes = newAttributes;
-      await Api.call(`/api/devices/${deviceData.id}`, 'PUT', deviceData, '');
+      await Api.call(`/api/devices/${deviceData.id}`, 'PUT', deviceData, false);
       setIsLocked(!isLocked);
     } catch (error) {
       console.error("Error mobilizing device:", error);
@@ -309,7 +309,7 @@ export default function MapScreen() {
       const startOfDay = new Date(today);
       startOfDay.setHours(0, 0, 0, 0);
       
-      const response = await Api.call(`/api/reports/summary?deviceId=${deviceId}&from=${startOfDay.toISOString()}&to=${today.toISOString()}&daily=false`, 'GET', {}, '');
+      const response = await Api.call(`/api/reports/summary?deviceId=${deviceId}&from=${startOfDay.toISOString()}&to=${today.toISOString()}&daily=false`, 'GET', {}, false);
       
       if (response.data && response.data.length > 0) {
         const summary = response.data[0];
@@ -324,15 +324,15 @@ export default function MapScreen() {
         };
         
         setTodaySummary({
-          distance: summary.distance || 0,
-          maxSpeed: summary.maxSpeed || 0,
-          averageSpeed: summary.averageSpeed || 0,
-          engineHours: formatDuration(summary.engineHours),
-          movingDuration: formatDuration(summary.movingDuration),
-          stoppedDuration: formatDuration(summary.stoppedDuration),
-          idleDuration: formatDuration(summary.deviceDuration - summary.movingDuration - summary.stoppedDuration),
-          ignitionOnDuration: formatDuration(summary.engineHours),
-          ignitionOffDuration: formatDuration(summary.deviceDuration - summary.engineHours)
+          distance: summary?.distance || 0,
+          maxSpeed: summary?.maxSpeed || 0,
+          averageSpeed: summary?.averageSpeed || 0,
+          engineHours: formatDuration(summary?.engineHours),
+          movingDuration: formatDuration(summary?.movingDuration),
+          stoppedDuration: formatDuration(summary?.stoppedDuration),
+          idleDuration: formatDuration(summary?.deviceDuration - summary?.movingDuration - summary?.stoppedDuration),
+          ignitionOnDuration: formatDuration(summary?.engineHours),
+          ignitionOffDuration: formatDuration(summary?.deviceDuration - summary?.engineHours)
         });
         
         setSummaryData(summary);
@@ -639,7 +639,7 @@ export default function MapScreen() {
                             return `${calculatedAvgSpeed.toFixed(1)} km/h`;
                           }
                         }
-                        return `${(summaryData.averageSpeed * 1.852 || 0).toFixed(1)} km/h`;
+                        return `${((summaryData?.averageSpeed||0) * 1.852 || 0).toFixed(1)} km/h`;
                       })()}
                 </Text>
               </View>

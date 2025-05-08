@@ -60,8 +60,8 @@ export default function DevicesScreen() {
     if (!isFocused) return;
     try {
       const [responseDevices, responsePositions] = await Promise.all([
-        Api.call('/api/devices', 'GET', {}, ''),
-        Api.call('/api/positions', 'GET', {}, '')
+        Api.call('/api/devices', 'GET', {}, false),  
+        Api.call('/api/positions', 'GET', {}, false)
       ]);
       setDevices(responseDevices.data.map((device: Device) => ({
         ...device,
@@ -116,10 +116,10 @@ export default function DevicesScreen() {
       };
 
       if (editMode && editId) {
-        const response = await Api.call(`/api/devices/${editId}`, 'PUT', deviceData, '');
+        const response = await Api.call(`/api/devices/${editId}`, 'PUT', deviceData, false);   
         console.log("response", response);
       } else {
-        await Api.call('/api/devices', 'POST', deviceData, '');
+        await Api.call('/api/devices', 'POST', deviceData, false);
       }
 
       setModalVisible(false);

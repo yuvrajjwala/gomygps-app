@@ -57,13 +57,13 @@ export default function HistoryPlaybackScreen() {
           toDateUTC.setHours(toDateUTC.getHours() - 5, toDateUTC.getMinutes() - 30);
 
           // Fetch route data
-          const routeResponse = await Api.call('/api/reports/route?from=' + fromDateUTC.toISOString().slice(0, 19) + 'Z&to=' + toDateUTC.toISOString().slice(0, 19) + 'Z&deviceId=' + device.deviceId, 'GET', {}, '');
+          const routeResponse = await Api.call('/api/reports/route?from=' + fromDateUTC.toISOString().slice(0, 19) + 'Z&to=' + toDateUTC.toISOString().slice(0, 19) + 'Z&deviceId=' + device.deviceId, 'GET', {}, false);
           setRouteData(routeResponse.data || []);
           setPlaybackIndex(0);
           setIsPlaying(false);
 
           // Fetch summary data in parallel
-          const summaryResponse = await Api.call('/api/reports/summary?from=' + startDate.toISOString() + '&to=' + endDate.toISOString() + '&deviceId=' + device.deviceId + '&daily=false', 'GET', {}, '');
+          const summaryResponse = await Api.call('/api/reports/summary?from=' + startDate.toISOString() + '&to=' + endDate.toISOString() + '&deviceId=' + device.deviceId + '&daily=false', 'GET', {}, false);
           setSummaryData(summaryResponse.data[0]);
         } catch (error) {
           console.error('Error fetching data:', error);
@@ -78,7 +78,7 @@ export default function HistoryPlaybackScreen() {
 
   const fetchDeviceDetails = async (deviceId: string) => {
     try {
-      const response = await Api.call(`/api/devices?id=${deviceId}`, 'GET', {}, '');
+      const response = await Api.call(`/api/devices?id=${deviceId}`, 'GET', {}, false);
       if (response.data) {
         const device = response.data.find((d: any) => d.id === deviceId);
         setDeviceDetails(device);

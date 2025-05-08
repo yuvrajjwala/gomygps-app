@@ -131,7 +131,7 @@ export default function TipsReportScreen() {
 
   const fetchDevices = async () => {
     try {
-      const response = await Api.call('/api/devices', 'GET', {}, '');
+      const response = await Api.call('/api/devices', 'GET', {}, false); 
       setDevices(response.data || []);
     } catch (error) {
       console.error('Error fetching devices:', error);
@@ -140,7 +140,7 @@ export default function TipsReportScreen() {
 
   const fetchGroups = async () => {
     try {
-      const response = await Api.call('/api/groups', 'GET', {}, '');
+      const response = await Api.call('/api/groups', 'GET', {}, false);
       setGroups(response.data || []);
     } catch (error) {
       console.error('Error fetching groups:', error);
@@ -168,7 +168,7 @@ export default function TipsReportScreen() {
         ...(groupValue ? { groupId: groupValue } : {}),
       };
 
-      const response = await Api.call(`/api/reports/trips`, 'GET', params, '');
+      const response = await Api.call(`/api/reports/trips`, 'GET', params, false);
       setReportData(response.data || []);
       setCurrentPage(1);
     } catch (error) {

@@ -186,7 +186,7 @@ export default function EventReportScreen() {
 
   const fetchDevices = async () => {
     try {
-      const response = await Api.call('/api/devices', 'GET', {}, '');
+      const response = await Api.call('/api/devices', 'GET', {}, false);
       setDevices(response.data || []);
     } catch (error) {
       console.error('Error fetching devices:', error);
@@ -195,7 +195,7 @@ export default function EventReportScreen() {
 
   const fetchGroups = async () => {
     try {
-      const response = await Api.call('/api/groups', 'GET', {}, '');
+      const response = await Api.call('/api/groups', 'GET', {}, false);
       setGroups(response.data || []);
       console.log(response.data);
     } catch (error) {
@@ -219,7 +219,7 @@ export default function EventReportScreen() {
       const toDateUTC = new Date(toDate);
       toDateUTC.setHours(toDateUTC.getHours() - 5, toDateUTC.getMinutes() - 30);
 
-      const response = await Api.call('/api/reports/events?from=' + fromDateUTC.toISOString().slice(0, 19) + 'Z&to=' + toDateUTC.toISOString().slice(0, 19) + 'Z' + (deviceValue ? '&deviceId=' + deviceValue : '') + (groupValue ? '&groupId=' + groupValue : '') + '&type=' + eventTypeValue, 'GET', {}, '');
+      const response = await Api.call('/api/reports/events?from=' + fromDateUTC.toISOString().slice(0, 19) + 'Z&to=' + toDateUTC.toISOString().slice(0, 19) + 'Z' + (deviceValue ? '&deviceId=' + deviceValue : '') + (groupValue ? '&groupId=' + groupValue : '') + '&type=' + eventTypeValue, 'GET', {}, false);
       setReportData(response.data || []);
       setCurrentPage(1); // Reset to first page after fetching new data
     } catch (error) {

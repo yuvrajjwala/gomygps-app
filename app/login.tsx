@@ -19,7 +19,7 @@ export default function LoginScreen() {
       `/api/session`,
       'POST',
       { email, password },
-      ""
+      true
     );
     console.log(response.data);
     if (response.data) {

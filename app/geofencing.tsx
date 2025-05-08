@@ -1,12 +1,12 @@
 import Api from '@/config/Api';
 import { MaterialIcons } from '@expo/vector-icons';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { Alert, Dimensions, FlatList, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import MapView, { Circle, Polygon } from 'react-native-maps';
 import { z } from 'zod';
-
 const { width, height } = Dimensions.get('window');
 
 interface Geofence {
@@ -58,7 +58,7 @@ type FormData = z.infer<typeof formSchema>;
 
 
 
-export default function GeofencingScreen({ onBack }: { onBack: () => void }) {
+export default function GeofencingScreen() {
   const [mode, setMode] = useState<'list' | 'add'>('list');
   const [geofences, setGeofences] = useState<Geofence[]>([]);
   const [drawingType, setDrawingType] = useState<'circle' | 'polygon'>('circle');
@@ -68,7 +68,7 @@ export default function GeofencingScreen({ onBack }: { onBack: () => void }) {
   const [geofenceName, setGeofenceName] = useState('');
   const [selectedGeofence, setSelectedGeofence] = useState<Geofence | null>(null);
   const [calendars, setCalendars] = useState<Calendar[]>([]);
-
+  const router = useRouter();   
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -280,7 +280,7 @@ export default function GeofencingScreen({ onBack }: { onBack: () => void }) {
   return (
     <View style={{ flex: 1, }}>
       <View style={styles.headerBar}>
-        <TouchableOpacity style={{ position: 'absolute', left: 0, top: 0, height: '100%', justifyContent: 'center', paddingLeft: 12 }} onPress={onBack}>
+        <TouchableOpacity style={{ position: 'absolute', left: 0, top: 0, height: '100%', justifyContent: 'center', paddingLeft: 12 }} onPress={() => router.back()}>
           <MaterialIcons name="arrow-back" size={26} color="#fff" />
         </TouchableOpacity>
         <Text style={[styles.headerText, { textAlign: 'center' }]}>Geofencing</Text>
@@ -442,6 +442,7 @@ const styles = StyleSheet.create({
       alignItems: 'center',
       justifyContent: 'center',
       marginBottom: 8,
+      marginTop: 40,
     },
     headerText: {
       fontSize: 20,

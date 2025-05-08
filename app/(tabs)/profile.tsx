@@ -150,239 +150,6 @@ function GroupManagementScreen({ onBack }: { onBack: () => void }) {
   );
 }
 
-function UserManagementScreen({ onBack }: { onBack: () => void }) {
-  const [mode, setMode] = useState<'list' | 'add'>('list');
-  const [users, setUsers] = useState(mockUsers);
-  const [formData, setFormData] = useState({
-    name: '',
-    userId: '',
-    email: '',
-    password: '',
-    role: 'readonly',
-    deviceLimit: '5',
-    userLimit: '0',
-    expiration: new Date().toISOString().split('T')[0]
-  });
-  const [editUserId, setEditUserId] = useState<string | null>(null);
-  const [search, setSearch] = useState('');
-
-  const handleAddUser = () => {
-    setMode('add');
-    setEditUserId(null);
-    setFormData({
-      name: '',
-      userId: '',
-      email: '',
-      password: '',
-      role: 'readonly',
-      deviceLimit: '5',
-      userLimit: '0',
-      expiration: new Date().toISOString().split('T')[0]
-    });
-  };
-
-  const handleEditUser = (user: typeof mockUsers[0]) => {
-    setMode('add');
-    setEditUserId(user.id);
-    setFormData({
-      name: user.name,
-      userId: user.userId,
-      email: user.email,
-      password: '', // Don't prefill password
-      role: user.role,
-      deviceLimit: String(user.deviceLimit),
-      userLimit: String(user.userLimit),
-      expiration: user.expiration
-    });
-  };
-
-  const handleSaveUser = () => {
-    if (formData.name.trim() && formData.userId.trim() && formData.email.trim() && (editUserId || formData.password.trim())) {
-      if (editUserId) {
-        setUsers(users.map(u => u.id === editUserId ? {
-          ...u,
-          ...formData,
-          deviceLimit: Number(formData.deviceLimit),
-          userLimit: Number(formData.userLimit),
-          password: undefined // Don't store password in mock
-        } : u));
-      } else {
-        setUsers([...users, {
-          id: Date.now().toString(),
-          ...formData,
-          deviceLimit: Number(formData.deviceLimit),
-          userLimit: Number(formData.userLimit)
-        }]);
-      }
-      setMode('list');
-      setEditUserId(null);
-    }
-  };
-
-  const getRoleColor = (role: string) => {
-    switch (role) {
-      case 'admin': return '#FF3D00';
-      case 'write': return '#2979FF';
-      default: return '#43A047';
-    }
-  };
-
-  const filteredUsers = users.filter(u =>
-    u.name.toLowerCase().includes(search.toLowerCase()) ||
-    u.userId.toLowerCase().includes(search.toLowerCase()) ||
-    u.email.toLowerCase().includes(search.toLowerCase())
-  );
-
-  const renderUserItem = ({ item }: { item: typeof mockUsers[0] }) => (
-    <View style={styles.userCard}>
-      <View style={styles.userInfo}>
-        <MaterialIcons name="person" size={28} color={getRoleColor(item.role)} />
-        <View style={styles.userDetails}>
-          <Text style={styles.userName}>{item.name}</Text>
-          <Text style={styles.userEmail}>{item.email}</Text>
-          <View style={styles.userMeta}>
-            <Text style={[styles.userRole, { color: getRoleColor(item.role) }]}> {item.role.toUpperCase()} </Text>
-            <Text style={styles.userLimits}> Devices: {item.deviceLimit} • Users: {item.userLimit} </Text>
-          </View>
-          <Text style={styles.userExpiration}> Expires: {new Date(item.expiration).toLocaleDateString()} </Text>
-        </View>
-        <View style={styles.userCardActions}>
-          <TouchableOpacity onPress={() => handleEditUser(item)} style={styles.userActionBtn}>
-            <MaterialIcons name="edit" size={22} color="#2979FF" />
-          </TouchableOpacity>
-          <TouchableOpacity onPress={() => {}} style={styles.userActionBtn}>
-            <MaterialIcons name="link" size={22} color="#43A047" />
-          </TouchableOpacity>
-        </View>
-      </View>
-    </View>
-  );
-
-  return (
-    <View style={{ flex: 1 }}>
-      <View style={styles.headerBar}>
-        <TouchableOpacity style={{ position: 'absolute', left: 0, top: 0, height: '100%', justifyContent: 'center', paddingLeft: 12 }} onPress={onBack}>
-          <MaterialIcons name="arrow-back" size={26} color="#fff" />
-        </TouchableOpacity>
-        <Text style={[styles.headerText, { textAlign: 'center' }]}>User Management</Text>
-      </View>
-      {mode === 'list' ? (
-        <View style={{ flex: 1, paddingBottom: 50 }}>
-          <TextInput
-            style={styles.userSearchInput}
-            value={search}
-            onChangeText={setSearch}
-            placeholder="Search users..."
-            placeholderTextColor="#888"
-            autoCapitalize="none"
-          />
-          <FlatList
-            data={filteredUsers}
-            keyExtractor={item => item.id}
-            contentContainerStyle={{ padding: 18 }}
-            renderItem={renderUserItem}
-            ListEmptyComponent={<Text style={{ color: '#888', textAlign: 'center', marginTop: 40 }}>No users found.</Text>}
-          />
-          <TouchableOpacity style={styles.addUserFab} onPress={handleAddUser} activeOpacity={0.85}>
-            <MaterialIcons name="add" size={28} color="#fff" />
-          </TouchableOpacity>
-        </View>
-      ) : (
-        <View style={{ flex: 1, padding: 18 }}>
-          <View style={styles.addUserPanel}>
-            <ScrollView showsVerticalScrollIndicator={false}>
-              <Text style={styles.geoAddLabel}>Name</Text>
-              <TextInput
-                style={styles.geoAddInput}
-                value={formData.name}
-                onChangeText={(text) => setFormData({ ...formData, name: text })}
-                placeholder="Enter full name"
-                placeholderTextColor="#888"
-                maxLength={32}
-              />
-              <Text style={styles.geoAddLabel}>User ID</Text>
-              <TextInput
-                style={styles.geoAddInput}
-                value={formData.userId}
-                onChangeText={(text) => setFormData({ ...formData, userId: text })}
-                placeholder="Enter user ID"
-                placeholderTextColor="#888"
-                maxLength={32}
-              />
-              <Text style={styles.geoAddLabel}>Email</Text>
-              <TextInput
-                style={styles.geoAddInput}
-                value={formData.email}
-                onChangeText={(text) => setFormData({ ...formData, email: text })}
-                placeholder="Enter email"
-                placeholderTextColor="#888"
-                keyboardType="email-address"
-                autoCapitalize="none"
-              />
-              <Text style={styles.geoAddLabel}>Password</Text>
-              <TextInput
-                style={styles.geoAddInput}
-                value={formData.password}
-                onChangeText={(text) => setFormData({ ...formData, password: text })}
-                placeholder="Enter password"
-                placeholderTextColor="#888"
-                secureTextEntry
-              />
-              <Text style={styles.geoAddLabel}>Role</Text>
-              <View style={styles.parentGroupSelector}>
-                <Picker
-                  selectedValue={formData.role}
-                  onValueChange={(value) => setFormData({ ...formData, role: value })}
-                  style={{ color: '#222' }}
-                >
-                  <Picker.Item label="Admin" value="admin" />
-                  <Picker.Item label="Write" value="write" />
-                  <Picker.Item label="Read Only" value="readonly" />
-                </Picker>
-              </View>
-              <Text style={styles.geoAddLabel}>Device Limit</Text>
-              <TextInput
-                style={styles.geoAddInput}
-                value={formData.deviceLimit}
-                onChangeText={(text) => setFormData({ ...formData, deviceLimit: text })}
-                placeholder="Enter device limit"
-                placeholderTextColor="#888"
-                keyboardType="numeric"
-              />
-              <Text style={styles.geoAddLabel}>User Limit</Text>
-              <TextInput
-                style={styles.geoAddInput}
-                value={formData.userLimit}
-                onChangeText={(text) => setFormData({ ...formData, userLimit: text })}
-                placeholder="Enter user limit"
-                placeholderTextColor="#888"
-                keyboardType="numeric"
-              />
-              <Text style={styles.geoAddLabel}>Expiration Date</Text>
-              <TextInput
-                style={styles.geoAddInput}
-                value={formData.expiration}
-                onChangeText={(text) => setFormData({ ...formData, expiration: text })}
-                placeholder="YYYY-MM-DD"
-                placeholderTextColor="#888"
-              />
-            </ScrollView>
-            <View style={styles.geoAddBtnRow}>
-              <TouchableOpacity style={styles.geoAddSaveBtn} onPress={handleSaveUser}>
-                <MaterialIcons name="save" size={22} color="#fff" />
-                <Text style={styles.geoAddSaveText}>Save</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.geoAddCancelBtn} onPress={() => { setMode('list'); setEditUserId(null); }}>
-                <MaterialIcons name="close" size={22} color="#fff" />
-                <Text style={styles.geoAddCancelText}>Cancel</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      )}
-    </View>
-  );
-}
 
 export default function DriversScreen() {
   const [showGroupManagement, setShowGroupManagement] = useState(false);
@@ -393,13 +160,13 @@ export default function DriversScreen() {
       label: 'Geofencing',
       icon: 'my-location',
       color: '#43A047',
-      onPress: () => router.replace('/geofencing'),
+      onPress: () => router.push('/geofencing'),
     },
     {
       label: 'User Management',
       icon: 'person',
       color: '#2979FF',
-      onPress: () => setShowUserManagement(true),
+      onPress: () => router.push('/userManagement'),
     },
     {
       label: 'Group Management',
@@ -431,9 +198,7 @@ export default function DriversScreen() {
     <SafeAreaView style={styles.safeArea}>
       { showGroupManagement ? (
         <GroupManagementScreen onBack={() => setShowGroupManagement(false)} />
-      ) : showUserManagement ? (
-        <UserManagementScreen onBack={() => setShowUserManagement(false)} />
-      ) : (
+      )  : (
         <>
           <View style={styles.headerBar}>
             <Text style={styles.headerText}>Settings</Text>

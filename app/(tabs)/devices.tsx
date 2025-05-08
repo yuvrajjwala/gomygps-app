@@ -163,7 +163,7 @@ export default function DevicesScreen() {
         contentContainerStyle={{ paddingBottom: 80, paddingTop: 12 }}
         renderItem={({ item }) => (
           <TouchableOpacity style={styles.deviceCard} 
-          onPress={() => router.replace({ 
+          onPress={() => router.push({ 
             pathname: '/map', 
             params: { 
               ...item,

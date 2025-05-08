@@ -109,7 +109,7 @@ export default function VehiclesScreen() {
       <TouchableOpacity
         key={device.id + index}
         activeOpacity={0.85}
-        onPress={() => router.replace({ pathname: '/map', params: { ...device } })}
+        onPress={() => router.push({ pathname: '/map', params: { ...device } })}
       >
         <View style={styles.vehicleCardNew}>
           <View style={{ flex: 1, flexDirection: 'row', alignItems: 'stretch' }}>

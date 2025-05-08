@@ -27,7 +27,7 @@ export default function LoginScreen() {
         token: response.data.token || "",
         user: response.data || {}
       }));
-      router.replace('/(tabs)');
+      router.push('/(tabs)');
     }
   };
 

@@ -90,6 +90,22 @@ export default function MapScreen() {
     longitude: Number(params?.longitude) || 0,
   });
 
+  const [summaryData, setSummaryData] = useState<any>(null);
+  const [todaySummary, setTodaySummary] = useState({
+    distance: 0,
+    maxSpeed: 0,
+    averageSpeed: 0,
+    engineHours: '0h:00m',
+    movingDuration: '00h:00m',
+    stoppedDuration: '00h:00m',
+    idleDuration: '00h:00m',
+    ignitionOnDuration: '00h:00m',
+    ignitionOffDuration: '00h:00m'
+  });
+
+  // Animation ref for details section
+  const detailsAnimHeight = useRef(new Animated.Value(0)).current;
+
   const getVehicleIcon = (): ImageSourcePropType => {
     if (!device?.lastUpdate) {
       return require('@/assets/images/cars/white.png');
@@ -147,6 +163,8 @@ export default function MapScreen() {
       markerPosition.setValue({
         latitude: Number(device?.latitude) || 0,
         longitude: Number(device?.longitude) || 0,
+        latitudeDelta: zoomLevel,
+        longitudeDelta: zoomLevel * 0.5,
       });
     }
   }, [device?.latitude, device?.longitude]);
@@ -161,6 +179,23 @@ export default function MapScreen() {
   }, []);
 
   useEffect(() => {
+    if (carMode) {
+      setZoomLevel(0.002);
+      if (device?.latitude && device?.longitude) {
+        const newRegion: Region = {
+          latitude: device.latitude,
+          longitude: device.longitude,
+          latitudeDelta: 0.002,
+          longitudeDelta: 0.001,
+        };
+        mapRef.current?.animateToRegion(newRegion, 500);
+      }
+    } else {
+      setZoomLevel(0.005);
+    }
+  }, [carMode]);
+
+  useEffect(() => {
     if (autoFollow && device?.latitude && device?.longitude) {
       const newRegion: Region = {
         latitude: device.latitude,
@@ -171,14 +206,6 @@ export default function MapScreen() {
       mapRef.current?.animateToRegion(newRegion, 500);
     }
   }, [device?.latitude, device?.longitude, autoFollow, zoomLevel]);
-
-  useEffect(() => {
-    if (carMode) {
-      setZoomLevel(0.002);
-    } else {
-      setZoomLevel(0.005);
-    }
-  }, [carMode]);
 
   const createGeofence = async (device: any) => {
     try {
@@ -275,6 +302,110 @@ export default function MapScreen() {
     };
   }, []);
 
+  // Fetch summary data for today
+  const fetchTodaySummary = async (deviceId: string | number) => {
+    try {
+      const today = new Date();
+      const startOfDay = new Date(today);
+      startOfDay.setHours(0, 0, 0, 0);
+      
+      const response = await Api.call(`/api/reports/summary?deviceId=${deviceId}&from=${startOfDay.toISOString()}&to=${today.toISOString()}&daily=false`, 'GET', {}, '');
+      
+      if (response.data && response.data.length > 0) {
+        const summary = response.data[0];
+        
+        // Format durations
+        const formatDuration = (milliseconds: number | undefined) => {
+          if (!milliseconds) return '00h:00m';
+          const totalMinutes = Math.floor(milliseconds / (1000 * 60));
+          const hours = Math.floor(totalMinutes / 60);
+          const minutes = totalMinutes % 60;
+          return `${hours.toString().padStart(2, '0')}h:${minutes.toString().padStart(2, '0')}m`;
+        };
+        
+        setTodaySummary({
+          distance: summary.distance || 0,
+          maxSpeed: summary.maxSpeed || 0,
+          averageSpeed: summary.averageSpeed || 0,
+          engineHours: formatDuration(summary.engineHours),
+          movingDuration: formatDuration(summary.movingDuration),
+          stoppedDuration: formatDuration(summary.stoppedDuration),
+          idleDuration: formatDuration(summary.deviceDuration - summary.movingDuration - summary.stoppedDuration),
+          ignitionOnDuration: formatDuration(summary.engineHours),
+          ignitionOffDuration: formatDuration(summary.deviceDuration - summary.engineHours)
+        });
+        
+        setSummaryData(summary);
+      }
+    } catch (error) {
+      console.error("Error fetching summary data:", error);
+    }
+  };
+  
+  // Format distance for display
+  const formatDistance = (meters: number | undefined) => {
+    if (!meters) return '0 km';
+    return `${(meters / 1000).toFixed(0)} km`;
+  };
+  
+  // Format speed for display
+  const formatSpeed = (knots: number | undefined) => {
+    if (!knots) return '0 km/h';
+    return `${(knots * 1.852).toFixed(0)} km/h`;
+  };
+
+  // Add new useEffect to fetch summary when device changes
+  useEffect(() => {
+    if (device?.deviceId) {
+      fetchTodaySummary(device.deviceId);
+    }
+  }, [device?.deviceId]);
+
+  // Animate the details section when showDetails changes
+  useEffect(() => {
+    Animated.timing(detailsAnimHeight, {
+      toValue: showDetails ? 1 : 0,
+      duration: 300,
+      useNativeDriver: false,
+    }).start();
+  }, [showDetails]);
+
+
+  const engineHoursCalculation = () => {
+    const startOdo = summaryData?.startOdometer || 0;
+    const endOdo = summaryData?.endOdometer || 0;
+
+    if (startOdo && endOdo) {
+      const odometerDiffKm = (endOdo - startOdo) / 1000;
+      const estimatedAvgSpeed = 35;
+      const engineHours = odometerDiffKm / estimatedAvgSpeed;
+
+      // Convert to hours and minutes
+      const totalMinutes = Math.floor(engineHours * 60);
+      const hours = Math.floor(totalMinutes / 60);
+      const minutes = totalMinutes % 60;
+
+      return `${hours} hrs ${minutes} min`;
+    } else if (summaryData?.startTime && summaryData?.endTime) {
+      // Fallback to time-based calculation if odometer data is missing
+      const startTime = new Date(summaryData.startTime);
+      const endTime = new Date(summaryData.endTime);
+      const totalMilliseconds = endTime.getTime() - startTime.getTime();
+
+      const totalMinutes = Math.floor(totalMilliseconds / (1000 * 60));
+      const hours = Math.floor(totalMinutes / 60);
+      const minutes = totalMinutes % 60;
+
+      return `${hours} hrs ${minutes} min`;
+    } else {
+      const totalMilliseconds = summaryData?.engineHours || 0;
+      const totalMinutes = Math.floor(totalMilliseconds / (1000 * 60));
+      const hours = Math.floor(totalMinutes / 60);
+      const minutes = totalMinutes % 60;
+
+      return `${hours} hrs ${minutes} min`;
+    }
+  };
   return (
     <SafeAreaView style={styles.safeArea}>
       <StatusBar barStyle="dark-content" backgroundColor="#000"  />
@@ -315,7 +446,7 @@ export default function MapScreen() {
           strokeColor="#FFD600"
           strokeWidth={4}
         />
-        <Marker.Animated coordinate={markerPosition}>
+        <Marker.Animated coordinate={currentMarkerPosition}>
           <Image
             source={getVehicleIcon()}
             style={[
@@ -335,7 +466,10 @@ export default function MapScreen() {
         <View style={styles.bottomSheetContent}>
           {/* Vehicle Name and Speed */}
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+            <View>
             <Text style={styles.vehicleNumber}>{device?.name}</Text>
+            <Text style={[styles.vehicleNumber, {fontSize: 12, color: '#666', fontWeight: '400'}]}>{device?.address}</Text>
+            </View>
             <View style={styles.speedoWrap}>
               <FontAwesome5 name="tachometer-alt" size={18} color="#43A047" />
               <Text style={styles.speedoText}>{(Number(device?.speed)* 1.852 || 0)?.toFixed(0)} km/h</Text>
@@ -359,7 +493,7 @@ export default function MapScreen() {
             <TouchableOpacity
               style={[styles.iconCircle, styles.iconCircleActive, { backgroundColor: '#4285F4', borderColor: '#4285F4', shadowColor: '#4285F4' }]}
               onPress={() => {
-                router.replace({ pathname: '/history-playback', params: { device: JSON.stringify(device) } });
+                router.push({ pathname: '/history-playback', params: { device: JSON.stringify(device) } });
               }}
             >
               <MaterialIcons name="play-arrow" size={24} color="#fff" />
@@ -390,9 +524,22 @@ export default function MapScreen() {
               style={[styles.iconCircle, { borderColor: autoFollow ? '#43A047' : '#A5F3C7', backgroundColor: autoFollow ? '#43A047' : '#fff' }]}
               onPress={() => {
                 if (!carMode) {
+                  // Can't enable auto-follow without car mode
                   return;
                 }
+                
                 setAutoFollow(!autoFollow);
+                
+                if (!autoFollow && device?.latitude && device?.longitude) {
+                  // When enabling auto-follow, immediately center on current position
+                  const newRegion: Region = {
+                    latitude: device.latitude,
+                    longitude: device.longitude,
+                    latitudeDelta: zoomLevel,
+                    longitudeDelta: zoomLevel * 0.5,
+                  };
+                  mapRef.current?.animateToRegion(newRegion, 500);
+                }
               }}
             >
               <MaterialIcons name="location-on" size={24} color={autoFollow ? '#fff' : '#43A047'} />
@@ -400,78 +547,104 @@ export default function MapScreen() {
           </View>
 
           {/* Stats Grid - only show if showDetails is true */}
-          {showDetails && (
-            <>
-              {/* <View style={{ borderTopWidth: 1, borderColor: '#eee', marginVertical: 8 }} /> */}
-             
-              <View style={styles.statsDivider} />
-              {/* Row 2 */}
-              <View style={styles.statsRow}>
-                <View style={styles.statsCol}>
-                  <Text style={styles.statsValue}>1084h:13m</Text>
-                  <Text style={styles.statsLabel}>Total Engine</Text>
-                </View>
-                <View style={styles.statsCol}>
-                  <Text style={styles.statsValue}>61 km/h</Text>
-                  <Text style={styles.statsLabel}>Today Max Speed</Text>
-                </View>
-                <View style={styles.statsCol}>
-                  <Text style={styles.statsValue}>{(Number(device?.speed) * 1.852 || 0)?.toFixed(0)} km/h</Text>
-                  <Text style={styles.statsLabel}>Speed</Text>
-                </View>
+          <Animated.View 
+            style={{
+              maxHeight: detailsAnimHeight.interpolate({
+                inputRange: [0, 1],
+                outputRange: [0, 500]
+              }),
+              opacity: detailsAnimHeight,
+              overflow: 'hidden'
+            }}
+          >
+            <View style={styles.statsDivider} />
+            
+         
+            
+            {/* Second row */}
+            <View style={styles.statsRow}>
+            <View style={[styles.statsCol, styles.statsColHighlight1]}>
+                <FontAwesome5 name="clock" size={14} color="#2196F3" style={styles.statsIcon} />
+                <Text style={styles.statsLabel}>Fix Time</Text>
+                <Text style={styles.statsValue}>
+                  {device?.lastUpdate
+                    ? moment(device.lastUpdate).format('DD/MM, HH:mm')
+                    : moment().format('DD/MM, HH:mm')}
+                </Text>
               </View>
-              <View style={styles.statsDivider} />
-              {/* Row 3 */}
-              <View style={styles.statsRow}>
-                <View style={styles.statsCol}>
-                  <Text style={styles.statsValue}>14811 km</Text>
-                  <Text style={styles.statsLabel}>Total Distance</Text>
-                </View>
-                <View style={styles.statsCol}>
-                  <Text style={styles.statsValue}>46 km</Text>
-                  <Text style={styles.statsLabel}>Today Distance</Text>
-                </View>
-                <View style={styles.statsCol}>
-                  <Text style={styles.statsValue}>8 km</Text>
-                  <Text style={styles.statsLabel}>Distance From Last Stop</Text>
-                </View>
+            <View style={[styles.statsCol, styles.statsColHighlight3]}>
+                <FontAwesome5 name="road" size={14} color="#43A047" style={styles.statsIcon} />
+                <Text style={styles.statsLabel}>Distance</Text>
+                <Text style={styles.statsValue}>
+                  {formatDistance(todaySummary.distance)}
+                </Text>
               </View>
-              <View style={styles.statsDivider} />
-              {/* Row 4 */}
-              <View style={styles.statsRow}>
-                <View style={styles.statsCol}>
-                  <Text style={styles.statsValue}>01h:12m</Text>
-                  <Text style={styles.statsLabel}>Today Stopped</Text>
-                </View>
-                <View style={styles.statsCol}>
-                  <Text style={styles.statsValue}>02h:39m</Text>
-                  <Text style={styles.statsLabel}>Today Running</Text>
-                </View>
-                <View style={styles.statsCol}>
-                  <Text style={styles.statsValue}>15h:33m</Text>
-                  <Text style={styles.statsLabel}>Today Idle</Text>
-                </View>
+              <View style={[styles.statsCol, styles.statsColHighlight4]}>
+                <FontAwesome5 name="cogs" size={14} color="#9C27B0" style={styles.statsIcon} />
+                <Text style={styles.statsLabel}>Engine</Text>
+                <Text style={styles.statsValue}>
+                  {todaySummary.engineHours}
+                </Text>
               </View>
-              <View style={styles.statsDivider} />
-              {/* Row 5 */}
-              <View style={styles.statsRow}>
-                <View style={styles.statsCol}>
-                  <Text style={styles.statsValue}>01h:15m</Text>
-                  <Text style={styles.statsLabel}>Today Ignition Off</Text>
-                </View>
-                <View style={styles.statsCol}>
-                  <Text style={styles.statsValue}>18h:57m</Text>
-                  <Text style={styles.statsLabel}>Today Ignition On</Text>
-                </View>
-                <View style={styles.statsCol}>
-                  <Text style={styles.statsValue}>01h:15m</Text>
-                  <Text style={styles.statsLabel}>Ignition On Since</Text>
-                </View>
+
+           
+
+           
+            </View>
+
+            <View style={styles.statsDivider} />
+            
+            {/* Third row */}
+            <View style={styles.statsRow}>
+            <View style={[styles.statsCol, styles.statsColHighlight5]}>
+                <FontAwesome5 name="running" size={14} color="#009688" style={styles.statsIcon} />
+                <Text style={styles.statsLabel}>Running</Text>
+                <Text style={styles.statsValue}>
+                {(() => {
+                        const runHours = engineHoursCalculation();
+                        // Convert "X hrs Y min" to "Xh Ym"
+                        return runHours.replace(/ hrs /, "h ").replace(/ min/, "m");
+                      })()}
+                </Text>
               </View>
-             
-              
-            </>
-          )}
+            <View style={[styles.statsCol, styles.statsColHighlight6]}>
+                <FontAwesome5 name="gas-pump" size={14} color="#E53935" style={styles.statsIcon} />
+                <Text style={styles.statsLabel}>Fuel</Text>
+                <Text style={styles.statsValue}>
+                  {device?.fuel || '0'} L
+                </Text>
+              </View>
+              <View style={[styles.statsCol, styles.statsColHighlight7]}>
+                <FontAwesome5 name="bolt" size={14} color="#FFC107" style={styles.statsIcon} />
+                <Text style={styles.statsLabel}>Max Speed</Text>
+                <Text style={styles.statsValue}>
+                  {formatSpeed(todaySummary.maxSpeed)}
+                </Text>
+              </View>
+
+              <View style={[styles.statsCol, styles.statsColHighlight8]}>
+                <FontAwesome5 name="chart-line" size={14} color="#03A9F4" style={styles.statsIcon} />
+                <Text style={styles.statsLabel}>Avg Speed</Text>
+                <Text style={styles.statsValue}>
+                {(() => {
+                        const distanceKm = (summaryData?.distance || 0) / 1000;
+                        const runningHoursText = engineHoursCalculation();
+                        const hoursMatch = runningHoursText.match(/(\d+) hrs (\d+) min/);
+                        if (hoursMatch) {
+                          const hours = parseInt(hoursMatch[1]);
+                          const minutes = parseInt(hoursMatch[2]);
+                          const totalHours = hours + (minutes / 60);
+                          if (totalHours > 0) {
+                            const calculatedAvgSpeed = distanceKm / totalHours;
+                            return `${calculatedAvgSpeed.toFixed(1)} km/h`;
+                          }
+                        }
+                        return `${(summaryData.averageSpeed * 1.852 || 0).toFixed(1)} km/h`;
+                      })()}
+                </Text>
+              </View>
+            </View>
+          </Animated.View>
 
           {/* Action Buttons (keep as before) */}
           <View style={styles.bottomCardDivider} />
@@ -484,7 +657,7 @@ export default function MapScreen() {
             </TouchableOpacity>
             <TouchableOpacity 
               style={styles.viewReportsBtn} 
-              onPress={() => router.replace({ pathname: '/reports', params: { deviceId: device?.deviceId } })}
+              onPress={() => router.push({ pathname: '/reports', params: { deviceId: device?.deviceId } })}
             >
               <Text style={styles.viewReportsBtnText}>View Reports</Text>
             </TouchableOpacity>
@@ -628,10 +801,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginHorizontal: 6,
-    shadowColor: 'transparent',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0,
-    shadowRadius: 0,
+    shadowColor: 'rgba(0,0,0,0.1)',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.5,
+    shadowRadius: 3,
+    elevation: 3,
   },
   iconCircleActive: {
     backgroundColor: '#4285F4',
@@ -653,6 +827,11 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     alignItems: 'center',
     marginRight: 8,
+    shadowColor: '#43A047',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 3,
   },
   centerMapBtnText: {
     color: '#fff',
@@ -666,6 +845,11 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     alignItems: 'center',
     marginLeft: 8,
+    shadowColor: '#FF7043',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 3,
   },
   viewReportsBtnText: {
     color: '#fff',
@@ -681,25 +865,39 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 8,
+    marginVertical: 4,
   },
   statsCol: {
     flex: 1,
     alignItems: 'center',
+    padding: 10,
+    borderRadius: 8,
+    backgroundColor: '#f8f9fa',
+    marginHorizontal: 2,
+    borderWidth: 1,
+    borderColor: 'rgba(0,0,0,0.05)',
+    shadowColor: 'rgba(0,0,0,0.05)',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.8,
+    shadowRadius: 2,
+    elevation: 1,
   },
   statsValue: {
     fontWeight: 'bold',
-    fontSize: 16,
+    fontSize: 12,
     color: '#000',
+    marginTop: 2,
   },
   statsLabel: {
-    fontSize: 12,
+    fontSize: 10,
     color: '#666',
+    textAlign: 'center',
+    fontWeight: '500',
   },
   statsDivider: {
     height: 1,
     backgroundColor: '#eee',
-    marginVertical: 8,
+    marginVertical: 6,
   },
   floatingMenu: {
     position: 'absolute',
@@ -747,5 +945,44 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 10,
     marginTop: -2,
+  },
+  statsColHighlight1: {
+    backgroundColor: '#EBF5FB',
+    borderColor: '#BBDEFB',
+  },
+  statsColHighlight2: {
+    backgroundColor: '#FFF8E1',
+    borderColor: '#FFECB3',
+  },
+  statsColHighlight3: {
+    backgroundColor: '#E8F5E9',
+    borderColor: '#C8E6C9',
+  },
+  statsColHighlight4: {
+    backgroundColor: '#F3E5F5',
+    borderColor: '#E1BEE7',
+  },
+  statsColHighlight5: {
+    backgroundColor: '#E0F2F1',
+    borderColor: '#B2DFDB',
+  },
+  statsColHighlight6: {
+    backgroundColor: '#FFEBEE',
+    borderColor: '#FFCDD2',
+  },
+  statsColHighlight7: {
+    backgroundColor: '#FFF8E1',
+    borderColor: '#FFE082',
+  },
+  statsColHighlight8: {
+    backgroundColor: '#E1F5FE',
+    borderColor: '#B3E5FC',
+  },
+  statsColHighlight9: {
+    backgroundColor: '#F1F8E9',
+    borderColor: '#DCEDC8',
+  },
+  statsIcon: {
+    marginBottom: 2,
   },
 }); 

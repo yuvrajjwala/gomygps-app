@@ -254,7 +254,7 @@ export default function VehicleDetailsScreen() {
         </View>
         {/* Back to Map Button */}
 
-        <TouchableOpacity style={styles.backBtnColorful1} onPress={() => router.replace({ pathname: '/history-playback', params: vehicle })}>
+        <TouchableOpacity style={styles.backBtnColorful1} onPress={() => router.push({ pathname: '/history-playback', params: vehicle })}>
           <MaterialIcons name="map" size={20} color="#fff" />
           <Text style={styles.backBtnTextColorful}>History Playback</Text>
         </TouchableOpacity>

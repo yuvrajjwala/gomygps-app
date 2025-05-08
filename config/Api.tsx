@@ -39,10 +39,7 @@ export default {
       }
     } catch (error: any) {
       if (error.response) {
-        if (error.response.status === 401) {
-        }
-        if (error.response.status === 400) {
-        }
+        console.log("error.response", error.response);
       }
       return { status: error.response?.status || 500, error };
     }

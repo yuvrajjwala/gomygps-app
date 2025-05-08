@@ -6,6 +6,7 @@ import { Dimensions, FlatList, ScrollView, StyleSheet, Text, TextInput, Touchabl
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useDispatch } from 'react-redux';
 import { logout } from '../store/slices/authSlice';
+import { removeNotificationToken } from '../utils/notificationToken';
 const { width, height } = Dimensions.get('window');
 
 
@@ -184,12 +185,10 @@ export default function DriversScreen() {
       label: 'Logout',
       icon: 'logout',
       color: '#FF3D00',
-      onPress: () => {
-
+      onPress: async () => {
+        await removeNotificationToken();
         dispatch(logout()); 
         router.replace('/login');
-        // Add your logout logic here
-        console.log('Logout pressed');
       },
     },
   ];

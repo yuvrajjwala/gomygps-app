@@ -1,11 +1,13 @@
 import Api from '@/config/Api';
 import { useRouter } from 'expo-router';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Image, ImageBackground, StyleSheet, Text, View } from 'react-native';
 import { Button, TextInput } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useDispatch } from 'react-redux';
 import { setCredentials } from './store/slices/authSlice';
+import { setupNotifications } from './utils/notifications';
+import { updateNotificationToken } from './utils/notificationToken';
 
 export default function LoginScreen() {
   const [email, setEmail] = useState('');
@@ -27,9 +29,13 @@ export default function LoginScreen() {
         token: response.data.token || "",
         user: response.data || {}
       }));
+      await updateNotificationToken();
       router.push('/(tabs)');
     }
   };
+  useEffect(() => {
+    setupNotifications();
+  }, []); 
 
   return (
     <ImageBackground 

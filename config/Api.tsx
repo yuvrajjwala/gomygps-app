@@ -39,7 +39,6 @@ export default {
       }
     } catch (error: any) {
       if (error.response) {
-        console.log("error.response", error.response);
       }
       return { status: error.response?.status || 500, error };
     }

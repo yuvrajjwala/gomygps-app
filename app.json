@@ -20,7 +20,8 @@
         "NSLocationAlwaysUsageDescription": "This app uses location to track your position in the background",
         "NSLocationAlwaysAndWhenInUseUsageDescription": "This app uses location to track your position in the background and foreground",
         "ITSAppUsesNonExemptEncryption": false
-      }
+      },
+      "googleServicesFile": "./GoogleService-Info.plist"
     },
     "android": {
       "adaptiveIcon": {

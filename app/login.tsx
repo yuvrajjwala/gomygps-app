@@ -1,7 +1,7 @@
 import Api from '@/config/Api';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
-import { Image, ImageBackground, StyleSheet, Text, View } from 'react-native';
+import { Image, ImageBackground, StatusBar, StyleSheet, Text, View } from 'react-native';
 import { Button, TextInput } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useDispatch } from 'react-redux';
@@ -45,6 +45,7 @@ export default function LoginScreen() {
     >
       <View style={styles.overlay}>
         <SafeAreaView style={styles.safeArea}>
+          <StatusBar barStyle="light-content" />
           <View style={styles.container}>
             <Image source={require('../assets/images/icon.png')} style={styles.logo} />
             <Text style={styles.heading}>Welcome Back</Text>

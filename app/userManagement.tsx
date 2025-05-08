@@ -4,16 +4,16 @@ import { Picker } from "@react-native-picker/picker";
 import { useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
-    Dimensions,
-    FlatList,
-    Modal,
-    SafeAreaView,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  Dimensions,
+  FlatList,
+  Modal,
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
 const { height } = Dimensions.get("window");
 
@@ -271,18 +271,12 @@ export default function UserManagementScreen()       {
   );
 
   return (
-    <SafeAreaView style={{ flex: 1 }}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: "#000000" }}>
       <View style={{ flex: 1, marginTop: 40 }}>
         <View style={styles.headerBar}>
           <TouchableOpacity
-            style={{
-              position: "absolute",
-              left: 0,
-              top: 0,
-              height: "100%",
-              justifyContent: "center",
-              paddingLeft: 12,
-            }}
+       
+            
             onPress={() => router.back()}
           >
             <MaterialIcons name="arrow-back" size={26} color="#fff" />
@@ -290,8 +284,11 @@ export default function UserManagementScreen()       {
           <Text style={[styles.headerText, { textAlign: "center" }]}>
             User Management
           </Text>
+          <View style={{ width: 26 }} />
         </View>
-        <View style={{ flex: 1, paddingBottom: 50 }}>
+        <View style={{ flex: 1, paddingBottom: 50, backgroundColor: "#000000", paddingHorizontal: 15 }}>
+          
+
           <TextInput
             style={styles.userSearchInput}
             value={search}
@@ -303,7 +300,7 @@ export default function UserManagementScreen()       {
           <FlatList
             data={filteredUsers}
             keyExtractor={(item) => item.id}
-            contentContainerStyle={{ padding: 18 }}
+            contentContainerStyle={{ padding: 2 }}
             renderItem={renderUserItem}
             ListEmptyComponent={
               <Text
@@ -338,7 +335,7 @@ export default function UserManagementScreen()       {
                   onPress={() => setAddModal(false)}
                   style={styles.closeButton}
                 >
-                  <MaterialIcons name="close" size={24} color="#666" />
+                  <MaterialIcons name="close" size={24} color="#fff" />
                 </TouchableOpacity>
               </View>
 
@@ -402,7 +399,7 @@ export default function UserManagementScreen()       {
                     onValueChange={(value) =>
                       setFormData({ ...formData, map: value })
                     }
-                    style={{ color: "#222" }}
+                    style={{ color: "#fff" }}
                   >
                     <Picker.Item label="Select default map" value="" />
                     {DEFAULT_MAP_OPTIONS.map((option) => (
@@ -418,7 +415,7 @@ export default function UserManagementScreen()       {
                     onValueChange={(value) =>
                       setFormData({ ...formData, coordinateFormat: value })
                     }
-                    style={{ color: "#222" }}
+                    style={{ color: "#fff" }}
                   >
                     <Picker.Item label="Select coordinates format" value="" />
                     {COORDINATES_FORMAT_OPTIONS.map((option) => (
@@ -476,7 +473,7 @@ export default function UserManagementScreen()       {
                           : "check-box-outline-blank"
                       }
                       size={24}
-                      color="#222"
+                      color="#fff"
                     />
                     <Text style={styles.checkboxLabel}>Read Only</Text>
                   </TouchableOpacity>
@@ -497,7 +494,7 @@ export default function UserManagementScreen()       {
                           : "check-box-outline-blank"
                       }
                       size={24}
-                      color="#222"
+                      color="#fff"
                     />
                     <Text style={styles.checkboxLabel}>Administrator</Text>
                   </TouchableOpacity>
@@ -518,7 +515,7 @@ export default function UserManagementScreen()       {
                           : "check-box-outline-blank"
                       }
                       size={24}
-                      color="#222"
+                      color="#fff"
                     />
                     <Text style={styles.checkboxLabel}>Device Read Only</Text>
                   </TouchableOpacity>
@@ -536,7 +533,7 @@ export default function UserManagementScreen()       {
                           : "check-box-outline-blank"
                       }
                       size={24}
-                      color="#222"
+                      color="#fff"
                     />
                     <Text style={styles.checkboxLabel}>Disabled</Text>
                   </TouchableOpacity>
@@ -569,35 +566,40 @@ export default function UserManagementScreen()       {
 
 const styles = StyleSheet.create({
   headerBar: {
-    backgroundColor: "#000",
-    paddingTop: 0,
-    paddingBottom: 18,
-    paddingHorizontal: 0,
+    backgroundColor: "#000000",
+    paddingBottom: 20,
+    paddingHorizontal: 15,
     alignItems: "center",
-    justifyContent: "center",
-    marginBottom: 8,
+    marginBottom: 16,
+    borderBottomWidth: 0.5,
+    borderBottomColor: "gray",
+    flexDirection: "row",
+    justifyContent: "space-between",
+    paddingTop: 10,
   },
   headerText: {
-    fontSize: 20,
-    fontWeight: "bold",
-    color: "#fff",
-    letterSpacing: 1,
-    paddingTop: 18,
+    fontSize: 24,
+    fontWeight: "700",
+    color: "#FFFFFF",
+    letterSpacing: 0.5,
   },
   userCard: {
-    backgroundColor: "#fff",
-    borderRadius: 14,
-    padding: 16,
-    marginBottom: 12,
+    backgroundColor: "#FFFFFF",
+    borderRadius: 16,
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    marginBottom: 16,
     elevation: 2,
-    shadowColor: "#000",
+    shadowColor: "#000000",
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 6,
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    borderWidth: 1,
+    borderColor: "#F0F0F0",
   },
   userInfo: {
     flexDirection: "row",
-    alignItems: "flex-start",
+    alignItems: "center",
   },
   userDetails: {
     marginLeft: 16,
@@ -607,27 +609,27 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     marginLeft: 8,
-    alignSelf: "flex-start",
   },
   userActionBtn: {
     padding: 6,
     marginLeft: 2,
   },
   userName: {
-    fontSize: 17,
+    fontSize: 18,
     fontWeight: "600",
-    color: "#222",
-    marginBottom: 2,
+    color: "#000000",
+    marginLeft: 18,
+    letterSpacing: 0.3,
   },
   userEmail: {
     fontSize: 14,
     color: "#666",
-    marginBottom: 4,
+    marginLeft: 18,
   },
   userMeta: {
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: 2,
+    marginLeft: 18,
   },
   userRole: {
     fontSize: 12,
@@ -641,19 +643,19 @@ const styles = StyleSheet.create({
   userExpiration: {
     fontSize: 12,
     color: "#666",
+    marginLeft: 18,
   },
   userSearchInput: {
-    backgroundColor: "#fff",
+    backgroundColor: "#1A1A1A",
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: "gray",
+    borderColor: "white",
     paddingHorizontal: 12,
     paddingVertical: 10,
     fontSize: 15,
-    color: "#222",
-    marginHorizontal: 18,
-    marginTop: 18,
-    marginBottom: 0,
+    color: "#FFFFFF",
+    marginBottom: 10,
+  
   },
   addUserFab: {
     position: "absolute",
@@ -662,7 +664,7 @@ const styles = StyleSheet.create({
     width: 56,
     height: 56,
     borderRadius: 28,
-    backgroundColor: "#000",
+    backgroundColor: "#000000",
     alignItems: "center",
     justifyContent: "center",
     elevation: 6,
@@ -671,6 +673,8 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.18,
     shadowRadius: 6,
     zIndex: 10,
+    borderWidth: 3,
+    borderColor: "#FFFFFF",
   },
   modalContainer: {
     flex: 1,
@@ -679,11 +683,13 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   modalContent: {
-    backgroundColor: "#fff",
+    backgroundColor: "#000000",
     borderRadius: 16,
     width: "90%",
     maxHeight: "80%",
     padding: 20,
+    borderWidth: 1,
+    borderColor: "#333",
   },
   modalHeader: {
     flexDirection: "row",
@@ -694,7 +700,7 @@ const styles = StyleSheet.create({
   modalTitle: {
     fontSize: 20,
     fontWeight: "bold",
-    color: "#222",
+    color: "#FFFFFF",
   },
   closeButton: {
     padding: 4,
@@ -703,28 +709,28 @@ const styles = StyleSheet.create({
     maxHeight: height - 200,
   },
   geoAddLabel: {
-    color: "#222",
+    color: "#FFFFFF",
     fontWeight: "600",
     fontSize: 15,
     marginBottom: 6,
     marginTop: 10,
   },
   geoAddInput: {
-    backgroundColor: "#F7F8FA",
+    backgroundColor: "#1A1A1A",
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: "#E3F2FD",
+    borderColor: "#333",
     paddingHorizontal: 12,
     paddingVertical: 8,
     fontSize: 15,
-    color: "#222",
+    color: "#FFFFFF",
     marginBottom: 8,
   },
   parentGroupSelector: {
-    backgroundColor: "#F7F8FA",
+    backgroundColor: "#1A1A1A",
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: "#E3F2FD",
+    borderColor: "#333",
     marginBottom: 16,
   },
   checkboxContainer: {
@@ -738,7 +744,7 @@ const styles = StyleSheet.create({
   checkboxLabel: {
     marginLeft: 8,
     fontSize: 15,
-    color: "#222",
+    color: "#FFFFFF",
   },
   geoAddBtnRow: {
     flexDirection: "row",
@@ -750,28 +756,32 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#43A047",
+    backgroundColor: "#000000",
     borderRadius: 10,
     paddingVertical: 12,
     flex: 1,
+    borderWidth: 1,
+    borderColor: "#FFFFFF",
   },
   geoAddSaveText: {
-    color: "#fff",
+    color: "#FFFFFF",
     fontWeight: "bold",
     fontSize: 15,
     marginLeft: 6,
   },
   geoAddCancelBtn: {
-    backgroundColor: "#FF7043",
+    backgroundColor: "#1A1A1A",
     borderRadius: 10,
     paddingVertical: 12,
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
     flexDirection: "row",
+    borderWidth: 1,
+    borderColor: "#333",
   },
   geoAddCancelText: {
-    color: "#fff",
+    color: "#FFFFFF",
     fontWeight: "bold",
     fontSize: 15,
     marginLeft: 6,

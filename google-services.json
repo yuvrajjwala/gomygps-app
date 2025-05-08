@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "625005645490",
+    "project_id": "gomygps-b521b",
+    "storage_bucket": "gomygps-b521b.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:625005645490:android:a89af6b2d712b47e68c3ab",
+        "android_client_info": {
+          "package_name": "com.gomygps.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBWHH-Pb8BADP0dPrHweqq0Xy3Lc5JAekg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -185,8 +185,8 @@ export default function SummaryReportScreen() {
           "Odometer Start (km)": (entry?.startOdometer / 1000).toFixed(2),
           "Odometer End (km)": (entry?.endOdometer / 1000).toFixed(2),
           "Distance (km)": (entry?.distance / 1000).toFixed(2),
-          "Average Speed (km/h)": entry?.averageSpeed?.toFixed(2),
-          "Maximum Speed (km/h)": entry?.maxSpeed?.toFixed(2),
+          "Average Speed (km/h)": (entry?.averageSpeed * 1.852).toFixed(2),
+          "Maximum Speed (km/h)": (entry?.maxSpeed * 1.852).toFixed(2),
           "Engine Hours (hr)": (entry?.engineHours/3600).toFixed(2) || "0",
           "AC Hours (hr)": entry?.acHours || "0",
           "Running Time (hr)": (entry?.movingDuration/3600).toFixed(2) || "0",
@@ -438,12 +438,12 @@ export default function SummaryReportScreen() {
                       </View>
                       <View style={[styles.tableCellDark, { flex: getColumnWidth('average speed') }]}>
                         <Text style={styles.tableCellTextDark}>
-                          {entry?.averageSpeed?.toFixed(2)} km/h
+                          {(entry?.averageSpeed * 1.852).toFixed(2)} km/h
                         </Text>
                       </View>
                       <View style={[styles.tableCellDark, { flex: getColumnWidth('maximum speed') }]}>
                         <Text style={styles.tableCellTextDark}>
-                          {entry?.maxSpeed?.toFixed(2)} km/h
+                          {(entry?.maxSpeed * 1.852).toFixed(2)} km/h
                         </Text>
                       </View>
                       <View style={[styles.tableCellDark, { flex: getColumnWidth('engine hours') }]}>

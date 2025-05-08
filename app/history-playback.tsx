@@ -301,7 +301,7 @@ export default function HistoryPlaybackScreen() {
                 <Text style={styles.bottomCardStatus}>Status: {data.status}</Text>
               </View>
               <View style={styles.speedBadge}>
-                <Text style={styles.speedBadgeText}>{(Number(data.speed)).toFixed(0)} km/h</Text>
+                <Text style={styles.speedBadgeText}>{((Number(data.speed)) * 1.852).toFixed(0)} km/h</Text>
               </View>
             </View>
             {/* Stats Rows with gap and center alignment */}

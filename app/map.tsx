@@ -5,7 +5,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import moment from 'moment';
 import React, { useEffect, useRef, useState } from 'react';
 import { Animated, Dimensions, Image, ImageSourcePropType, PanResponder, StatusBar, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import MapView, { Marker, Region } from 'react-native-maps';
+import MapView, { AnimatedRegion, Marker, Polyline, Region } from 'react-native-maps';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
@@ -16,6 +16,15 @@ export default function MapScreen() {
   const router = useRouter();
   const params = useLocalSearchParams();
   const [device, setDevice] = useState<any>(params);
+  const [markerPosition] = useState(
+    new AnimatedRegion({
+      latitude: Number(params?.latitude) || 0,
+      longitude: Number(params?.longitude) || 0,
+    })
+  );
+  const [carPath, setCarPath] = useState([
+    { latitude: Number(params?.latitude) || 0, longitude: Number(params?.longitude) || 0 }
+  ]);
   const mapRef = useRef<MapView>(null);
   const [zoomLevel, setZoomLevel] = useState(0.005);
   const [isParked, setIsParked] = useState(false);
@@ -23,6 +32,11 @@ export default function MapScreen() {
   const [carMode, setCarMode] = useState(false);
   const [autoFollow, setAutoFollow] = useState(false);
   const isFocused = useIsFocused();
+  const [showDetails, setShowDetails] = useState(false);
+  // Map options state
+  const [showTraffic, setShowTraffic] = useState(false);
+  const [showCompass, setShowCompass] = useState(true);
+  const [mapType, setMapType] = useState<'standard' | 'satellite' | 'terrain' | 'hybrid'>('standard');
 
   // Bottom Sheet Animation
   const pan = useRef(new Animated.ValueXY()).current;
@@ -71,6 +85,11 @@ export default function MapScreen() {
     })
   ).current;
 
+  const [currentMarkerPosition, setCurrentMarkerPosition] = useState({
+    latitude: Number(params?.latitude) || 0,
+    longitude: Number(params?.longitude) || 0,
+  });
+
   const getVehicleIcon = (): ImageSourcePropType => {
     if (!device?.lastUpdate) {
       return require('@/assets/images/cars/white.png');
@@ -85,6 +104,52 @@ export default function MapScreen() {
     }
     return device.status === 'online' ? require('@/assets/images/cars/green.png') : require('@/assets/images/cars/red.png');
   };
+
+  const getPosition = async () => {
+    if (!isFocused) return;
+    const response = await Api.call(`/api/positions?deviceId=${device.deviceId}`, 'GET', {}, '');
+    const newDevice = { ...device, ...response.data[0] };
+    setDevice(newDevice);
+    if (newDevice.latitude && newDevice.longitude) {
+      markerPosition.timing({
+        toValue: { latitude: newDevice.latitude, longitude: newDevice.longitude },
+        duration: 1000,
+        useNativeDriver: false,
+      } as any).start(() => {
+        setCarPath(prev => ([
+          ...prev,
+          { latitude: newDevice.latitude, longitude: newDevice.longitude }
+        ]));
+        setCurrentMarkerPosition({ latitude: newDevice.latitude, longitude: newDevice.longitude });
+      });
+      const isSignificantChange =
+        Math.abs(newDevice.latitude - device.latitude) > 0.0001 ||
+        Math.abs(newDevice.longitude - device.longitude) > 0.0001;
+      if (isSignificantChange) {
+        const newRegion: Region = {
+          latitude: newDevice.latitude,
+          longitude: newDevice.longitude,
+          latitudeDelta: zoomLevel,
+          longitudeDelta: zoomLevel * 0.5,
+        };
+        if (autoFollow) {
+          mapRef.current?.animateToRegion(newRegion, 500);
+        } else {
+          mapRef.current?.animateToRegion(newRegion, 1000);
+        }
+      }
+    }
+  };
+
+  // Reset marker position if device changes (e.g. on first load)
+  useEffect(() => {
+    if (device?.latitude && device?.longitude) {
+      markerPosition.setValue({
+        latitude: Number(device?.latitude) || 0,
+        longitude: Number(device?.longitude) || 0,
+      });
+    }
+  }, [device?.latitude, device?.longitude]);
 
   useEffect(() => {
     getPosition();
@@ -114,34 +179,6 @@ export default function MapScreen() {
       setZoomLevel(0.005);
     }
   }, [carMode]);
-
-
-  const getPosition = async () => {
-    if (!isFocused) return;
-    const response = await Api.call(`/api/positions?deviceId=${device.deviceId}`, 'GET', {}, '');
-    const newDevice = { ...device, ...response.data[0] };
-    setDevice(newDevice);
-    if (newDevice.latitude && newDevice.longitude) {
-      const isSignificantChange =
-        Math.abs(newDevice.latitude - device.latitude) > 0.0001 ||
-        Math.abs(newDevice.longitude - device.longitude) > 0.0001;
-
-      if (isSignificantChange) {
-        const newRegion: Region = {
-          latitude: newDevice.latitude,
-          longitude: newDevice.longitude,
-          latitudeDelta: zoomLevel,
-          longitudeDelta: zoomLevel * 0.5,
-        };
-        
-        if (autoFollow) {
-          mapRef.current?.animateToRegion(newRegion, 500);
-        } else {
-          mapRef.current?.animateToRegion(newRegion, 1000);
-        }
-      }
-    }
-  }
 
   const createGeofence = async (device: any) => {
     try {
@@ -225,6 +262,19 @@ export default function MapScreen() {
     }
   };
 
+  useEffect(() => {
+    // Cleanup on unmount: reset carPath and marker position
+    return () => {
+      setCarPath([
+        { latitude: Number(params?.latitude) || 0, longitude: Number(params?.longitude) || 0 }
+      ]);
+      setCurrentMarkerPosition({
+        latitude: Number(params?.latitude) || 0,
+        longitude: Number(params?.longitude) || 0,
+      });
+    };
+  }, []);
+
   return (
     <SafeAreaView style={styles.safeArea}>
       <StatusBar barStyle="dark-content" backgroundColor="#000"  />
@@ -256,8 +306,16 @@ export default function MapScreen() {
         followsUserLocation={carMode}
         rotateEnabled={!carMode}
         scrollEnabled={!carMode}
+        showsTraffic={showTraffic}
+        showsCompass={showCompass}
+        mapType={mapType}
       >
-        <Marker coordinate={{ latitude: Number(device?.latitude), longitude: Number(device?.longitude) }}>
+        <Polyline
+          coordinates={carPath}
+          strokeColor="#FFD600"
+          strokeWidth={4}
+        />
+        <Marker.Animated coordinate={markerPosition}>
           <Image
             source={getVehicleIcon()}
             style={[
@@ -269,49 +327,32 @@ export default function MapScreen() {
               }
             ]}
           />
-        </Marker>
+        </Marker.Animated>
       </MapView>
 
       {/* Custom Bottom Sheet */}
-      <Animated.View
-        style={[
-          styles.bottomSheet,
-          {
-            height: bottomSheetHeight,
-          },
-        ]}
-      >
-        <View {...panResponder.panHandlers} style={styles.bottomSheetHandle}>
-          <View style={styles.handleBar} />
-        </View>
+      <View style={styles.bottomSheet}>
         <View style={styles.bottomSheetContent}>
-          <View style={styles.bottomCardHeader}>
+          {/* Vehicle Name and Speed */}
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
             <Text style={styles.vehicleNumber}>{device?.name}</Text>
             <View style={styles.speedoWrap}>
               <FontAwesome5 name="tachometer-alt" size={18} color="#43A047" />
-              <Text style={styles.speedoText}>{(Number(device?.speed) || 0)?.toFixed(0)} km/h</Text>
+              <Text style={styles.speedoText}>{(Number(device?.speed)* 1.852 || 0)?.toFixed(0)} km/h</Text>
             </View>
           </View>
-          <View style={styles.bottomCardRow}>
-            <MaterialIcons name="event" size={18} color="#FFD600" style={{ marginRight: 6 }} />
-            <Text style={styles.bottomCardRowText}>{moment(device?.lastUpdate).format('DD/MM/YYYY HH:mm')}</Text>
-          </View>
-          <View style={styles.bottomCardRow}>
-            <MaterialIcons name="location-on" size={18} color="#2979FF" style={{ marginRight: 6 }} />
-            <Text style={styles.bottomCardRowText}>{device?.address}</Text>
-          </View>
-          <View style={styles.bottomCardDivider} />
+
           <View style={styles.statusIconsRow}>
             {/* Parking */}
             <TouchableOpacity
-              style={[styles.iconCircle, { borderColor: isParked ? '#43A047' : '#A5F3C7' }]}
+              style={[styles.iconCircle, { borderColor: isParked ? '#43A047' : '#A5F3C7', backgroundColor: isParked ? '#43A047' : '#fff' }]}
               onPress={() => {
                 if (device) {
                   isParked ? removeGeofence(device) : createGeofence(device);
                 }
               }}
             >
-              <MaterialIcons name="local-parking" size={24} color={isParked ? '#43A047' : '#A5F3C7'} />
+              <MaterialIcons name="local-parking" size={24} color={isParked ? '#fff' : '#43A047'} />
             </TouchableOpacity>
 
             {/* Play (active) */}
@@ -326,27 +367,27 @@ export default function MapScreen() {
 
             {/* Car Mode */}
             <TouchableOpacity
-              style={[styles.iconCircle, { borderColor: carMode ? '#4285F4' : '#90CAF9' }]}
+              style={[styles.iconCircle, { borderColor: carMode ? '#4285F4' : '#90CAF9', backgroundColor: carMode ? '#4285F4' : '#fff' }]}
               onPress={() => setCarMode(!carMode)}
             >
-              <MaterialIcons name="directions-car" size={24} color={carMode ? '#4285F4' : '#90CAF9'} />
+              <MaterialIcons name="directions-car" size={24} color={carMode ? '#fff' : '#4285F4'} />
             </TouchableOpacity>
 
             {/* Lock */}
             <TouchableOpacity
-              style={[styles.iconCircle, { borderColor: isLocked ? '#E53935' : '#FFCDD2' }]}
+              style={[styles.iconCircle, { borderColor: isLocked ? '#E53935' : '#FFCDD2', backgroundColor: isLocked ? '#E53935' : '#fff' }]}
               onPress={() => {
                 if (device) {
                   mobilize(device.protocol);
                 }
               }}
             >
-              <MaterialIcons name="lock" size={24} color={isLocked ? '#E53935' : '#FFCDD2'} />
+              <MaterialIcons name={isLocked ? 'lock' : 'lock-open'} size={24} color={isLocked ? '#fff' : '#E53935'} />
             </TouchableOpacity>
 
             {/* Auto Follow */}
             <TouchableOpacity
-              style={[styles.iconCircle, { borderColor: autoFollow ? '#43A047' : '#A5F3C7' }]}
+              style={[styles.iconCircle, { borderColor: autoFollow ? '#43A047' : '#A5F3C7', backgroundColor: autoFollow ? '#43A047' : '#fff' }]}
               onPress={() => {
                 if (!carMode) {
                   return;
@@ -354,15 +395,92 @@ export default function MapScreen() {
                 setAutoFollow(!autoFollow);
               }}
             >
-              <MaterialIcons name="location-on" size={24} color={autoFollow ? '#43A047' : '#A5F3C7'} />
+              <MaterialIcons name="location-on" size={24} color={autoFollow ? '#fff' : '#43A047'} />
             </TouchableOpacity>
           </View>
+
+          {/* Stats Grid - only show if showDetails is true */}
+          {showDetails && (
+            <>
+              {/* <View style={{ borderTopWidth: 1, borderColor: '#eee', marginVertical: 8 }} /> */}
+             
+              <View style={styles.statsDivider} />
+              {/* Row 2 */}
+              <View style={styles.statsRow}>
+                <View style={styles.statsCol}>
+                  <Text style={styles.statsValue}>1084h:13m</Text>
+                  <Text style={styles.statsLabel}>Total Engine</Text>
+                </View>
+                <View style={styles.statsCol}>
+                  <Text style={styles.statsValue}>61 km/h</Text>
+                  <Text style={styles.statsLabel}>Today Max Speed</Text>
+                </View>
+                <View style={styles.statsCol}>
+                  <Text style={styles.statsValue}>{(Number(device?.speed) * 1.852 || 0)?.toFixed(0)} km/h</Text>
+                  <Text style={styles.statsLabel}>Speed</Text>
+                </View>
+              </View>
+              <View style={styles.statsDivider} />
+              {/* Row 3 */}
+              <View style={styles.statsRow}>
+                <View style={styles.statsCol}>
+                  <Text style={styles.statsValue}>14811 km</Text>
+                  <Text style={styles.statsLabel}>Total Distance</Text>
+                </View>
+                <View style={styles.statsCol}>
+                  <Text style={styles.statsValue}>46 km</Text>
+                  <Text style={styles.statsLabel}>Today Distance</Text>
+                </View>
+                <View style={styles.statsCol}>
+                  <Text style={styles.statsValue}>8 km</Text>
+                  <Text style={styles.statsLabel}>Distance From Last Stop</Text>
+                </View>
+              </View>
+              <View style={styles.statsDivider} />
+              {/* Row 4 */}
+              <View style={styles.statsRow}>
+                <View style={styles.statsCol}>
+                  <Text style={styles.statsValue}>01h:12m</Text>
+                  <Text style={styles.statsLabel}>Today Stopped</Text>
+                </View>
+                <View style={styles.statsCol}>
+                  <Text style={styles.statsValue}>02h:39m</Text>
+                  <Text style={styles.statsLabel}>Today Running</Text>
+                </View>
+                <View style={styles.statsCol}>
+                  <Text style={styles.statsValue}>15h:33m</Text>
+                  <Text style={styles.statsLabel}>Today Idle</Text>
+                </View>
+              </View>
+              <View style={styles.statsDivider} />
+              {/* Row 5 */}
+              <View style={styles.statsRow}>
+                <View style={styles.statsCol}>
+                  <Text style={styles.statsValue}>01h:15m</Text>
+                  <Text style={styles.statsLabel}>Today Ignition Off</Text>
+                </View>
+                <View style={styles.statsCol}>
+                  <Text style={styles.statsValue}>18h:57m</Text>
+                  <Text style={styles.statsLabel}>Today Ignition On</Text>
+                </View>
+                <View style={styles.statsCol}>
+                  <Text style={styles.statsValue}>01h:15m</Text>
+                  <Text style={styles.statsLabel}>Ignition On Since</Text>
+                </View>
+              </View>
+             
+              
+            </>
+          )}
+
+          {/* Action Buttons (keep as before) */}
+          <View style={styles.bottomCardDivider} />
           <View style={styles.bottomButtonsRow}>
             <TouchableOpacity
               style={styles.centerMapBtn}
               onPress={() => router.replace({ pathname: '/vehicle-details', params: { device: JSON.stringify(device) } })}
             >
-              <Text style={styles.centerMapBtnText}>View Details</Text>
+              <Text style={styles.centerMapBtnText}>{showDetails ? 'Hide Details' : 'View Details'}</Text>
             </TouchableOpacity>
             <TouchableOpacity 
               style={styles.viewReportsBtn} 
@@ -372,7 +490,32 @@ export default function MapScreen() {
             </TouchableOpacity>
           </View>
         </View>
-      </Animated.View>
+      </View>
+      {/* Floating Map Options Menu */}
+      <View style={styles.floatingMenu}>
+        <TouchableOpacity style={styles.fab} onPress={() => setShowTraffic(t => !t)}>
+          <MaterialIcons name="traffic" size={24} color={showTraffic ? "#43A047" : "#888"} />
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.fab} onPress={() => setShowCompass(c => !c)}>
+          <MaterialIcons name="explore" size={24} color={showCompass ? "#2979FF" : "#888"} />
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.fab} onPress={() => setMapType('standard')}>
+          <MaterialIcons name="map" size={24} color={mapType === 'standard' ? "#FF7043" : "#888"} />
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.fab} onPress={() => setMapType('satellite')}>
+          <MaterialIcons name="satellite" size={24} color={mapType === 'satellite' ? "#FFD600" : "#888"} />
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.fab} onPress={() => setMapType('terrain')}>
+          <MaterialIcons name="terrain" size={24} color={mapType === 'terrain' ? "#43A047" : "#888"} />
+        </TouchableOpacity>
+        {/* Speed Indicator as a circular orange button */}
+        <View style={styles.fabSpeed}>
+          <Text style={styles.fabSpeedText}>
+            {(Number(device?.speed) * 1.852 || 0).toFixed(0)}
+          </Text>
+          <Text style={styles.fabSpeedUnit}>km/h</Text>
+        </View>
+      </View>
     </SafeAreaView>
   );
 }
@@ -422,18 +565,7 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 8,
     zIndex: 3,
-  },
-  bottomSheetHandle: {
-    width: '100%',
-    height: 24,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  handleBar: {
-    width: 40,
-    height: 4,
-    backgroundColor: '#E0E0E0',
-    borderRadius: 2,
+    maxHeight: SCREEN_HEIGHT * 0.8,
   },
   bottomSheetContent: {
     flex: 1,
@@ -545,5 +677,75 @@ const styles = StyleSheet.create({
     height: 30,
     resizeMode: 'contain',
   },
-
+  statsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  statsCol: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  statsValue: {
+    fontWeight: 'bold',
+    fontSize: 16,
+    color: '#000',
+  },
+  statsLabel: {
+    fontSize: 12,
+    color: '#666',
+  },
+  statsDivider: {
+    height: 1,
+    backgroundColor: '#eee',
+    marginVertical: 8,
+  },
+  floatingMenu: {
+    position: 'absolute',
+    top: 130,
+    left: 16,
+    zIndex: 10,
+    alignItems: 'center',
+  },
+  fab: {
+    backgroundColor: '#fff',
+    borderRadius: 24,
+    width: 48,
+    height: 48,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.12,
+    shadowRadius: 4,
+    elevation: 4,
+  },
+  fabSpeed: {
+    backgroundColor: '#FF7043',
+    borderRadius: 24,
+    width: 48,
+    height: 48,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.12,
+    shadowRadius: 4,
+    elevation: 4,
+    zIndex: 20,
+  },
+  fabSpeedText: {
+    color: '#fff',
+    fontWeight: 'bold',
+    fontSize: 14,
+    marginTop: 2,
+  },
+  fabSpeedUnit: {
+    color: '#fff',
+    fontSize: 10,
+    marginTop: -2,
+  },
 }); 

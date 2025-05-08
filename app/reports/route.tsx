@@ -166,7 +166,7 @@ export default function RouteReportScreen() {
           "Vehicle Number": deviceItems.find(option => option.value === deviceValue)?.label || "N/A",
           "Date & Time": formatDate(entry.fixTime),
           "Distance (KM)": ((entry?.attributes?.distance) / 1000).toFixed(2),
-          "Speed (km/hr)": entry?.speed?.toFixed(2),
+          "Speed (km/hr)": (entry?.speed * 1.852).toFixed(2),
           "AC": entry?.attributes?.ac ? "Yes" : "No",
           "Odometer (KM)": (entry?.attributes?.odometer/1000).toFixed(2),
           "Latitude": entry?.latitude?.toFixed(4),
@@ -357,7 +357,7 @@ export default function RouteReportScreen() {
                       </View>
                       <View style={[styles.tableCellDark, { flex: getColumnWidth('speed') }]}>
                         <Text style={styles.tableCellTextDark}>
-                          {entry?.speed?.toFixed(2)} km/hr
+                          {(entry?.speed * 1.852).toFixed(2)} km/hr
                         </Text>
                       </View>
                       <View style={[styles.tableCellDark, { flex: getColumnWidth('ac') }]}>

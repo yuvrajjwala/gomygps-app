@@ -131,8 +131,8 @@ export default function VehiclesScreen() {
             {/* Right: Stats */}
             <View style={styles.statsColNew}>
               <View style={styles.statRowCompact}>
-                <Text style={styles.statValueNew}>{(device?.speed || 0).toFixed(0)}</Text>
-                <Text style={styles.statUnitNew}> kmh</Text>
+                <Text style={styles.statValueNew}>{(Number(device?.speed) * 1.852 || 0).toFixed(0)}</Text>
+                <Text style={styles.statUnitNew}> km/h</Text>
               </View>
               <Text style={styles.statLabelNew}>Speed</Text>
               <View style={styles.statRowCompact}>

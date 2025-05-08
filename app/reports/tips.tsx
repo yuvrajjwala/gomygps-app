@@ -191,8 +191,8 @@ export default function TipsReportScreen() {
           "Duration (min)": (trip.duration / 60000).toFixed(2),
           "Start Address": trip.startAddress || "N/A",
           "End Address": trip.endAddress || "N/A",
-          "Average Speed (km/h)": (trip.averageSpeed * 3.5).toFixed(2),
-          "Maximum Speed (km/h)": trip.maxSpeed,
+          "Average Speed (km/h)": (trip.averageSpeed * 1.852).toFixed(2),
+          "Maximum Speed (km/h)": (trip.maxSpeed * 1.852).toFixed(2),
           "AC Hours": trip.acHours || "0",
           "Spent Fuel (L)": trip.spentFuel || "0",
           "Mileage Fuel": trip.mileageFuel || "N/A"
@@ -456,7 +456,7 @@ export default function TipsReportScreen() {
                       </View>
                       <View style={[styles.tableCellDark, { flex: getColumnWidth('maximum speed') }]}>
                         <Text style={styles.tableCellTextDark}>
-                          {trip.maxSpeed} km/h
+                          {(trip.maxSpeed * 1.852).toFixed(2)} km/h
                         </Text>
                       </View>
                       <View style={[styles.tableCellDark, { flex: getColumnWidth('ac hours') }]}>

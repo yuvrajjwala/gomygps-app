@@ -126,7 +126,7 @@ export default function VehicleDetailsScreen() {
     address: vehicle?.address || 'N/A',
     pingTime: formatDate(vehicle?.lastUpdate || new Date().toISOString()),
     stoppedSince: getTimeDifference(vehicle?.lastUpdate || new Date().toISOString()),
-    speed: `${parseFloat(vehicle?.speed || '0').toFixed(1)} kmh`,
+    speed: `${(Number(vehicle?.speed) * 1.852 || 0)?.toFixed(0)} km/h`,
     status: vehicle?.status || 'N/A',
     model: vehicle?.model || 'N/A',
     protocol: vehicle?.protocol || 'N/A',

@@ -4,6 +4,7 @@ import { Picker } from "@react-native-picker/picker";
 import { useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
+  Alert,
   Dimensions,
   FlatList,
   Modal,
@@ -15,6 +16,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import ConnectionsForm from "./components/ConnectionsForm";
 const { height } = Dimensions.get("window");
 
 const DEFAULT_MAP_OPTIONS = [
@@ -80,11 +82,13 @@ interface FormData {
   poiLayer: string;
 }
 
-export default function UserManagementScreen()       {
+export default function UserManagementScreen() {
   const [users, setUsers] = useState<User[]>([]);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [addModal, setAddModal] = useState(false);
   const [search, setSearch] = useState("");
+  const [connectionModalOpen, setConnectionModalOpen] = useState(false);
+  const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
   const [formData, setFormData] = useState<FormData>({
     name: "",
     email: "",
@@ -179,10 +183,15 @@ export default function UserManagementScreen()       {
   const handleSaveUser = async () => {
     try {
       if (selectedUser) {
-        await Api.call(`/api/users/${selectedUser.id}`, "PUT", {
-          ...formData,
-          id: selectedUser.id,
-        }, false);
+        await Api.call(
+          `/api/users/${selectedUser.id}`,
+          "PUT",
+          {
+            ...formData,
+            id: selectedUser.id,
+          },
+          false
+        );
       } else {
         await Api.call("/api/users", "POST", formData, false);
       }
@@ -194,12 +203,18 @@ export default function UserManagementScreen()       {
   };
 
   const deleteUser = async (id: string) => {
-    try {
-      await Api.call(`/api/users/${id}`, "DELETE", {}, false);
-      getUsers();
-    } catch (error) {
-      console.log(error);
-    }
+    Alert.alert("Delete User", "Are you sure you want to delete this user?", [
+      { text: "Cancel", style: "cancel" },
+      { text: "Delete", style: "destructive", onPress: async () => {
+        try {
+          await Api.call(`/api/users/${id}`, "DELETE", {}, false);
+          getUsers();
+        } catch (error) {
+          console.log(error);
+        }
+        },
+      },
+    ]);
   };
 
   const filteredUsers = users.filter(
@@ -211,48 +226,40 @@ export default function UserManagementScreen()       {
   const renderUserItem = ({ item }: { item: User }) => (
     <View style={styles.userCard}>
       <View style={styles.userInfo}>
-        <MaterialIcons
-          name="person"
-          size={28}
-          color={
-            item.administrator
-              ? "#FF3D00"
-              : item.readonly
-              ? "#43A047"
-              : "#2979FF"
-          }
-        />
         <View style={styles.userDetails}>
-          <Text style={styles.userName}>{item.name}</Text>
+          <Text style={styles.userName}>
+            {item.name}
+            <Text style={{ color: "green", fontSize: 12, fontWeight: "bold" }}>
+             {" "} (
+              {item.administrator
+                ? "Admin"
+                : item.readonly
+                ? "Read Only"
+                : "Write"}
+              )
+            </Text>
+          </Text>
           <Text style={styles.userEmail}>{item.email}</Text>
           <View style={styles.userMeta}>
-            <Text
-              style={[
-                styles.userRole,
-                {
-                  color: item.administrator
-                    ? "#FF3D00"
-                    : item.readonly
-                    ? "#43A047"
-                    : "#2979FF",
-                },
-              ]}
-            >
-              {item.administrator
-                ? "ADMIN"
-                : item.readonly
-                ? "READONLY"
-                : "WRITE"}
-            </Text>
             <Text style={styles.userLimits}>
               Devices: {item.deviceLimit} • Users: {item.userLimit}
             </Text>
           </View>
           <Text style={styles.userExpiration}>
-            Expires: {new Date(item?.expirationTime || new Date()).toLocaleDateString()}
+            Expires:{" "}
+            {new Date(item?.expirationTime || new Date()).toLocaleDateString()}
           </Text>
         </View>
         <View style={styles.userCardActions}>
+          <TouchableOpacity
+            onPress={() => {
+              setSelectedUserId(item.id);
+              setConnectionModalOpen(true);
+            }}
+            style={styles.userActionBtn}
+          >
+            <MaterialIcons name="link" size={22} color="#4CAF50" />
+          </TouchableOpacity>
           <TouchableOpacity
             onPress={() => handleEditUser(item)}
             style={styles.userActionBtn}
@@ -267,6 +274,14 @@ export default function UserManagementScreen()       {
           </TouchableOpacity>
         </View>
       </View>
+      <View style={styles.cardButtonsContainer}>
+        <TouchableOpacity style={styles.cardButton}>
+          <Text style={styles.cardButtonText}>Dashboard</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.cardButton}>
+          <Text style={styles.cardButtonText}>Devices</Text>
+        </TouchableOpacity>
+      </View>
     </View>
   );
 
@@ -274,11 +289,7 @@ export default function UserManagementScreen()       {
     <SafeAreaView style={{ flex: 1, backgroundColor: "#000000" }}>
       <View style={{ flex: 1, marginTop: 40 }}>
         <View style={styles.headerBar}>
-          <TouchableOpacity
-       
-            
-            onPress={() => router.back()}
-          >
+          <TouchableOpacity onPress={() => router.back()}>
             <MaterialIcons name="arrow-back" size={26} color="#fff" />
           </TouchableOpacity>
           <Text style={[styles.headerText, { textAlign: "center" }]}>
@@ -286,9 +297,14 @@ export default function UserManagementScreen()       {
           </Text>
           <View style={{ width: 26 }} />
         </View>
-        <View style={{ flex: 1, paddingBottom: 50, backgroundColor: "#000000", paddingHorizontal: 15 }}>
-          
-
+        <View
+          style={{
+            flex: 1,
+            paddingBottom: 50,
+            backgroundColor: "#000000",
+            paddingHorizontal: 15,
+          }}
+        >
           <TextInput
             style={styles.userSearchInput}
             value={search}
@@ -559,6 +575,17 @@ export default function UserManagementScreen()       {
             </View>
           </View>
         </Modal>
+        {selectedUserId && (
+          <ConnectionsForm
+            id={selectedUserId}
+            open={connectionModalOpen}
+          onClose={() => {
+            setConnectionModalOpen(false);
+            setSelectedUserId(null);
+          }}
+            type="userId"
+          />
+        )}
       </View>
     </SafeAreaView>
   );
@@ -587,7 +614,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#FFFFFF",
     borderRadius: 16,
     paddingVertical: 10,
-    paddingHorizontal: 20,
+    paddingHorizontal: 10,
     marginBottom: 16,
     elevation: 2,
     shadowColor: "#000000",
@@ -602,7 +629,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   userDetails: {
-    marginLeft: 16,
     flex: 1,
   },
   userCardActions: {
@@ -655,7 +681,6 @@ const styles = StyleSheet.create({
     fontSize: 15,
     color: "#FFFFFF",
     marginBottom: 10,
-  
   },
   addUserFab: {
     position: "absolute",
@@ -785,5 +810,26 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     fontSize: 15,
     marginLeft: 6,
+  },
+  cardButtonsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 12,
+    paddingHorizontal: 18,
+    gap: 8,
+  },
+  cardButton: {
+    flex: 1,
+    backgroundColor: '#000000',
+    paddingVertical: 8,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#FFFFFF',
+    alignItems: 'center',
+  },
+  cardButtonText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '600',
   },
 });

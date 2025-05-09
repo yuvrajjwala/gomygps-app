@@ -7,10 +7,11 @@ import {
   StatusBar,
   StyleSheet,
   Text,
+  TouchableOpacity,
   View,
 } from "react-native";
 import { PieChart } from "react-native-chart-kit";
-import { Card, Paragraph, Title, useTheme } from "react-native-paper";
+import { Card, useTheme } from "react-native-paper";
 import { SafeAreaView } from "react-native-safe-area-context";
 const screenWidth = Dimensions.get("window").width;
 
@@ -19,10 +20,12 @@ export default function DashboardScreen() {
   const [devicesData, setDevicesData] = useState<any[]>([]);
   const [groupsData, setGroupsData] = useState([]);
   const [vehicleStats, setVehicleStats] = useState([
-    { label: "Running", count: 0, color: "#00E676" },
-    { label: "Stopped", count: 0, color: "#FF1744" },
-    { label: "Idle", count: 0, color: "#FFD600" },
-    { label: "No Data", count: 0, color: "#2979FF" },
+    { label: "All", count: 0, color: "black" },
+    { label: "Running", count: 0, color: "green" },
+    { label: "Idle", count: 0, color: "orange" },
+    { label: "Stop", count: 0, color: "red" },
+    { label: "Inactive", count: 0, color: "#00a8d5" },
+    { label: "No Data", count: 0, color: "gray" },
   ]);
 
   useEffect(() => {
@@ -38,31 +41,37 @@ export default function DashboardScreen() {
 
   const updateVehicleStats = () => {
     const stats = [
-      { label: "All", count: 0, color: "#2979FF" },
-      { label: "Running", count: 0, color: "#00E676" },
-      { label: "Stopped", count: 0, color: "#FF1744" },
-      { label: "Idle", count: 0, color: "#FFD600" },
+      { label: "All", color: "black", count: 0 },
+      { label: "Running", color: "green", count: 0 },
+      { label: "Idle", color: "orange", count: 0 },
+      { label: "Stop", color: "red", count: 0 },
+      { label: "Inactive", color: "#00a8d5", count: 0 },
+      { label: "No Data", color: "gray", count: 0 },
     ];
 
     devicesData.forEach((device) => {
       if (!device?.lastUpdate) {
-        stats[2].count++;
+        stats[5].count++; // No Data
         return;
       }
       const lastUpdate = new Date(device.lastUpdate);
-      const fourHoursAgo = new Date(Date.now() - 1000 * 60 * 60 * 4);
-      if (lastUpdate < fourHoursAgo) {
-        stats[2].count++;
+      const twelveHoursAgo = new Date(Date.now() - 1000 * 60 * 60 * 12);
+      if (lastUpdate < twelveHoursAgo) {
+        stats[4].count++; // Inactive
         return;
       }
       if (device.status === "online" && Number(device.speed) === 0) {
-        stats[3].count++;
+        stats[2].count++; // Idle
         return;
       }
-      stats[1].count++;
+      if (device.status === "online") {
+        stats[1].count++; // Running
+        return;
+      }
+      stats[3].count++; // Stop
     });
 
-    stats[0].count = stats[1].count + stats[2].count + stats[3].count;
+    stats[0].count = devicesData.length; // All
 
     setVehicleStats(stats);
   };
@@ -87,7 +96,7 @@ export default function DashboardScreen() {
     setGroupsData(response.data);
   };
 
-  const pieData = vehicleStats.map((stat) => ({
+  const pieData = vehicleStats.slice(1, 6).map((stat) => ({
     name: stat.label,
     population: stat.count,
     color: stat.color,
@@ -103,48 +112,26 @@ export default function DashboardScreen() {
       </View>
       <ScrollView>
         {/* <Title style={styles.header}>Fleet Dashboard</Title> */}
-        <View style={styles.cardGrid}>
-          <View style={styles.cardRow}>
-            {vehicleStats.slice(0, 2).map((stat: any, idx: number) => (
-              <Card
-                key={stat.label + idx}
-                style={[
-                  styles.statCard,
-                  { backgroundColor: stat.color + "CC" },
-                ]}
-              >
-                <Card.Content>
-                  <Title style={{ color: "#fff", fontWeight: "bold" }}>
-                    {stat.count}
-                  </Title>
-                  <Paragraph style={{ color: "#fff", fontWeight: "bold" }}>
-                    {stat.label}
-                  </Paragraph>
-                </Card.Content>
-              </Card>
-            ))}
-          </View>
-          <View style={styles.cardRow}>
-            {vehicleStats.slice(2, 4).map((stat) => (
-              <Card
-                key={stat.label}
-                style={[
-                  styles.statCard,
-                  { backgroundColor: stat.color + "CC" },
-                ]}
-              >
-                <Card.Content>
-                  <Title style={{ color: "#fff", fontWeight: "bold" }}>
-                    {stat.count}
-                  </Title>
-                  <Paragraph style={{ color: "#fff", fontWeight: "bold" }}>
-                    {stat.label}
-                  </Paragraph>
-                </Card.Content>
-              </Card>
-            ))}
-          </View>
-        </View>
+        <View style={styles.statusRow}>
+        {vehicleStats.map((filter) => (
+          <TouchableOpacity
+            key={filter.label}
+            style={[
+              styles.statusCard,
+              filter.label === "Idle"
+                ? { backgroundColor: "#FF6F00" }
+                : { backgroundColor: filter.color, shadowColor: filter.color },
+              filter.label === "Idle" && {
+                borderWidth: 2,
+                borderColor: "#fff",
+              },
+            ]}
+          >
+            <Text style={styles.statusLabel}>{filter.label}</Text>
+            <Text style={styles.statusCount}>{filter.count}</Text>
+          </TouchableOpacity>
+        ))}
+      </View>
         <Card style={styles.chartCard}>
           <Card.Title
             title="Vehicle Status Distribution"
@@ -269,7 +256,6 @@ const styles = StyleSheet.create({
     flex: 1,
     marginHorizontal: 4,
     borderRadius: 16,
-    elevation: 4,
     alignItems: "center",
   },
   chartCard: {
@@ -418,5 +404,28 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: "bold",
     letterSpacing: 1,
+  },  statusRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    marginHorizontal: 8,
+    marginBottom: 16,
+    gap: 8,
+  },
+  statusCard: {
+    width: "31%",
+    borderRadius: 16,
+    alignItems: "center",
+    paddingVertical: 5,
+  },
+  statusLabel: {
+    color: "#fff",
+    fontWeight: "600",
+    fontSize: 13,
+    marginBottom: 2,
+  },
+  statusCount: {
+    color: "#fff",
+    fontWeight: "bold",
+    fontSize: 16,
   },
 });

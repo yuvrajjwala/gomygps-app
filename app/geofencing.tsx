@@ -2,7 +2,7 @@ import Api from "@/config/Api";
 import { MaterialIcons } from "@expo/vector-icons";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "expo-router";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import {
   Alert,
@@ -24,7 +24,7 @@ interface Geofence {
   id: string;
   name: string;
   description: string;
-  type: "circle" | "polygon";
+  type: "circle" | "polygon" | "linestring";
   center?: {
     latitude: number;
     longitude: number;
@@ -48,31 +48,26 @@ interface Calendar {
 }
 
 const formSchema = z.object({
-  name: z.string().nonempty({
-    message: "Name is required",
-  }),
-  description: z.string().nonempty({
-    message: "Description is required",
-  }),
-  area: z.string().nonempty({
-    message: "Area is required",
-  }),
+  name: z.string().min(1, "Name is required"),
+  description: z.string().min(1, "Description is required"),
+  area: z.string().min(1, "Area is required"),
   calendarId: z.union([z.string(), z.number()]).optional(),
-  id: z.union([z.string(), z.number()]).optional(),
   attributes: z.object({
     attribute: z.string().optional(),
     type: z.string().optional(),
   }),
 });
 
-type FormData = z.infer<typeof formSchema>;
+type FormData = z.infer<typeof formSchema> & {
+  id?: string | number;
+  calendarId?: string | number;
+};
 
 export default function GeofencingScreen() {
   const [mode, setMode] = useState<"list" | "add">("list");
   const [geofences, setGeofences] = useState<Geofence[]>([]);
-  const [drawingType, setDrawingType] = useState<"circle" | "polygon">(
-    "circle"
-  );
+  const [drawingType, setDrawingType] = useState<"circle" | "polygon" | "linestring">("circle");
+  const [geometryType, setGeometryType] = useState<"CIRCLE" | "POLYGON" | "LINESTRING">("CIRCLE");
   const [circle, setCircle] = useState<{
     center: { latitude: number; longitude: number };
     radius: number;
@@ -86,6 +81,12 @@ export default function GeofencingScreen() {
     null
   );
   const [calendars, setCalendars] = useState<Calendar[]>([]);
+  const [mapRegion, setMapRegion] = useState({
+    latitude: 22.5726,
+    longitude: 88.3639,
+    latitudeDelta: 0.01,
+    longitudeDelta: 0.01,
+  });
   const router = useRouter();
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
@@ -100,6 +101,7 @@ export default function GeofencingScreen() {
       },
     },
   });
+  const mapRef = useRef<MapView>(null);
 
   useEffect(() => {
     getGeofences();
@@ -153,6 +155,7 @@ export default function GeofencingScreen() {
 
   const handleEditGeofence = (geofence: Geofence) => {
     setSelectedGeofence(geofence);
+    console.log("Editing geofence:", geofence);
     setMode("add");
 
     // Reset form with geofence data
@@ -168,14 +171,79 @@ export default function GeofencingScreen() {
       },
     });
 
-    // Set geometry based on type
-    if (geofence.type === "circle" && geofence.center && geofence.radius) {
-      setCircle({ center: geofence.center, radius: geofence.radius });
+    // Parse the area string to determine type and coordinates
+    console.log("Parsing area string:", geofence.area);
+    
+    // Handle CIRCLE format: "CIRCLE (lat lng, radius)"
+    const circleMatch = geofence.area.match(/CIRCLE \(([^,]+) ([^,]+), ([^)]+)\)/);
+    if (circleMatch) {
+      const lat = parseFloat(circleMatch[1]);
+      const lng = parseFloat(circleMatch[2]);
+      const radius = parseFloat(circleMatch[3]);
+
+      setCircle({ center: { latitude: lat, longitude: lng }, radius });
       setDrawingType("circle");
-      setRadius(geofence.radius.toString());
-    } else if (geofence.type === "polygon" && geofence.coordinates) {
-      setPolygon(geofence.coordinates);
-      setDrawingType("polygon");
+      setRadius(radius.toString());
+      setPolygon([]);
+
+      // Update map region to focus on circle
+      const newRegion = {
+        latitude: lat,
+        longitude: lng,
+        latitudeDelta: (radius * 2) / 111000,
+        longitudeDelta: (radius * 2) / (111000 * Math.cos(lat * Math.PI / 180)),
+      };
+      setMapRegion(newRegion);
+      mapRef.current?.animateToRegion(newRegion, 1000);
+      return;
+    }
+
+    // Handle LINESTRING or POLYGON format
+    const shapeMatch = geofence.area.match(/\((.*)\)/);
+    if (shapeMatch) {
+      const coordinates = shapeMatch[1].split(",").map((coord) => {
+        const [lat, lng] = coord.trim().split(" ");
+        return { latitude: parseFloat(lat), longitude: parseFloat(lng) };
+      });
+
+      if (geofence.area.startsWith("LINESTRING")) {
+        setPolygon(coordinates);
+        setDrawingType("polygon");
+        setCircle(null);
+      } else if (geofence.area.startsWith("POLYGON")) {
+        setPolygon(coordinates);
+        setDrawingType("polygon");
+        setCircle(null);
+      }
+
+      // Calculate center and bounds
+      const center = coordinates.reduce(
+        (acc, coord) => ({
+          latitude: acc.latitude + coord.latitude / coordinates.length,
+          longitude: acc.longitude + coord.longitude / coordinates.length,
+        }),
+        { latitude: 0, longitude: 0 }
+      );
+      
+      const bounds = coordinates.reduce(
+        (acc, coord) => ({
+          minLat: Math.min(acc.minLat, coord.latitude),
+          maxLat: Math.max(acc.maxLat, coord.latitude),
+          minLng: Math.min(acc.minLng, coord.longitude),
+          maxLng: Math.max(acc.maxLng, coord.longitude),
+        }),
+        { minLat: 90, maxLat: -90, minLng: 180, maxLng: -180 }
+      );
+
+      // Update map region
+      const newRegion = {
+        latitude: center.latitude,
+        longitude: center.longitude,
+        latitudeDelta: (bounds.maxLat - bounds.minLat) * 1.5,
+        longitudeDelta: (bounds.maxLng - bounds.minLng) * 1.5,
+      };
+      setMapRegion(newRegion);
+      mapRef.current?.animateToRegion(newRegion, 1000);
     }
   };
 
@@ -216,9 +284,8 @@ export default function GeofencingScreen() {
           Alert.alert("Error", "Please draw a polygon with at least 3 points");
           return;
         }
-        const areaValue = `POLYGON (${polygon
-          .map((p) => `${p.latitude} ${p.longitude}`)
-          .join(", ")})`;
+        const coordinates = polygon.map((p) => `${p.latitude} ${p.longitude}`).join(", ");
+        const areaValue = `POLYGON ((${coordinates}))`;
         console.log("Setting polygon area:", areaValue);
         form.setValue("area", areaValue);
       }
@@ -244,52 +311,40 @@ export default function GeofencingScreen() {
     try {
       console.log("onSubmit called with values:", values);
 
-      // Prepare the geofence data based on type
-      const geofenceData = {
-        ...values,
-        type: drawingType,
-        ...(drawingType === "circle" && circle
-          ? {
-              center: circle.center,
-              radius: Number(radius),
-            }
-          : {}),
-        ...(drawingType === "polygon" && polygon.length > 2
-          ? {
-              coordinates: polygon,
-            }
-          : {}),
-      };
-
-      // Convert calendarId to string if it's a number
-      if (typeof geofenceData.calendarId === "number") {
-        geofenceData.calendarId = geofenceData.calendarId.toString();
+      // Prepare the geofence data
+      const restValues = { ...values };
+      
+      // Remove empty calendarId
+      if (!restValues.calendarId) {
+        delete restValues.calendarId;
       }
 
-      // Remove empty calendarId and id
-      if (!geofenceData.calendarId) {
-        delete geofenceData.calendarId;
-      }
-      delete geofenceData.id; // Remove id from payload
+      // Remove id from payload
+      delete restValues.id;
 
-      console.log("Final payload:", geofenceData);
+      console.log("Final payload for API:", restValues);
 
       if (selectedGeofence) {
         console.log("Updating geofence:", selectedGeofence.id);
+        console.log("Update URL:", `/api/geofences/${selectedGeofence.id}`);
+        console.log("Update payload:", restValues);
+        
         const response = await Api.call(
           `/api/geofences/${selectedGeofence.id}`,
           "PUT",
-          geofenceData,
+          restValues,
           false
         );
         console.log("Update response:", response);
         Alert.alert("Success", "Geofence updated successfully");
       } else {
         console.log("Creating new geofence");
+        console.log("Create payload:", restValues);
+        
         const response = await Api.call(
           "/api/geofences",
           "POST",
-          geofenceData,
+          restValues,
           false
         );
         console.log("Create response:", response);
@@ -299,8 +354,16 @@ export default function GeofencingScreen() {
       getGeofences();
       setMode("list");
       setSelectedGeofence(null);
+      setCircle(null);
+      setPolygon([]);
+      form.reset();
     } catch (error: any) {
       console.error("Geofence submission error:", error);
+      console.error("Error details:", {
+        message: error?.message,
+        response: error?.response?.data,
+        status: error?.response?.status
+      });
       const errorMessage =
         error?.message || error?.response?.data?.message || "Unknown error";
       Alert.alert("Error", `Failed to save geofence: ${errorMessage}`);
@@ -331,10 +394,10 @@ export default function GeofencingScreen() {
               <View style={styles.geofenceCard}>
                 <MaterialIcons
                   name={
-                    item.type === "circle" ? "radio-button-checked" : "polyline"
+                    item.type === "circle" ? "radio-button-checked" : item.type === "polygon" ? "polyline" : "directions"
                   }
                   size={28}
-                  color={item.type === "circle" ? "#43A047" : "#2979FF"}
+                  color={item.type === "circle" ? "#43A047" : item.type === "polygon" ? "#2979FF" : "#FF7043"}
                 />
                 <View style={{ flex: 1 }}>
                   <Text style={styles.geofenceName}>{item.name}</Text>
@@ -381,13 +444,10 @@ export default function GeofencingScreen() {
           }}
         >
           <MapView
+            ref={mapRef}
             style={[styles.map, { height: height - 280, marginTop: 0 }]}
-            initialRegion={{
-              latitude: 22.5726,
-              longitude: 88.3639,
-              latitudeDelta: 0.01,
-              longitudeDelta: 0.01,
-            }}
+            initialRegion={mapRegion}
+            region={mapRegion}
             onPress={(e) => {
               if (drawingType === "circle") {
                 setCircle({
@@ -405,6 +465,7 @@ export default function GeofencingScreen() {
                 radius={Number(radius)}
                 strokeColor="#43A047"
                 fillColor="#43A04722"
+                strokeWidth={2}
               />
             )}
             {polygon.length > 1 && (
@@ -412,6 +473,7 @@ export default function GeofencingScreen() {
                 coordinates={polygon}
                 strokeColor="#2979FF"
                 fillColor="#2979FF22"
+                strokeWidth={2}
               />
             )}
           </MapView>
@@ -424,7 +486,6 @@ export default function GeofencingScreen() {
                 fieldState: { error },
               }) => (
                 <View>
-                  <Text style={styles.geoAddLabel}>Name</Text>
                   <TextInput
                     style={[styles.geoAddInput, error && styles.inputError]}
                     value={value}
@@ -447,7 +508,6 @@ export default function GeofencingScreen() {
                 fieldState: { error },
               }) => (
                 <View>
-                  <Text style={styles.geoAddLabel}>Description</Text>
                   <TextInput
                     style={[styles.geoAddInput, error && styles.inputError]}
                     value={value}
@@ -462,14 +522,16 @@ export default function GeofencingScreen() {
                 </View>
               )}
             />
-            <Text style={styles.geoAddLabel}>Geofencing Type</Text>
             <View style={styles.geoAddTypeRow}>
               <TouchableOpacity
                 style={[
                   styles.geoAddTypeBtn,
                   drawingType === "circle" && styles.geoAddTypeBtnActive,
                 ]}
-                onPress={() => setDrawingType("circle")}
+                onPress={() => {
+                  setDrawingType("circle");
+                  setPolygon([]);
+                }}
               >
                 <MaterialIcons
                   name="radio-button-checked"
@@ -483,7 +545,10 @@ export default function GeofencingScreen() {
                   styles.geoAddTypeBtn,
                   drawingType === "polygon" && styles.geoAddTypeBtnActive,
                 ]}
-                onPress={() => setDrawingType("polygon")}
+                onPress={() => {
+                  setDrawingType("polygon");
+                  setCircle(null);
+                }}
               >
                 <MaterialIcons name="polyline" size={22} color="#2979FF" />
                 <Text style={styles.geoAddTypeText}>Polygon</Text>
@@ -491,13 +556,12 @@ export default function GeofencingScreen() {
             </View>
             {drawingType === "circle" && (
               <View style={styles.geoAddRadiusRow}>
-                <Text style={styles.geoAddLabel}>Radius (meters)</Text>
                 <TextInput
                   style={styles.geoAddInput}
                   value={radius}
                   onChangeText={setRadius}
                   keyboardType="numeric"
-                  placeholder="Radius"
+                  placeholder="Radius (meters)"
                   placeholderTextColor="#888"
                   maxLength={6}
                 />
@@ -508,14 +572,14 @@ export default function GeofencingScreen() {
                 style={styles.geoAddSaveBtn}
                 onPress={handleSaveGeofence}
               >
-                <MaterialIcons name="save" size={22} color="#fff" />
+                <MaterialIcons name="save" size={20} color="#fff" />
                 <Text style={styles.geoAddSaveText}>Save</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={styles.geoAddCancelBtn}
                 onPress={() => setMode("list")}
               >
-                <MaterialIcons name="close" size={22} color="#fff" />
+                <MaterialIcons name="close" size={20} color="#fff" />
                 <Text style={styles.geoAddCancelText}>Cancel</Text>
               </TouchableOpacity>
             </View>
@@ -640,7 +704,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     backgroundColor: "#1A1A1A",
     borderRadius: 8,
-    paddingVertical: 12,
+    paddingVertical: 5,
     flex: 1,
     marginHorizontal: 4,
     borderWidth: 1,
@@ -657,12 +721,11 @@ const styles = StyleSheet.create({
     marginLeft: 6,
   },
   geoAddRadiusRow: {
-    marginBottom: 8,
   },
   geoAddBtnRow: {
     flexDirection: "row",
     justifyContent: "space-between",
-    marginTop: 12,
+    marginTop: 5,
     gap: 12,
   },
   geoAddSaveBtn: {
@@ -671,7 +734,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     backgroundColor: "#000000",
     borderRadius: 10,
-    paddingVertical: 12,
+    paddingVertical: 8,
     flex: 1,
     borderWidth: 1,
     borderColor: "#FFFFFF",
@@ -685,7 +748,7 @@ const styles = StyleSheet.create({
   geoAddCancelBtn: {
     backgroundColor: "#1A1A1A",
     borderRadius: 10,
-    paddingVertical: 12,
+    paddingVertical: 8,
     flex: 1,
     alignItems: "center",
     justifyContent: "center",

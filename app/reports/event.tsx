@@ -1,12 +1,12 @@
 import Api from '@/config/Api';
 import { MaterialIcons } from '@expo/vector-icons';
-import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import * as FileSystem from 'expo-file-system';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import * as Sharing from 'expo-sharing';
 import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, Platform, ScrollView, StatusBar, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, ScrollView, StatusBar, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import DropDownPicker from 'react-native-dropdown-picker';
+import DateTimePickerModal from "react-native-modal-datetime-picker";
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as XLSX from 'xlsx';
 
@@ -152,12 +152,12 @@ export default function EventReportScreen() {
 
   const [fromDate, setFromDate] = useState(() => {
     const date = new Date();
-    date.setMonth(date.getMonth() - 1);
+    date.setHours(date.getHours() - 24); // Set to 24 hours ago
     return date;
   });
   const [toDate, setToDate] = useState(new Date());
-  const [showFromPicker, setShowFromPicker] = useState(false);
-  const [showToPicker, setShowToPicker] = useState(false);
+  const [isFromDatePickerVisible, setFromDatePickerVisible] = useState(false);
+  const [isToDatePickerVisible, setToDatePickerVisible] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const recordsPerPage = 50;
 
@@ -265,6 +265,16 @@ export default function EventReportScreen() {
   const currentRecords = reportData.slice(indexOfFirstRecord, indexOfLastRecord);
   const totalPages = Math.ceil(reportData.length / recordsPerPage);
 
+  const handleFromDateConfirm = (date: Date) => {
+    setFromDate(date);
+    setFromDatePickerVisible(false);
+  };
+
+  const handleToDateConfirm = (date: Date) => {
+    setToDate(date);
+    setToDatePickerVisible(false);
+  };
+
   return (
     <SafeAreaView style={styles.containerDark}>
       {/* Header */}
@@ -351,40 +361,40 @@ export default function EventReportScreen() {
 
           <View style={styles.filterFieldBlock}>
             <Text style={styles.filterLabelDark}>From</Text>
-            <TouchableOpacity style={styles.dateInputDark} onPress={() => setShowFromPicker(true)}>
+            <TouchableOpacity 
+              style={styles.dateInputDark} 
+              onPress={() => setFromDatePickerVisible(true)}
+            >
               <Text style={styles.dateInputTextDark}>{fromDate.toLocaleString()}</Text>
-              <MaterialIcons name="calendar-today" size={18} color="#aaa" style={{ marginLeft: 6 }} />
+              <MaterialIcons name="calendar-today" size={18} color="#666" style={{ marginLeft: 6 }} />
             </TouchableOpacity>
-            {showFromPicker && (
-              <DateTimePicker
-                value={fromDate}
-                mode="datetime"
-                display={Platform.OS === 'ios' ? 'inline' : 'default'}
-                onChange={(event: DateTimePickerEvent, date?: Date) => {
-                  setShowFromPicker(false);
-                  if (date) setFromDate(date);
-                }}
-              />
-            )}
+            <DateTimePickerModal
+              isVisible={isFromDatePickerVisible}
+              mode="datetime"
+              onConfirm={handleFromDateConfirm}
+              onCancel={() => setFromDatePickerVisible(false)}
+              date={fromDate}
+              maximumDate={toDate}
+            />
           </View>
 
           <View style={styles.filterFieldBlock}>
             <Text style={styles.filterLabelDark}>To</Text>
-            <TouchableOpacity style={styles.dateInputDark} onPress={() => setShowToPicker(true)}>
+            <TouchableOpacity 
+              style={styles.dateInputDark} 
+              onPress={() => setToDatePickerVisible(true)}
+            >
               <Text style={styles.dateInputTextDark}>{toDate.toLocaleString()}</Text>
-              <MaterialIcons name="calendar-today" size={18} color="#aaa" style={{ marginLeft: 6 }} />
+              <MaterialIcons name="calendar-today" size={18} color="#666" style={{ marginLeft: 6 }} />
             </TouchableOpacity>
-            {showToPicker && (
-              <DateTimePicker
-                value={toDate}
-                mode="datetime"
-                display={Platform.OS === 'ios' ? 'inline' : 'default'}
-                onChange={(event: DateTimePickerEvent, date?: Date) => {
-                  setShowToPicker(false);
-                  if (date) setToDate(date);
-                }}
-              />
-            )}
+            <DateTimePickerModal
+              isVisible={isToDatePickerVisible}
+              mode="datetime"
+              onConfirm={handleToDateConfirm}
+              onCancel={() => setToDatePickerVisible(false)}
+              date={toDate}
+              minimumDate={fromDate}
+            />
           </View>
 
           <View style={styles.buttonContainer}>

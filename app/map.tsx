@@ -1,16 +1,29 @@
-import Api from '@/config/Api';
-import { FontAwesome5, MaterialIcons } from '@expo/vector-icons';
-import { useIsFocused } from '@react-navigation/native';
-import { useLocalSearchParams, useRouter } from 'expo-router';
-import moment from 'moment';
-import React, { useEffect, useRef, useState } from 'react';
-import { Animated, Dimensions, Image, ImageSourcePropType, PanResponder, StatusBar, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import MapView, { AnimatedRegion, Marker, Polyline, Region } from 'react-native-maps';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import Api from "@/config/Api";
+import { FontAwesome5, MaterialIcons } from "@expo/vector-icons";
+import { useIsFocused } from "@react-navigation/native";
+import { useLocalSearchParams, useRouter } from "expo-router";
+import moment from "moment";
+import React, { useEffect, useRef, useState } from "react";
+import {
+  Animated,
+  Dimensions,
+  Image,
+  ImageSourcePropType,
+  StatusBar,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
+import MapView, {
+  AnimatedRegion,
+  Marker,
+  Polyline,
+  Region,
+} from "react-native-maps";
+import { SafeAreaView } from "react-native-safe-area-context";
 
-const { height: SCREEN_HEIGHT } = Dimensions.get('window');
-const BOTTOM_SHEET_MIN_HEIGHT = 300;
-const BOTTOM_SHEET_MAX_HEIGHT = SCREEN_HEIGHT * 0.5;
+const { height: SCREEN_HEIGHT } = Dimensions.get("window");
 
 export default function MapScreen() {
   const router = useRouter();
@@ -23,7 +36,10 @@ export default function MapScreen() {
     })
   );
   const [carPath, setCarPath] = useState([
-    { latitude: Number(params?.latitude) || 0, longitude: Number(params?.longitude) || 0 }
+    {
+      latitude: Number(params?.latitude) || 0,
+      longitude: Number(params?.longitude) || 0,
+    },
   ]);
   const mapRef = useRef<MapView>(null);
   const [zoomLevel, setZoomLevel] = useState(0.005);
@@ -36,54 +52,9 @@ export default function MapScreen() {
   // Map options state
   const [showTraffic, setShowTraffic] = useState(false);
   const [showCompass, setShowCompass] = useState(true);
-  const [mapType, setMapType] = useState<'standard' | 'satellite' | 'terrain' | 'hybrid'>('standard');
-
-  // Bottom Sheet Animation
-  const pan = useRef(new Animated.ValueXY()).current;
-  const bottomSheetHeight = useRef(new Animated.Value(BOTTOM_SHEET_MIN_HEIGHT)).current;
-  const [isBottomSheetExpanded, setIsBottomSheetExpanded] = useState(false);
-
-  const panResponder = useRef(
-    PanResponder.create({
-      onStartShouldSetPanResponder: () => true,
-      onMoveShouldSetPanResponder: () => true,
-      onPanResponderMove: (_, gestureState) => {
-        if (gestureState.dy > 0) {
-          // Dragging down
-          bottomSheetHeight.setValue(BOTTOM_SHEET_MAX_HEIGHT - gestureState.dy);
-        } else {
-          // Dragging up
-          bottomSheetHeight.setValue(BOTTOM_SHEET_MIN_HEIGHT - gestureState.dy);
-        }
-      },
-      onPanResponderRelease: (_, gestureState) => {
-        if (gestureState.dy > 50) {
-          // Dragged down significantly
-          Animated.spring(bottomSheetHeight, {
-            toValue: BOTTOM_SHEET_MIN_HEIGHT,
-            useNativeDriver: false,
-            bounciness: 0,
-          }).start();
-          setIsBottomSheetExpanded(false);
-        } else if (gestureState.dy < -50) {
-          // Dragged up significantly
-          Animated.spring(bottomSheetHeight, {
-            toValue: BOTTOM_SHEET_MAX_HEIGHT,
-            useNativeDriver: false,
-            bounciness: 0,
-          }).start();
-          setIsBottomSheetExpanded(true);
-        } else {
-          // Return to previous position
-          Animated.spring(bottomSheetHeight, {
-            toValue: isBottomSheetExpanded ? BOTTOM_SHEET_MAX_HEIGHT : BOTTOM_SHEET_MIN_HEIGHT,
-            useNativeDriver: false,
-            bounciness: 0,
-          }).start();
-        }
-      },
-    })
-  ).current;
+  const [mapType, setMapType] = useState<
+    "standard" | "satellite" | "terrain" | "hybrid"
+  >("standard");
 
   const [currentMarkerPosition, setCurrentMarkerPosition] = useState({
     latitude: Number(params?.latitude) || 0,
@@ -95,12 +66,12 @@ export default function MapScreen() {
     distance: 0,
     maxSpeed: 0,
     averageSpeed: 0,
-    engineHours: '0h:00m',
-    movingDuration: '00h:00m',
-    stoppedDuration: '00h:00m',
-    idleDuration: '00h:00m',
-    ignitionOnDuration: '00h:00m',
-    ignitionOffDuration: '00h:00m'
+    engineHours: "0h:00m",
+    movingDuration: "00h:00m",
+    stoppedDuration: "00h:00m",
+    idleDuration: "00h:00m",
+    ignitionOnDuration: "00h:00m",
+    ignitionOffDuration: "00h:00m",
   });
 
   // Animation ref for details section
@@ -108,43 +79,59 @@ export default function MapScreen() {
 
   const getVehicleIcon = (): ImageSourcePropType => {
     if (!device?.lastUpdate) {
-      return require('@/assets/images/cars/white.png');
+      return require("@/assets/images/cars/white.png");
     }
     const lastUpdate = new Date(device.lastUpdate);
     const fourHoursAgo = new Date(Date.now() - 1000 * 60 * 60 * 4);
     if (lastUpdate < fourHoursAgo) {
-      return require('@/assets/images/cars/white.png');
+      return require("@/assets/images/cars/blue.png");
     }
-    if (device.status === 'online' && Number(device.speed) === 0) {
-      return require('@/assets/images/cars/orange.png');
+    if (device.status === "online" && Number(device.speed) === 0) {
+      return require("@/assets/images/cars/orange.png");
     }
-    return device.status === 'online' ? require('@/assets/images/cars/green.png') : require('@/assets/images/cars/red.png');
+    return device.status === "online"
+      ? require("@/assets/images/cars/green.png")
+      : require("@/assets/images/cars/red.png");
   };
 
   const getPosition = async () => {
     if (!isFocused) return;
-    const response = await Api.call(`/api/positions?deviceId=${device.deviceId}`, 'GET', {}, false);
+    const response = await Api.call(
+      `/api/positions?deviceId=${device.deviceId}`,
+      "GET",
+      {},
+      false
+    );
     const newDevice = { ...device, ...response.data[0] };
     setDevice(newDevice);
+    console.log(newDevice);
     if (newDevice.latitude && newDevice.longitude) {
-      markerPosition.timing({
-        toValue: { latitude: newDevice.latitude, longitude: newDevice.longitude },
-        duration: 1000,
-        useNativeDriver: false,
-      } as any).start(() => {
-        setCarPath(prev => ([
-          ...prev,
-          { latitude: newDevice.latitude, longitude: newDevice.longitude }
-        ]));
-        setCurrentMarkerPosition({ latitude: newDevice.latitude, longitude: newDevice.longitude });
-      });
-      const isSignificantChange =
-        Math.abs(newDevice.latitude - device.latitude) > 0.0001 ||
-        Math.abs(newDevice.longitude - device.longitude) > 0.0001;
-      if (isSignificantChange) {
+      markerPosition
+        .timing({
+          toValue: {
+            latitude: newDevice.latitude || 0,
+            longitude: newDevice.longitude || 0,
+          },
+          duration: 1000,
+          useNativeDriver: false,
+        } as any)
+        .start(() => {
+          setCarPath((prev) => [
+            ...prev,
+            {
+              latitude: newDevice.latitude || 0,
+              longitude: newDevice.longitude || 0,
+            },
+          ]);
+          setCurrentMarkerPosition({
+            latitude: newDevice.latitude || 0,
+            longitude: newDevice.longitude || 0,
+          });
+        });
+   
         const newRegion: Region = {
-          latitude: newDevice.latitude,
-          longitude: newDevice.longitude,
+          latitude: newDevice.latitude || 0,
+          longitude: newDevice.longitude || 0,
           latitudeDelta: zoomLevel,
           longitudeDelta: zoomLevel * 0.5,
         };
@@ -153,7 +140,7 @@ export default function MapScreen() {
         } else {
           mapRef.current?.animateToRegion(newRegion, 1000);
         }
-      }
+      
     }
   };
 
@@ -170,13 +157,14 @@ export default function MapScreen() {
   }, [device?.latitude, device?.longitude]);
 
   useEffect(() => {
-    getPosition();
-
-    const interval = setInterval(() => {
+    if (isFocused) {
       getPosition();
-    }, 5000);
-    return () => clearInterval(interval);
-  }, []);
+      const interval = setInterval(() => {
+        getPosition();
+      }, 10000);
+      return () => clearInterval(interval);
+    }
+  }, [isFocused]);
 
   useEffect(() => {
     if (carMode) {
@@ -214,12 +202,22 @@ export default function MapScreen() {
         description: `Auto-generated high alert zone for ${device.name}`,
         area: `CIRCLE (${device.latitude} ${device.longitude}, 50)`,
       };
-      const response = await Api.call('/api/geofences', 'POST', geofenceData, false);
+      const response = await Api.call(
+        "/api/geofences",
+        "POST",
+        geofenceData,
+        false
+      );
       let deviceData = await fetchDeviceDetails(device.deviceId);
-      await Api.call('/api/permissions', 'POST', {
-        deviceId: device.deviceId,
-        geofenceId: response.data.id,
-      }, false);
+      await Api.call(
+        "/api/permissions",
+        "POST",
+        {
+          deviceId: device.deviceId,
+          geofenceId: response.data.id,
+        },
+        false
+      );
       let newAttributes = {
         ...deviceData.attributes,
         fence_id: response.data.id,
@@ -227,7 +225,12 @@ export default function MapScreen() {
         is_parked: true,
       };
       deviceData.attributes = newAttributes;
-      await Api.call(`/api/devices/${device.deviceId}`, 'PUT', deviceData, false);
+      await Api.call(
+        `/api/devices/${device.deviceId}`,
+        "PUT",
+        deviceData,
+        false
+      );
       setIsParked(true);
     } catch (error) {
       console.error("Error creating geofence:", error);
@@ -237,7 +240,12 @@ export default function MapScreen() {
   const removeGeofence = async (device: any) => {
     try {
       let deviceData = await fetchDeviceDetails(device.deviceId);
-      await Api.call(`/api/geofences/${deviceData.attributes.fence_id}`, 'DELETE', {}, false);
+      await Api.call(
+        `/api/geofences/${deviceData.attributes.fence_id}`,
+        "DELETE",
+        {},
+        false
+      );
       let newAttributes = {
         ...deviceData.attributes,
         fence_id: null,
@@ -245,7 +253,12 @@ export default function MapScreen() {
         is_parked: false,
       };
       deviceData.attributes = newAttributes;
-      await Api.call(`/api/devices/${device.deviceId}`, 'PUT', deviceData, false);
+      await Api.call(
+        `/api/devices/${device.deviceId}`,
+        "PUT",
+        deviceData,
+        false
+      );
       setIsParked(false);
     } catch (error) {
       console.error("Error removing geofence:", error);
@@ -254,7 +267,12 @@ export default function MapScreen() {
 
   const fetchDeviceDetails = async (deviceId: string) => {
     try {
-      const response = await Api.call(`/api/devices?id=${deviceId}`, 'GET', {}, false);
+      const response = await Api.call(
+        `/api/devices?id=${deviceId}`,
+        "GET",
+        {},
+        false
+      );
       if (response.data) {
         const device = response.data.find((d: any) => d.id === deviceId);
         return device;
@@ -267,22 +285,27 @@ export default function MapScreen() {
   const mobilize = async (protocol: string) => {
     try {
       let lockStatus = isLocked ? "RELAY,1#" : "RELAY,0#";
-      await Api.call('/api/commands/send', 'POST', {
-        commandId: "",
-        deviceId: device?.deviceId,
-        description: "mobilize",
-        type: "custom",
-        attributes: {
-          data: lockStatus,
+      await Api.call(
+        "/api/commands/send",
+        "POST",
+        {
+          commandId: "",
+          deviceId: device?.deviceId,
+          description: "mobilize",
+          type: "custom",
+          attributes: {
+            data: lockStatus,
+          },
         },
-      }, false);
+        false
+      );
       let deviceData = await fetchDeviceDetails(device?.deviceId);
       let newAttributes = {
         ...deviceData.attributes,
         is_mobilized: !isLocked,
       };
       deviceData.attributes = newAttributes;
-      await Api.call(`/api/devices/${deviceData.id}`, 'PUT', deviceData, false);
+      await Api.call(`/api/devices/${deviceData.id}`, "PUT", deviceData, false);
       setIsLocked(!isLocked);
     } catch (error) {
       console.error("Error mobilizing device:", error);
@@ -293,7 +316,10 @@ export default function MapScreen() {
     // Cleanup on unmount: reset carPath and marker position
     return () => {
       setCarPath([
-        { latitude: Number(params?.latitude) || 0, longitude: Number(params?.longitude) || 0 }
+        {
+          latitude: Number(params?.latitude) || 0,
+          longitude: Number(params?.longitude) || 0,
+        },
       ]);
       setCurrentMarkerPosition({
         latitude: Number(params?.latitude) || 0,
@@ -308,21 +334,28 @@ export default function MapScreen() {
       const today = new Date();
       const startOfDay = new Date(today);
       startOfDay.setHours(0, 0, 0, 0);
-      
-      const response = await Api.call(`/api/reports/summary?deviceId=${deviceId}&from=${startOfDay.toISOString()}&to=${today.toISOString()}&daily=false`, 'GET', {}, false);
-      
+
+      const response = await Api.call(
+        `/api/reports/summary?deviceId=${deviceId}&from=${startOfDay.toISOString()}&to=${today.toISOString()}&daily=false`,
+        "GET",
+        {},
+        false
+      );
+
       if (response.data && response.data.length > 0) {
         const summary = response.data[0];
-        
+
         // Format durations
         const formatDuration = (milliseconds: number | undefined) => {
-          if (!milliseconds) return '00h:00m';
+          if (!milliseconds) return "00h:00m";
           const totalMinutes = Math.floor(milliseconds / (1000 * 60));
           const hours = Math.floor(totalMinutes / 60);
           const minutes = totalMinutes % 60;
-          return `${hours.toString().padStart(2, '0')}h:${minutes.toString().padStart(2, '0')}m`;
+          return `${hours.toString().padStart(2, "0")}h:${minutes
+            .toString()
+            .padStart(2, "0")}m`;
         };
-        
+
         setTodaySummary({
           distance: summary?.distance || 0,
           maxSpeed: summary?.maxSpeed || 0,
@@ -330,27 +363,33 @@ export default function MapScreen() {
           engineHours: formatDuration(summary?.engineHours),
           movingDuration: formatDuration(summary?.movingDuration),
           stoppedDuration: formatDuration(summary?.stoppedDuration),
-          idleDuration: formatDuration(summary?.deviceDuration - summary?.movingDuration - summary?.stoppedDuration),
+          idleDuration: formatDuration(
+            summary?.deviceDuration -
+              summary?.movingDuration -
+              summary?.stoppedDuration
+          ),
           ignitionOnDuration: formatDuration(summary?.engineHours),
-          ignitionOffDuration: formatDuration(summary?.deviceDuration - summary?.engineHours)
+          ignitionOffDuration: formatDuration(
+            summary?.deviceDuration - summary?.engineHours
+          ),
         });
-        
+
         setSummaryData(summary);
       }
     } catch (error) {
       console.error("Error fetching summary data:", error);
     }
   };
-  
+
   // Format distance for display
   const formatDistance = (meters: number | undefined) => {
-    if (!meters) return '0 km';
+    if (!meters) return "0 km";
     return `${(meters / 1000).toFixed(0)} km`;
   };
-  
+
   // Format speed for display
   const formatSpeed = (knots: number | undefined) => {
-    if (!knots) return '0 km/h';
+    if (!knots) return "0 km/h";
     return `${(knots * 1.852).toFixed(0)} km/h`;
   };
 
@@ -369,7 +408,6 @@ export default function MapScreen() {
       useNativeDriver: false,
     }).start();
   }, [showDetails]);
-
 
   const engineHoursCalculation = () => {
     const startOdo = summaryData?.startOdometer || 0;
@@ -408,15 +446,18 @@ export default function MapScreen() {
   };
   return (
     <SafeAreaView style={styles.safeArea}>
-      <StatusBar barStyle="dark-content" backgroundColor="#000"  />
+      <StatusBar barStyle="light-content" backgroundColor="#000" />
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()}>
           <MaterialIcons name="arrow-back" size={26} color="#fff" />
         </TouchableOpacity>
-        <View style={{ flex: 1, alignItems: 'center' }}>
+        <View style={{ flex: 1, alignItems: "center" }}>
           <Text style={styles.headerTitle}>{device?.name}</Text>
-          <Text style={styles.headerSubtitle}>Last updated: {moment(device?.lastUpdate).format('DD/MM/YYYY HH:mm')}</Text>
+          <Text style={styles.headerSubtitle}>
+            Last updated:{" "}
+            {moment(device?.lastUpdate).format("DD/MM/YYYY HH:mm")}
+          </Text>
         </View>
       </View>
       {/* Map */}
@@ -441,21 +482,15 @@ export default function MapScreen() {
         showsCompass={showCompass}
         mapType={mapType}
       >
-        <Polyline
-          coordinates={carPath}
-          strokeColor="#FFD600"
-          strokeWidth={4}
-        />
+        <Polyline coordinates={carPath} strokeColor="#FFD600" strokeWidth={4} />
         <Marker.Animated coordinate={currentMarkerPosition}>
           <Image
             source={getVehicleIcon()}
             style={[
               styles.markerImage,
               {
-                transform: [
-                  { rotate: `${device?.course || 0}deg` }
-                ]
-              }
+                transform: [{ rotate: `${device?.course || 0}deg` }],
+              },
             ]}
           />
         </Marker.Animated>
@@ -465,35 +500,66 @@ export default function MapScreen() {
       <View style={styles.bottomSheet}>
         <View style={styles.bottomSheetContent}>
           {/* Vehicle Name and Speed */}
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+          <View
+            style={{
+              flexDirection: "row",
+              justifyContent: "space-between",
+              alignItems: "center",
+              marginBottom: 8,
+            }}
+          >
             <View>
-            <Text style={styles.vehicleNumber}>{device?.name}</Text>
-            <Text style={[styles.vehicleNumber, {fontSize: 12, color: '#666', fontWeight: '400'}]}>{device?.address}</Text>
-            </View>
-            <View style={styles.speedoWrap}>
-              <FontAwesome5 name="tachometer-alt" size={18} color="#43A047" />
-              <Text style={styles.speedoText}>{(Number(device?.speed)* 1.852 || 0)?.toFixed(0)} km/h</Text>
+              <Text style={styles.vehicleNumber}>{device?.name}</Text>
+              <Text
+                style={[
+                  styles.vehicleNumber,
+                  { fontSize: 12, color: "#666", fontWeight: "400" },
+                ]}
+              >
+                {device?.address}
+              </Text>
             </View>
           </View>
 
           <View style={styles.statusIconsRow}>
             {/* Parking */}
             <TouchableOpacity
-              style={[styles.iconCircle, { borderColor: isParked ? '#43A047' : '#A5F3C7', backgroundColor: isParked ? '#43A047' : '#fff' }]}
+              style={[
+                styles.iconCircle,
+                {
+                  borderColor: isParked ? "#43A047" : "#A5F3C7",
+                  backgroundColor: isParked ? "#43A047" : "#fff",
+                },
+              ]}
               onPress={() => {
                 if (device) {
                   isParked ? removeGeofence(device) : createGeofence(device);
                 }
               }}
             >
-              <MaterialIcons name="local-parking" size={24} color={isParked ? '#fff' : '#43A047'} />
+              <MaterialIcons
+                name="local-parking"
+                size={24}
+                color={isParked ? "#fff" : "#43A047"}
+              />
             </TouchableOpacity>
 
             {/* Play (active) */}
             <TouchableOpacity
-              style={[styles.iconCircle, styles.iconCircleActive, { backgroundColor: '#4285F4', borderColor: '#4285F4', shadowColor: '#4285F4' }]}
+              style={[
+                styles.iconCircle,
+                styles.iconCircleActive,
+                {
+                  backgroundColor: "#4285F4",
+                  borderColor: "#4285F4",
+                  shadowColor: "#4285F4",
+                },
+              ]}
               onPress={() => {
-                router.push({ pathname: '/history-playback', params: { device: JSON.stringify(device) } });
+                router.push({
+                  pathname: "/history-playback",
+                  params: { device: JSON.stringify(device) },
+                });
               }}
             >
               <MaterialIcons name="play-arrow" size={24} color="#fff" />
@@ -501,35 +567,61 @@ export default function MapScreen() {
 
             {/* Car Mode */}
             <TouchableOpacity
-              style={[styles.iconCircle, { borderColor: carMode ? '#4285F4' : '#90CAF9', backgroundColor: carMode ? '#4285F4' : '#fff' }]}
+              style={[
+                styles.iconCircle,
+                {
+                  borderColor: carMode ? "#4285F4" : "#90CAF9",
+                  backgroundColor: carMode ? "#4285F4" : "#fff",
+                },
+              ]}
               onPress={() => setCarMode(!carMode)}
             >
-              <MaterialIcons name="directions-car" size={24} color={carMode ? '#fff' : '#4285F4'} />
+              <MaterialIcons
+                name="directions-car"
+                size={24}
+                color={carMode ? "#fff" : "#4285F4"}
+              />
             </TouchableOpacity>
 
             {/* Lock */}
             <TouchableOpacity
-              style={[styles.iconCircle, { borderColor: isLocked ? '#E53935' : '#FFCDD2', backgroundColor: isLocked ? '#E53935' : '#fff' }]}
+              style={[
+                styles.iconCircle,
+                {
+                  borderColor: isLocked ? "#E53935" : "#FFCDD2",
+                  backgroundColor: isLocked ? "#E53935" : "#fff",
+                },
+              ]}
               onPress={() => {
                 if (device) {
                   mobilize(device.protocol);
                 }
               }}
             >
-              <MaterialIcons name={isLocked ? 'lock' : 'lock-open'} size={24} color={isLocked ? '#fff' : '#E53935'} />
+              <MaterialIcons
+                name={isLocked ? "lock" : "lock-open"}
+                size={24}
+                color={isLocked ? "#fff" : "#E53935"}
+              />
             </TouchableOpacity>
 
             {/* Auto Follow */}
             <TouchableOpacity
-              style={[styles.iconCircle, { borderColor: autoFollow ? '#43A047' : '#A5F3C7', backgroundColor: autoFollow ? '#43A047' : '#fff' }]}
+              style={[
+                styles.iconCircle,
+                {
+                  borderColor: autoFollow ? "#43A047" : "#A5F3C7",
+                  backgroundColor: autoFollow ? "#43A047" : "#fff",
+                },
+              ]}
               onPress={() => {
                 if (!carMode) {
                   // Can't enable auto-follow without car mode
                   return;
                 }
-                
+
                 setAutoFollow(!autoFollow);
-                
+
                 if (!autoFollow && device?.latitude && device?.longitude) {
                   // When enabling auto-follow, immediately center on current position
                   const newRegion: Region = {
@@ -542,80 +634,106 @@ export default function MapScreen() {
                 }
               }}
             >
-              <MaterialIcons name="location-on" size={24} color={autoFollow ? '#fff' : '#43A047'} />
+              <MaterialIcons
+                name="location-on"
+                size={24}
+                color={autoFollow ? "#fff" : "#43A047"}
+              />
             </TouchableOpacity>
           </View>
 
           {/* Stats Grid - only show if showDetails is true */}
-          <Animated.View 
+          <Animated.View
             style={{
               maxHeight: detailsAnimHeight.interpolate({
                 inputRange: [0, 1],
-                outputRange: [0, 500]
+                outputRange: [0, 500],
               }),
               opacity: detailsAnimHeight,
-              overflow: 'hidden'
+              overflow: "hidden",
             }}
           >
             <View style={styles.statsDivider} />
-            
-         
-            
+
             {/* Second row */}
             <View style={styles.statsRow}>
-            <View style={[styles.statsCol, styles.statsColHighlight1]}>
-                <FontAwesome5 name="clock" size={14} color="#2196F3" style={styles.statsIcon} />
+              <View style={[styles.statsCol, styles.statsColHighlight1]}>
+                <FontAwesome5
+                  name="clock"
+                  size={14}
+                  color="#2196F3"
+                  style={styles.statsIcon}
+                />
                 <Text style={styles.statsLabel}>Fix Time</Text>
                 <Text style={styles.statsValue}>
                   {device?.lastUpdate
-                    ? moment(device.lastUpdate).format('DD/MM, HH:mm')
-                    : moment().format('DD/MM, HH:mm')}
+                    ? moment(device.lastUpdate).format("DD/MM, HH:mm")
+                    : moment().format("DD/MM, HH:mm")}
                 </Text>
               </View>
-            <View style={[styles.statsCol, styles.statsColHighlight3]}>
-                <FontAwesome5 name="road" size={14} color="#43A047" style={styles.statsIcon} />
+              <View style={[styles.statsCol, styles.statsColHighlight3]}>
+                <FontAwesome5
+                  name="road"
+                  size={14}
+                  color="#43A047"
+                  style={styles.statsIcon}
+                />
                 <Text style={styles.statsLabel}>Distance</Text>
                 <Text style={styles.statsValue}>
                   {formatDistance(todaySummary.distance)}
                 </Text>
               </View>
               <View style={[styles.statsCol, styles.statsColHighlight4]}>
-                <FontAwesome5 name="cogs" size={14} color="#9C27B0" style={styles.statsIcon} />
+                <FontAwesome5
+                  name="cogs"
+                  size={14}
+                  color="#9C27B0"
+                  style={styles.statsIcon}
+                />
                 <Text style={styles.statsLabel}>Engine</Text>
                 <Text style={styles.statsValue}>
                   {todaySummary.engineHours}
                 </Text>
               </View>
-
-           
-
-           
             </View>
 
             <View style={styles.statsDivider} />
-            
+
             {/* Third row */}
             <View style={styles.statsRow}>
-            <View style={[styles.statsCol, styles.statsColHighlight5]}>
-                <FontAwesome5 name="running" size={14} color="#009688" style={styles.statsIcon} />
+              <View style={[styles.statsCol, styles.statsColHighlight5]}>
+                <FontAwesome5
+                  name="running"
+                  size={14}
+                  color="#009688"
+                  style={styles.statsIcon}
+                />
                 <Text style={styles.statsLabel}>Running</Text>
                 <Text style={styles.statsValue}>
-                {(() => {
-                        const runHours = engineHoursCalculation();
-                        // Convert "X hrs Y min" to "Xh Ym"
-                        return runHours.replace(/ hrs /, "h ").replace(/ min/, "m");
-                      })()}
+                  {(() => {
+                    const runHours = engineHoursCalculation();
+                    // Convert "X hrs Y min" to "Xh Ym"
+                    return runHours.replace(/ hrs /, "h ").replace(/ min/, "m");
+                  })()}
                 </Text>
               </View>
-            <View style={[styles.statsCol, styles.statsColHighlight6]}>
-                <FontAwesome5 name="gas-pump" size={14} color="#E53935" style={styles.statsIcon} />
+              <View style={[styles.statsCol, styles.statsColHighlight6]}>
+                <FontAwesome5
+                  name="gas-pump"
+                  size={14}
+                  color="#E53935"
+                  style={styles.statsIcon}
+                />
                 <Text style={styles.statsLabel}>Fuel</Text>
-                <Text style={styles.statsValue}>
-                  {device?.fuel || '0'} L
-                </Text>
+                <Text style={styles.statsValue}>{device?.fuel || "0"} L</Text>
               </View>
               <View style={[styles.statsCol, styles.statsColHighlight7]}>
-                <FontAwesome5 name="bolt" size={14} color="#FFC107" style={styles.statsIcon} />
+                <FontAwesome5
+                  name="bolt"
+                  size={14}
+                  color="#FFC107"
+                  style={styles.statsIcon}
+                />
                 <Text style={styles.statsLabel}>Max Speed</Text>
                 <Text style={styles.statsValue}>
                   {formatSpeed(todaySummary.maxSpeed)}
@@ -623,24 +741,32 @@ export default function MapScreen() {
               </View>
 
               <View style={[styles.statsCol, styles.statsColHighlight8]}>
-                <FontAwesome5 name="chart-line" size={14} color="#03A9F4" style={styles.statsIcon} />
+                <FontAwesome5
+                  name="chart-line"
+                  size={14}
+                  color="#03A9F4"
+                  style={styles.statsIcon}
+                />
                 <Text style={styles.statsLabel}>Avg Speed</Text>
                 <Text style={styles.statsValue}>
-                {(() => {
-                        const distanceKm = (summaryData?.distance || 0) / 1000;
-                        const runningHoursText = engineHoursCalculation();
-                        const hoursMatch = runningHoursText.match(/(\d+) hrs (\d+) min/);
-                        if (hoursMatch) {
-                          const hours = parseInt(hoursMatch[1]);
-                          const minutes = parseInt(hoursMatch[2]);
-                          const totalHours = hours + (minutes / 60);
-                          if (totalHours > 0) {
-                            const calculatedAvgSpeed = distanceKm / totalHours;
-                            return `${calculatedAvgSpeed.toFixed(1)} km/h`;
-                          }
-                        }
-                        return `${((summaryData?.averageSpeed||0) * 1.852 || 0).toFixed(1)} km/h`;
-                      })()}
+                  {(() => {
+                    const distanceKm = (summaryData?.distance || 0) / 1000;
+                    const runningHoursText = engineHoursCalculation();
+                    const hoursMatch =
+                      runningHoursText.match(/(\d+) hrs (\d+) min/);
+                    if (hoursMatch) {
+                      const hours = parseInt(hoursMatch[1]);
+                      const minutes = parseInt(hoursMatch[2]);
+                      const totalHours = hours + minutes / 60;
+                      if (totalHours > 0) {
+                        const calculatedAvgSpeed = distanceKm / totalHours;
+                        return `${calculatedAvgSpeed.toFixed(1)} km/h`;
+                      }
+                    }
+                    return `${(
+                      (summaryData?.averageSpeed || 0) * 1.852 || 0
+                    ).toFixed(1)} km/h`;
+                  })()}
                 </Text>
               </View>
             </View>
@@ -653,11 +779,18 @@ export default function MapScreen() {
               style={styles.centerMapBtn}
               onPress={() => setShowDetails((prev) => !prev)}
             >
-              <Text style={styles.centerMapBtnText}>{showDetails ? 'Hide Details' : 'View Details'}</Text>
+              <Text style={styles.centerMapBtnText}>
+                {showDetails ? "Hide Details" : "View Details"}
+              </Text>
             </TouchableOpacity>
-            <TouchableOpacity 
-              style={styles.viewReportsBtn} 
-              onPress={() => router.push({ pathname: '/reports', params: { deviceId: device?.deviceId } })}
+            <TouchableOpacity
+              style={styles.viewReportsBtn}
+              onPress={() =>
+                router.push({
+                  pathname: "/reports",
+                  params: { deviceId: device?.deviceId },
+                })
+              }
             >
               <Text style={styles.viewReportsBtnText}>View Reports</Text>
             </TouchableOpacity>
@@ -666,20 +799,55 @@ export default function MapScreen() {
       </View>
       {/* Floating Map Options Menu */}
       <View style={styles.floatingMenu}>
-        <TouchableOpacity style={styles.fab} onPress={() => setShowTraffic(t => !t)}>
-          <MaterialIcons name="traffic" size={24} color={showTraffic ? "#43A047" : "#888"} />
+        <TouchableOpacity
+          style={styles.fab}
+          onPress={() => setShowTraffic((t) => !t)}
+        >
+          <MaterialIcons
+            name="traffic"
+            size={24}
+            color={showTraffic ? "#43A047" : "#888"}
+          />
         </TouchableOpacity>
-        <TouchableOpacity style={styles.fab} onPress={() => setShowCompass(c => !c)}>
-          <MaterialIcons name="explore" size={24} color={showCompass ? "#2979FF" : "#888"} />
+        <TouchableOpacity
+          style={styles.fab}
+          onPress={() => setShowCompass((c) => !c)}
+        >
+          <MaterialIcons
+            name="explore"
+            size={24}
+            color={showCompass ? "#2979FF" : "#888"}
+          />
         </TouchableOpacity>
-        <TouchableOpacity style={styles.fab} onPress={() => setMapType('standard')}>
-          <MaterialIcons name="map" size={24} color={mapType === 'standard' ? "#FF7043" : "#888"} />
+        <TouchableOpacity
+          style={styles.fab}
+          onPress={() => setMapType("standard")}
+        >
+          <MaterialIcons
+            name="map"
+            size={24}
+            color={mapType === "standard" ? "#FF7043" : "#888"}
+          />
         </TouchableOpacity>
-        <TouchableOpacity style={styles.fab} onPress={() => setMapType('satellite')}>
-          <MaterialIcons name="satellite" size={24} color={mapType === 'satellite' ? "#FFD600" : "#888"} />
+        <TouchableOpacity
+          style={styles.fab}
+          onPress={() => setMapType("satellite")}
+        >
+          <MaterialIcons
+            name="satellite"
+            size={24}
+            color={mapType === "satellite" ? "#FFD600" : "#888"}
+          />
         </TouchableOpacity>
-        <TouchableOpacity style={styles.fab} onPress={() => setMapType('terrain')}>
-          <MaterialIcons name="terrain" size={24} color={mapType === 'terrain' ? "#43A047" : "#888"} />
+        <TouchableOpacity
+          style={styles.fab}
+          onPress={() => setMapType("terrain")}
+        >
+          <MaterialIcons
+            name="terrain"
+            size={24}
+            color={mapType === "terrain" ? "#43A047" : "#888"}
+          />
         </TouchableOpacity>
         {/* Speed Indicator as a circular orange button */}
         <View style={styles.fabSpeed}>
@@ -693,46 +861,46 @@ export default function MapScreen() {
   );
 }
 
-const { width } = Dimensions.get('window');
+const { width } = Dimensions.get("window");
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: "#fff",
   },
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#000',
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#000",
     paddingHorizontal: 16,
     paddingTop: 12,
     paddingBottom: 8,
     zIndex: 2,
   },
   headerTitle: {
-    color: '#fff',
-    fontWeight: 'bold',
+    color: "#fff",
+    fontWeight: "bold",
     fontSize: 20,
     letterSpacing: 1,
   },
   headerSubtitle: {
-    color: '#BBDEFB',
+    color: "#BBDEFB",
     fontSize: 13,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   map: {
     flex: 1,
-    width: '100%',
+    width: "100%",
     zIndex: 1,
   },
   bottomSheet: {
-    position: 'absolute',
+    position: "absolute",
     bottom: 0,
     left: 0,
     right: 0,
-    backgroundColor: '#fff',
+    backgroundColor: "#fff",
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: -2 },
     shadowOpacity: 0.12,
     shadowRadius: 8,
@@ -745,50 +913,50 @@ const styles = StyleSheet.create({
     padding: 18,
   },
   bottomCardHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     marginBottom: 6,
   },
   vehicleNumber: {
-    fontWeight: 'bold',
+    fontWeight: "bold",
     fontSize: 18,
-    color: '#000000',
+    color: "#000000",
   },
   speedoWrap: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#F7F8FA',
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#F7F8FA",
     borderRadius: 16,
     paddingHorizontal: 8,
     paddingVertical: 2,
   },
   speedoText: {
-    fontWeight: 'bold',
-    color: '#43A047',
+    fontWeight: "bold",
+    color: "#43A047",
     marginLeft: 4,
     fontSize: 16,
   },
   bottomCardRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     marginBottom: 2,
     marginTop: 2,
   },
   bottomCardRowText: {
-    color: '#444',
+    color: "#444",
     fontSize: 14,
     flex: 1,
-    flexWrap: 'wrap',
+    flexWrap: "wrap",
   },
   bottomCardDivider: {
     height: 1,
-    backgroundColor: '#F0F0F0',
+    backgroundColor: "#F0F0F0",
     marginVertical: 10,
   },
   statusIconsRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    justifyContent: "space-between",
     marginTop: 4,
     marginBottom: 10,
   },
@@ -797,138 +965,138 @@ const styles = StyleSheet.create({
     height: 48,
     borderRadius: 24,
     borderWidth: 2,
-    backgroundColor: '#fff',
-    alignItems: 'center',
-    justifyContent: 'center',
+    backgroundColor: "#fff",
+    alignItems: "center",
+    justifyContent: "center",
     marginHorizontal: 6,
-    shadowColor: 'rgba(0,0,0,0.1)',
+    shadowColor: "rgba(0,0,0,0.1)",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.5,
     shadowRadius: 3,
     elevation: 3,
   },
   iconCircleActive: {
-    backgroundColor: '#4285F4',
-    borderColor: '#4285F4',
-    shadowColor: '#4285F4',
+    backgroundColor: "#4285F4",
+    borderColor: "#4285F4",
+    shadowColor: "#4285F4",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.18,
     shadowRadius: 8,
   },
   bottomButtonsRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    justifyContent: "space-between",
     marginTop: 8,
   },
   centerMapBtn: {
     flex: 1,
-    backgroundColor: '#43A047',
+    backgroundColor: "#43A047",
     borderRadius: 10,
     paddingVertical: 12,
-    alignItems: 'center',
+    alignItems: "center",
     marginRight: 8,
-    shadowColor: '#43A047',
+    shadowColor: "#43A047",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.25,
     shadowRadius: 4,
     elevation: 3,
   },
   centerMapBtnText: {
-    color: '#fff',
-    fontWeight: 'bold',
+    color: "#fff",
+    fontWeight: "bold",
     fontSize: 16,
   },
   viewReportsBtn: {
     flex: 1,
-    backgroundColor: '#FF7043',
+    backgroundColor: "#FF7043",
     borderRadius: 10,
     paddingVertical: 12,
-    alignItems: 'center',
+    alignItems: "center",
     marginLeft: 8,
-    shadowColor: '#FF7043',
+    shadowColor: "#FF7043",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.25,
     shadowRadius: 4,
     elevation: 3,
   },
   viewReportsBtnText: {
-    color: '#fff',
-    fontWeight: 'bold',
+    color: "#fff",
+    fontWeight: "bold",
     fontSize: 16,
   },
   markerImage: {
     width: 30,
     height: 30,
-    resizeMode: 'contain',
+    resizeMode: "contain",
   },
   statsRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     marginVertical: 4,
   },
   statsCol: {
     flex: 1,
-    alignItems: 'center',
+    alignItems: "center",
     padding: 10,
     borderRadius: 8,
-    backgroundColor: '#f8f9fa',
+    backgroundColor: "#f8f9fa",
     marginHorizontal: 2,
     borderWidth: 1,
-    borderColor: 'rgba(0,0,0,0.05)',
-    shadowColor: 'rgba(0,0,0,0.05)',
+    borderColor: "rgba(0,0,0,0.05)",
+    shadowColor: "rgba(0,0,0,0.05)",
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.8,
     shadowRadius: 2,
     elevation: 1,
   },
   statsValue: {
-    fontWeight: 'bold',
+    fontWeight: "bold",
     fontSize: 12,
-    color: '#000',
+    color: "#000",
     marginTop: 2,
   },
   statsLabel: {
     fontSize: 10,
-    color: '#666',
-    textAlign: 'center',
-    fontWeight: '500',
+    color: "#666",
+    textAlign: "center",
+    fontWeight: "500",
   },
   statsDivider: {
     height: 1,
-    backgroundColor: '#eee',
+    backgroundColor: "#eee",
     marginVertical: 6,
   },
   floatingMenu: {
-    position: 'absolute',
+    position: "absolute",
     top: 130,
     left: 16,
     zIndex: 10,
-    alignItems: 'center',
+    alignItems: "center",
   },
   fab: {
-    backgroundColor: '#fff',
+    backgroundColor: "#fff",
     borderRadius: 24,
     width: 48,
     height: 48,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     marginBottom: 12,
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.12,
     shadowRadius: 4,
     elevation: 4,
   },
   fabSpeed: {
-    backgroundColor: '#FF7043',
+    backgroundColor: "#FF7043",
     borderRadius: 24,
     width: 48,
     height: 48,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     marginBottom: 12,
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.12,
     shadowRadius: 4,
@@ -936,53 +1104,53 @@ const styles = StyleSheet.create({
     zIndex: 20,
   },
   fabSpeedText: {
-    color: '#fff',
-    fontWeight: 'bold',
+    color: "#fff",
+    fontWeight: "bold",
     fontSize: 14,
     marginTop: 2,
   },
   fabSpeedUnit: {
-    color: '#fff',
+    color: "#fff",
     fontSize: 10,
     marginTop: -2,
   },
   statsColHighlight1: {
-    backgroundColor: '#EBF5FB',
-    borderColor: '#BBDEFB',
+    backgroundColor: "#EBF5FB",
+    borderColor: "#BBDEFB",
   },
   statsColHighlight2: {
-    backgroundColor: '#FFF8E1',
-    borderColor: '#FFECB3',
+    backgroundColor: "#FFF8E1",
+    borderColor: "#FFECB3",
   },
   statsColHighlight3: {
-    backgroundColor: '#E8F5E9',
-    borderColor: '#C8E6C9',
+    backgroundColor: "#E8F5E9",
+    borderColor: "#C8E6C9",
   },
   statsColHighlight4: {
-    backgroundColor: '#F3E5F5',
-    borderColor: '#E1BEE7',
+    backgroundColor: "#F3E5F5",
+    borderColor: "#E1BEE7",
   },
   statsColHighlight5: {
-    backgroundColor: '#E0F2F1',
-    borderColor: '#B2DFDB',
+    backgroundColor: "#E0F2F1",
+    borderColor: "#B2DFDB",
   },
   statsColHighlight6: {
-    backgroundColor: '#FFEBEE',
-    borderColor: '#FFCDD2',
+    backgroundColor: "#FFEBEE",
+    borderColor: "#FFCDD2",
   },
   statsColHighlight7: {
-    backgroundColor: '#FFF8E1',
-    borderColor: '#FFE082',
+    backgroundColor: "#FFF8E1",
+    borderColor: "#FFE082",
   },
   statsColHighlight8: {
-    backgroundColor: '#E1F5FE',
-    borderColor: '#B3E5FC',
+    backgroundColor: "#E1F5FE",
+    borderColor: "#B3E5FC",
   },
   statsColHighlight9: {
-    backgroundColor: '#F1F8E9',
-    borderColor: '#DCEDC8',
+    backgroundColor: "#F1F8E9",
+    borderColor: "#DCEDC8",
   },
   statsIcon: {
     marginBottom: 2,
   },
-}); 
+});

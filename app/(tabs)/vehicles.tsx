@@ -16,10 +16,12 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 
 const statusFilters = [
-  { label: "All", color: "#2979FF", icon: "apps" },
+  { label: "All", color: "black", icon: "apps" },
   { label: "Running", color: "#43A047", icon: "autorenew" },
-  { label: "Stop", color: "#90A4AE", icon: "stop-circle" },
   { label: "Idle", color: "#FFD600", icon: "show-chart" },
+  { label: "Stop", color: "red", icon: "stop-circle" },
+  { label: "In Active", color: "#00a8d5", icon: "show-chart" },
+  { label: "No Data", color: "gray", icon: "stop-circle" },
 ];
 
 // Car images
@@ -28,6 +30,8 @@ const carImages = {
   Idle: require("@/assets/images/cars/car-orange.png"),
   Stop: require("@/assets/images/cars/car-red.png"),
   Default: require("@/assets/images/cars/car-blue.png"),
+  "In Active": require("@/assets/images/cars/car-blue.png"),
+  "No Data": require("@/assets/images/cars/car-blue.png"),
 };
 
 export default function VehiclesScreen() {
@@ -38,14 +42,21 @@ export default function VehiclesScreen() {
   const isFocused = useIsFocused();
 
   useEffect(() => {
-    getDevices();
-    const interval = setInterval(() => {
-      if (isFocused) {
+    let interval: ReturnType<typeof setInterval>;
+    
+    if (isFocused) {
+      getDevices();
+      interval = setInterval(() => {
         getDevices();
+      }, 10000);
+    }
+
+    return () => {
+      if (interval) {
+        clearInterval(interval);
       }
-    }, 5000);
-    return () => clearInterval(interval);
-  }, []);
+    };
+  }, [isFocused]);
 
   const getDevices = async () => {
     if (!isFocused) return;
@@ -69,17 +80,19 @@ export default function VehiclesScreen() {
 
   const getDeviceStatus = (device: any) => {
     if (!device?.lastUpdate) {
-      return "Stop";
+      return "No Data";
     }
     const lastUpdate = new Date(device.lastUpdate);
     const fourHoursAgo = new Date(Date.now() - 1000 * 60 * 60 * 4);
     if (lastUpdate < fourHoursAgo) {
-      return "Stop";
+      return "In Active";
     }
     if (device.status === "online" && Number(device.speed) === 0) {
       return "Idle";
     }
-    return "Running";
+    return device.status === "online"
+      ? "Running"
+      : "Stop";
   };
 
   const filteredDevices = useMemo(() => {
@@ -99,6 +112,8 @@ export default function VehiclesScreen() {
       Running: 0,
       Stop: 0,
       Idle: 0,
+      "In Active": 0,
+      "No Data": 0,
     };
 
     devicesData.forEach((device: any) => {
@@ -118,6 +133,7 @@ export default function VehiclesScreen() {
   }) => {
     const vehicleNumberColor = "#2EAD4B";
     const iconColors = [
+      device.attributes.ignition ? "#66BB6A" : "#EF5350",
       "#EF5350", // key - red
       "#EF5350", // lock - red
       "#29B6F6", // ac-unit - sky blue
@@ -125,8 +141,8 @@ export default function VehiclesScreen() {
       "#66BB6A", // battery-full - green
     ];
     const iconNames = [
-      { "vpn-key": device.attributes.is_mobilized },
-      { lock: device.attributes.ignition },
+      { "vpn-key":device.attributes.ignition  },
+      { lock:device.attributes.is_mobilized  },
       { "ac-unit": device.attributes.is_parked },
       { "motion-photos-on": device.attributes.motion },
     ];
@@ -140,14 +156,13 @@ export default function VehiclesScreen() {
           <View
             style={{ flex: 1, flexDirection: "row", alignItems: "stretch" }}
           >
-            {/* Left: Icon and Info */}
             <View
               style={{ flex: 1, flexDirection: "row", alignItems: "center" }}
             >
               <View style={styles.vehicleIconWrap}>
                 <Image
                   source={
-                    carImages[getDeviceStatus(device)] || carImages.Default
+                    carImages[getDeviceStatus(device) as keyof typeof carImages] || carImages.Default
                   }
                   style={{
                     width: 72,
@@ -201,7 +216,7 @@ export default function VehiclesScreen() {
                 color={iconColors[i]}
                 style={{
                   marginHorizontal: 4,
-                  opacity: Object.values(icon)[0] ? 1: 0.5,
+                  opacity: Object.keys(icon)[0] === 'vpn-key' ? (device.attributes.ignition ? 1 : 0.5) : (Object.values(icon)[0] ? 1 : 0.5),
                 }}
               />
             ))}
@@ -230,12 +245,6 @@ export default function VehiclesScreen() {
               },
             ]}
           >
-            <MaterialIcons
-              name={filter.icon as any}
-              size={22}
-              color="#fff"
-              style={{ marginBottom: 4 }}
-            />
             <Text style={styles.statusLabel}>{filter.label}</Text>
             <Text style={styles.statusCount}>{filterCounts[filter.label]}</Text>
           </TouchableOpacity>
@@ -284,21 +293,16 @@ const styles = StyleSheet.create({
   },
   statusRow: {
     flexDirection: "row",
-    justifyContent: "space-between",
+    flexWrap: "wrap",
     marginHorizontal: 8,
     marginBottom: 16,
+    gap: 8,
   },
   statusCard: {
-    flex: 1,
-    marginHorizontal: 4,
+    width: "31%",
     borderRadius: 16,
     alignItems: "center",
-    paddingVertical: 14,
-    elevation: 4,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.12,
-    shadowRadius: 6,
+    paddingVertical: 5,
   },
   statusLabel: {
     color: "#fff",

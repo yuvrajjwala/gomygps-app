@@ -1,17 +1,23 @@
 import Api from '@/config/Api';
 import { MaterialIcons } from '@expo/vector-icons';
-import DateTimePicker from '@react-native-community/datetimepicker';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import moment from 'moment';
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, Dimensions, Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import MapView, { Marker, Polyline } from 'react-native-maps';
+import DateTimePickerModal from 'react-native-modal-datetime-picker';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 const carIcon = require('@/assets/images/cars/green.png');
 const { width, height } = Dimensions.get('window');
+const ASPECT_RATIO = width / height;
+const LATITUDE_DELTA = 0.0922;
+const LONGITUDE_DELTA = LATITUDE_DELTA * ASPECT_RATIO;
 
 const speeds = [1, 2, 3, 4, 5, 6];
+const MARKER_RENDER_INTERVAL = 10; // Increased interval for fewer markers
+const MAP_UPDATE_INTERVAL = 200; // Increased interval for smoother updates
+const MAX_POINTS = 1000; // Maximum number of points to display
 
 export default function HistoryPlaybackScreen() {
   const router = useRouter();
@@ -21,20 +27,21 @@ export default function HistoryPlaybackScreen() {
   const [playbackIndex, setPlaybackIndex] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
   const [speed, setSpeed] = useState(1);
-  const [zoomLevel, setZoomLevel] = useState(0.01);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const [startDate, setStartDate] = useState(() => {
     const date = new Date();
-    date.setHours(0, 0, 0, 0);
+    date.setHours(date.getHours() - 24); // Set to 24 hours ago
     return date;
   });
   const [endDate, setEndDate] = useState(new Date());
-  const [showStartPicker, setShowStartPicker] = useState(false);
-  const [showEndPicker, setShowEndPicker] = useState(false);
+  const [isStartPickerVisible, setStartPickerVisible] = useState(false);
+  const [isEndPickerVisible, setEndPickerVisible] = useState(false);
   const [loading, setLoading] = useState(false);
   const [routeData, setRouteData] = useState<any[]>([]);
   const [deviceDetails, setDeviceDetails] = useState<any>(null);
   const [summaryData, setSummaryData] = useState<any>(null);
+  const [stopLocations, setStopLocations] = useState<any[]>([]);
+  const [userZoom, setUserZoom] = useState(0.01);
 
   // Fetch device details
   useEffect(() => {
@@ -43,27 +50,53 @@ export default function HistoryPlaybackScreen() {
     }
   }, [device?.deviceId]);
 
-  // Fetch initial route data
+  // Optimize route data processing
+  const processRouteData = useCallback((data: any[]) => {
+    if (!data || data.length === 0) return [];
+    
+    // If data is too large, sample it
+    if (data.length > MAX_POINTS) {
+      const samplingRate = Math.ceil(data.length / MAX_POINTS);
+      return data.filter((_, index) => index % samplingRate === 0);
+    }
+    return data;
+  }, []);
+
+  // Fetch initial route data with optimization
   useEffect(() => {
     if (device?.deviceId) {
       const fetchData = async () => {
         setLoading(true);
         try {
-          // Convert local time to UTC with +5:30 offset
           const fromDateUTC = new Date(startDate);
           fromDateUTC.setHours(fromDateUTC.getHours() - 5, fromDateUTC.getMinutes() - 30);
           
           const toDateUTC = new Date(endDate);
           toDateUTC.setHours(toDateUTC.getHours() - 5, toDateUTC.getMinutes() - 30);
 
-          // Fetch route data
-          const routeResponse = await Api.call('/api/reports/route?from=' + fromDateUTC.toISOString().slice(0, 19) + 'Z&to=' + toDateUTC.toISOString().slice(0, 19) + 'Z&deviceId=' + device.deviceId, 'GET', {}, false);
-          setRouteData(routeResponse.data || []);
+          const routeResponse = await Api.call(
+            '/api/reports/route?from=' + fromDateUTC.toISOString() + '&to=' + 
+            toDateUTC.toISOString() + '&deviceId=' + device.deviceId, 
+            'GET', 
+            {}, 
+            false
+          );
+          
+          const processedData = processRouteData(routeResponse.data || []);
+          setRouteData(processedData);
           setPlaybackIndex(0);
           setIsPlaying(false);
 
-          // Fetch summary data in parallel
-          const summaryResponse = await Api.call('/api/reports/summary?from=' + startDate.toISOString() + '&to=' + endDate.toISOString() + '&deviceId=' + device.deviceId + '&daily=false', 'GET', {}, false);
+          // Fetch stop locations
+          await fetchStopLocations(device.deviceId, fromDateUTC, toDateUTC);
+
+          const summaryResponse = await Api.call(
+            '/api/reports/summary?from=' + startDate.toISOString() + '&to=' + 
+            endDate.toISOString() + '&deviceId=' + device.deviceId + '&daily=false', 
+            'GET', 
+            {}, 
+            false
+          );
           setSummaryData(summaryResponse.data[0]);
         } catch (error) {
           console.error('Error fetching data:', error);
@@ -74,7 +107,7 @@ export default function HistoryPlaybackScreen() {
 
       fetchData();
     }
-  }, [device?.deviceId, startDate, endDate]);
+  }, [device?.deviceId, startDate, endDate, processRouteData]);
 
   const fetchDeviceDetails = async (deviceId: string) => {
     try {
@@ -88,59 +121,148 @@ export default function HistoryPlaybackScreen() {
     }
   };
 
-  // Calculate zoom level based on speed
-  const getZoomLevel = (speed: number) => {
-    if (speed > 80) return 0.08; // Far zoom for high speed
-    if (speed > 40) return 0.04; // Medium zoom for medium speed
-    return 0.02; // Close zoom for low speed
+  // Fetch stop locations
+  const fetchStopLocations = async (deviceId: string, from: Date, to: Date) => {
+    try {
+      const response = await Api.call(
+        `/api/reports/stops?deviceId=${deviceId}&from=${from.toISOString()}&to=${to.toISOString()}`,
+        'GET',
+        {},
+        false
+      );
+      setStopLocations(response.data || []);
+    } catch (error) {
+      console.error("Error fetching stop locations:", error);
+    }
   };
 
-  // Playback effect
+  // Memoize route coordinates with sampling
+  const routeCoordinates = useMemo(() => {
+    if (!routeData.length) return [];
+    
+    const samplingRate = Math.max(1, Math.floor(routeData.length / MAX_POINTS));
+    return routeData
+      .filter((_, index) => index % samplingRate === 0)
+      .map(pos => ({
+        latitude: pos.latitude,
+        longitude: pos.longitude
+      }));
+  }, [routeData]);
+
+  // Memoize markers with increased interval
+  const markers = useMemo(() => 
+    routeData
+      .filter((_, idx) => idx % MARKER_RENDER_INTERVAL === 0)
+      .map((point, idx) => (
+        <Marker
+          key={idx}
+          coordinate={{
+            latitude: point.latitude,
+            longitude: point.longitude
+          }}
+          anchor={{ x: 0.23, y: 0.5 }}
+          style={{ zIndex: 2 }}
+        >
+          <MaterialIcons 
+            name="keyboard-arrow-up" 
+            size={22} 
+            color="orange" 
+            style={{ transform: [{ rotate: `${point.course || 0}deg` }] }} 
+          />
+        </Marker>
+      )), [routeData]);
+
+  // Add stop markers to the map
+  const stopMarkers = useMemo(() => 
+    stopLocations.map((stop, idx) => {
+
+      const isFirstOrLast = idx === 0 || idx === stopLocations.length - 1;
+return(
+      <Marker
+        key={`stop-${idx}`}
+        coordinate={{
+          latitude: stop.latitude,
+          longitude: stop.longitude
+        }}
+        anchor={{ x: 0.5, y: 0.5 }}
+        style={{ zIndex: 2 }}
+      >
+        <View style={{ alignItems: 'center' }}>
+          <MaterialIcons 
+            name="flag" 
+            size={24} 
+            color= {idx === 0 ? "green" : "red"} 
+            style={{opacity: isFirstOrLast ? 1 : 0}}
+          />
+          <View style={[styles.stopCountBadge, {opacity: !isFirstOrLast ? 1 : 0}]}>
+            <Text style={styles.stopCountText}>{idx}</Text>
+          </View>
+        </View>
+      </Marker>
+      )
+    }), [stopLocations]);
+
+  // Simplify updateMapRegion to only update position
+  const updateMapRegion = useCallback((nextIndex: number) => {
+    if (!mapRef.current || !routeData[nextIndex]) return;
+    
+    requestAnimationFrame(() => {
+      mapRef.current?.animateToRegion({
+        latitude: routeData[nextIndex].latitude,
+        longitude: routeData[nextIndex].longitude,
+        latitudeDelta: userZoom,
+        longitudeDelta: userZoom,
+      }, 500);
+    });
+  }, [routeData, userZoom]);
+
+  // Optimize playback effect with better timing
   useEffect(() => {
-    if (isPlaying && routeData.length > 0) {
-      intervalRef.current = setInterval(() => {
+    if (!isPlaying || routeData.length === 0) {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+        intervalRef.current = null;
+      }
+      return;
+    }
+
+    let lastUpdateTime = Date.now();
+    let animationFrameId: number;
+
+    const updatePlayback = () => {
+      const currentTime = Date.now();
+      if (currentTime - lastUpdateTime >= MAP_UPDATE_INTERVAL) {
         setPlaybackIndex((prev) => {
           if (prev < routeData.length - 1) {
-            const nextIndex = prev + 1;
-            // Animate map to follow current position with dynamic zoom
-            if (mapRef.current && routeData[nextIndex]) {
-              const currentSpeed = routeData[nextIndex].speed || 0;
-              const newZoomLevel = getZoomLevel(currentSpeed);
-              
-              // Validate coordinates before animating
-              const lat = routeData[nextIndex].latitude;
-              const lng = routeData[nextIndex].longitude;
-              
-              if (lat && lng && !isNaN(lat) && !isNaN(lng)) {
-                setZoomLevel(newZoomLevel);
-                mapRef.current.animateToRegion({
-                  latitude: lat,
-                  longitude: lng,
-                  latitudeDelta: newZoomLevel,
-                  longitudeDelta: newZoomLevel,
-                }, 500);
-              }
-            }
-            return nextIndex;
+            updateMapRegion(prev + 1);
+            lastUpdateTime = currentTime;
+            return prev + 1;
           }
           setIsPlaying(false);
           return prev;
         });
-      }, 1000 / speed) as any;
-    } else if (intervalRef.current) {
-      clearInterval(intervalRef.current as any);
-    }
-    return () => {
-      if (intervalRef.current) clearInterval(intervalRef.current as any);
+      }
+      animationFrameId = requestAnimationFrame(updatePlayback);
     };
-  }, [isPlaying, speed, routeData]);
+
+    animationFrameId = requestAnimationFrame(updatePlayback);
+
+    return () => {
+      if (animationFrameId) {
+        cancelAnimationFrame(animationFrameId);
+      }
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+      }
+    };
+  }, [isPlaying, routeData, updateMapRegion]);
 
   const currentPosition = routeData[playbackIndex];
 
   // For the summary card
   const data = {
     number: device?.name || 'N/A',
-    date: currentPosition ? moment(currentPosition.deviceTime).format('DD/MM/YYYY HH:mm:ss') : 'N/A',
+    date: currentPosition ? moment(currentPosition.deviceTime).format('DD/MM/YYYY HH:mm') : 'N/A',
     status: currentPosition?.attributes?.ignition ? 'Engine On' : 'Engine Off',
     address: currentPosition?.address || 'N/A',
     odometer: `${((currentPosition?.attributes?.totalDistance || 0) / 1000).toFixed(0)} Km`,
@@ -173,38 +295,22 @@ export default function HistoryPlaybackScreen() {
             initialRegion={{
               latitude: routeData[0]?.latitude || 0,
               longitude: routeData[0]?.longitude || 0,
-              latitudeDelta: zoomLevel,
-              longitudeDelta: zoomLevel,
+              latitudeDelta: userZoom,
+              longitudeDelta: userZoom,
             }}
-            minZoomLevel={0.001}
-            maxZoomLevel={0.1}
+            zoomEnabled={true}
+            zoomControlEnabled={true}
             onRegionChangeComplete={(region) => {
-              setZoomLevel(region.latitudeDelta);
+              setUserZoom(region.latitudeDelta);
             }}
           >
             <Polyline
-              coordinates={routeData.map(pos => ({
-                latitude: pos.latitude,
-                longitude: pos.longitude
-              }))}
+              coordinates={routeCoordinates}
               strokeColor="#2979FF"
-              strokeWidth={5}
+              strokeWidth={2}
             />
-            {routeData.map((point, idx) => (
-              idx < routeData.length - 1 && (
-                <Marker
-                  key={idx}
-                  coordinate={{
-                    latitude: point.latitude,
-                    longitude: point.longitude
-                  }}
-                  anchor={{ x: 0.5, y: 0.5 }}
-                  style={{ zIndex: 2 }}
-                >
-                  <MaterialIcons name="arrow-forward" size={22} color="#2979FF" style={{ transform: [{ rotate: `${point.course || 0}deg` }] }} />
-                </Marker>
-              )
-            ))}
+            {markers}
+            {stopMarkers}
             {currentPosition && (
               <Marker 
                 coordinate={{
@@ -228,14 +334,14 @@ export default function HistoryPlaybackScreen() {
         {/* Overlay: Filter Bar */}
         <View style={styles.overlayFilterBar}>
           <View style={styles.filterBar}>
-            <TouchableOpacity style={styles.filterDateBtn} onPress={() => setShowStartPicker(true)}>
+            <TouchableOpacity style={styles.filterDateBtn} onPress={() => setStartPickerVisible(true)}>
               <MaterialIcons name="calendar-today" size={18} color="#FFD600" />
-              <Text style={styles.filterDateText}>{startDate.toLocaleDateString()}</Text>
+              <Text style={styles.filterDateText}>{moment(startDate).format('DD/MM/YYYY HH:mm')}</Text>
             </TouchableOpacity>
             <Text style={styles.filterToText}>to</Text>
-            <TouchableOpacity style={styles.filterDateBtn} onPress={() => setShowEndPicker(true)}>
+            <TouchableOpacity style={styles.filterDateBtn} onPress={() => setEndPickerVisible(true)}>
               <MaterialIcons name="calendar-today" size={18} color="#FFD600" />
-              <Text style={styles.filterDateText}>{endDate.toLocaleDateString()}</Text>
+              <Text style={styles.filterDateText}>{moment(endDate).format('DD/MM/YYYY HH:mm')}</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -259,28 +365,6 @@ export default function HistoryPlaybackScreen() {
             </View>
           </View>
         </View>
-        {showStartPicker && (
-          <DateTimePicker
-            value={startDate}
-            mode="date"
-            display="default"
-            onChange={(event, date) => {
-              setShowStartPicker(false);
-              if (date) setStartDate(date);
-            }}
-          />
-        )}
-        {showEndPicker && (
-          <DateTimePicker
-            value={endDate}
-            mode="date"
-            display="default"
-            onChange={(event, date) => {
-              setShowEndPicker(false);
-              if (date) setEndDate(date);
-            }}
-          />
-        )}
         {/* Overlay: Playback Controls */}
         <View style={styles.overlayPlaybackBar}>
           <View style={styles.playbackBar}>
@@ -290,69 +374,49 @@ export default function HistoryPlaybackScreen() {
         {/* Overlay: Bottom Card */}
         <View style={styles.overlayBottomCard}>
           <View style={styles.bottomCard}>
-            <View style={styles.bottomCardHandle} />
             <View style={styles.bottomCardRow}>
-              <View style={styles.bottomCardIconWrap}>
-                <MaterialIcons name="directions-car" size={32} color="#000" />
-              </View>
-              <View style={{ flex: 1 }}>
+      
+              <View style={{ flex: 1 , gap:5}}>
                 <Text style={styles.bottomCardTitle}>{data.number}</Text>
                 <Text style={styles.bottomCardDate}>Date: {data.date}</Text>
                 <Text style={styles.bottomCardStatus}>Status: {data.status}</Text>
               </View>
               <View style={styles.speedBadge}>
-                <Text style={styles.speedBadgeText}>{((Number(data.speed)) * 1.852).toFixed(0)} km/h</Text>
+                <Text style={styles.speedBadgeText}>{(Number(data.speed)).toFixed(0)} km/h</Text>
               </View>
             </View>
             {/* Stats Rows with gap and center alignment */}
-            <View style={styles.statRow}><MaterialIcons name="location-on" size={18} color="#2979FF" style={styles.statIcon} /><Text style={styles.statLabel}><Text style={{ color: '#2979FF' }}>Address:</Text> {data.address}</Text></View>
-            <View style={styles.statRow}><MaterialIcons name="speed" size={18} color="#43A047" style={styles.statIcon} /><Text style={styles.statLabel}><Text style={{ color: '#43A047' }}>Odometer:</Text> {data.odometer}</Text></View>
-          </View>
-        </View>
-        {/* Overlay: Zoom Controls */}
-        <View style={styles.overlayZoomControls}>
-          <View style={styles.zoomControls}>
-            <TouchableOpacity 
-              style={styles.zoomButton}
-              onPress={() => {
-                if (mapRef.current) {
-                  const newZoom = Math.min(zoomLevel * 0.5, 0.1);
-                  setZoomLevel(newZoom);
-                  if (currentPosition?.latitude && currentPosition?.longitude) {
-                    mapRef.current.animateToRegion({
-                      latitude: currentPosition.latitude,
-                      longitude: currentPosition.longitude,
-                      latitudeDelta: newZoom,
-                      longitudeDelta: newZoom,
-                    }, 300);
-                  }
-                }
-              }}
-            >
-              <MaterialIcons name="add" size={24} color="#fff" />
-            </TouchableOpacity>
-            <TouchableOpacity 
-              style={styles.zoomButton}
-              onPress={() => {
-                if (mapRef.current) {
-                  const newZoom = Math.max(zoomLevel * 2, 0.001);
-                  setZoomLevel(newZoom);
-                  if (currentPosition?.latitude && currentPosition?.longitude) {
-                    mapRef.current.animateToRegion({
-                      latitude: currentPosition.latitude,
-                      longitude: currentPosition.longitude,
-                      latitudeDelta: newZoom,
-                      longitudeDelta: newZoom,
-                    }, 300);
-                  }
-                }
-              }}
-            >
-              <MaterialIcons name="remove" size={24} color="#fff" />
-            </TouchableOpacity>
+            <View style={styles.statRow}><Text style={styles.statLabel}><Text style={{ color: 'black', fontWeight: 'bold' ,}}>Address:</Text> {data.address}</Text></View>
+            <View style={styles.statRow}><Text style={styles.statLabel}><Text style={{ color: 'black', fontWeight: 'bold' }}>Distance:</Text> {(summaryData?.distance / 1000).toFixed(2)} km</Text></View>
+            <View style={styles.statRow}><Text style={styles.statLabel}><Text style={{ color: 'black', fontWeight: 'bold' }}>Odometer:</Text> {data.odometer}</Text></View>
           </View>
         </View>
       </View>
+
+      {/* Date Time Pickers */}
+      <DateTimePickerModal
+        isVisible={isStartPickerVisible}
+        mode="datetime"
+        onConfirm={(date) => {
+          setStartPickerVisible(false);
+          setStartDate(date);
+        }}
+        onCancel={() => setStartPickerVisible(false)}
+        date={startDate}
+        maximumDate={endDate}
+      />
+
+      <DateTimePickerModal
+        isVisible={isEndPickerVisible}
+        mode="datetime"
+        onConfirm={(date) => {
+          setEndPickerVisible(false);
+          setEndDate(date);
+        }}
+        onCancel={() => setEndPickerVisible(false)}
+        date={endDate}
+        minimumDate={startDate}
+      />
     </SafeAreaView>
   );
 }
@@ -373,8 +437,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     backgroundColor: '#000',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingHorizontal: width * 0.04,
+    paddingVertical: height * 0.015,
     borderBottomWidth: 0,
     elevation: 2,
     shadowColor: '#000',
@@ -385,16 +449,16 @@ const styles = StyleSheet.create({
   headerTitle: {
     color: '#fff',
     fontWeight: 'bold',
-    fontSize: 20,
+    fontSize: width * 0.05,
   },
   filterBar: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: '#111',
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    gap: 8,
+    paddingVertical: height * 0.01,
+    paddingHorizontal: width * 0.04,
+    gap: width * 0.02,
     borderBottomWidth: 1,
     borderBottomColor: '#181818',
   },
@@ -402,22 +466,22 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#181818',
-    borderRadius: 8,
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    marginHorizontal: 2,
+    borderRadius: width * 0.02,
+    paddingVertical: height * 0.008,
+    paddingHorizontal: width * 0.03,
+    marginHorizontal: width * 0.005,
   },
   filterDateText: {
     color: '#FFD600',
     fontWeight: 'bold',
-    fontSize: 15,
-    marginLeft: 6,
+    fontSize: width * 0.035,
+    marginLeft: width * 0.015,
   },
   filterToText: {
     color: '#fff',
     fontWeight: 'bold',
-    fontSize: 15,
-    marginHorizontal: 8,
+    fontSize: width * 0.035,
+    marginHorizontal: width * 0.02,
   },
   map: {
     ...StyleSheet.absoluteFillObject,
@@ -427,15 +491,15 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#111',
-    paddingVertical: 10,
-    paddingHorizontal: 18,
+    paddingVertical: height * 0.012,
+    paddingHorizontal: width * 0.045,
     justifyContent: 'space-between',
   },
   timeText: {
     color: '#fff',
     fontWeight: 'bold',
-    fontSize: 15,
-    marginLeft: 12,
+    fontSize: width * 0.035,
+    marginLeft: width * 0.03,
   },
   bottomCard: {
     position: 'absolute',
@@ -443,9 +507,9 @@ const styles = StyleSheet.create({
     left: 0,
     width: width,
     backgroundColor: '#fff',
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    padding: 18,
+    borderTopLeftRadius: width * 0.06,
+    borderTopRightRadius: width * 0.06,
+    padding: width * 0.045,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: -2 },
     shadowOpacity: 0.12,
@@ -455,60 +519,60 @@ const styles = StyleSheet.create({
     marginTop: 0,
   },
   bottomCardHandle: {
-    width: 48,
-    height: 5,
-    borderRadius: 3,
+    width: width * 0.12,
+    height: height * 0.006,
+    borderRadius: width * 0.0075,
     backgroundColor: '#eee',
     alignSelf: 'center',
-    marginBottom: 10,
+    marginBottom: height * 0.012,
   },
   bottomCardRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 8,
+    marginBottom: height * 0.01,
   },
   bottomCardIconWrap: {
     backgroundColor: '#222',
-    borderRadius: 24,
-    width: 48,
-    height: 48,
+    borderRadius: width * 0.06,
+    width: width * 0.12,
+    height: width * 0.12,
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 12,
+    marginRight: width * 0.03,
   },
   bottomCardTitle: {
     color: '#000',
     fontWeight: 'bold',
-    fontSize: 18,
+    fontSize: width * 0.045,
   },
   bottomCardDate: {
     color: '#888',
-    fontSize: 14,
+    fontSize: width * 0.035,
     fontWeight: '600',
   },
   bottomCardStatus: {
     color: '#222',
-    fontSize: 15,
+    fontSize: width * 0.0375,
     fontWeight: 'bold',
   },
   bottomCardLabel: {
     color: '#444',
-    fontSize: 15,
-    marginBottom: 2,
+    fontSize: width * 0.0375,
+    marginBottom: height * 0.0025,
   },
   speedBadge: {
     backgroundColor: '#000',
-    borderRadius: 16,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
+    borderRadius: width * 0.04,
+    paddingHorizontal: width * 0.025,
+    paddingVertical: height * 0.005,
     alignItems: 'center',
     justifyContent: 'center',
-    marginLeft: 8,
+    marginLeft: width * 0.02,
   },
   speedBadgeText: {
     color: '#fff',
     fontWeight: 'bold',
-    fontSize: 14,
+    fontSize: width * 0.035,
   },
   overlayFilterBar: {
     position: 'absolute',
@@ -520,7 +584,7 @@ const styles = StyleSheet.create({
   },
   overlayPlaybackBar: {
     position: 'absolute',
-    bottom: 120,
+    bottom: height * 0.15,
     left: 0,
     width: '100%',
     zIndex: 10,
@@ -533,7 +597,7 @@ const styles = StyleSheet.create({
     zIndex: 20,
   },
   overlaySpeedSelectorBar: {
-    top: 42,
+    top: height * 0.052,
     left: 0,
     borderRadius: 0,
     width: '100%',
@@ -544,11 +608,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#181818',
-    borderRadius: 12,
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    marginTop: 4,
-    marginBottom: 4,
+    borderRadius: width * 0.03,
+    paddingVertical: height * 0.01,
+    paddingHorizontal: width * 0.04,
+    marginTop: height * 0.005,
+    marginBottom: height * 0.005,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.08,
@@ -557,20 +621,20 @@ const styles = StyleSheet.create({
   speedSelectorLabel: {
     color: '#FFD600',
     fontWeight: 'bold',
-    fontSize: 15,
-    marginRight: 10,
+    fontSize: width * 0.0375,
+    marginRight: width * 0.025,
   },
   speedSelectorRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    gap: width * 0.015,
   },
   speedBtn: {
     backgroundColor: '#222',
-    borderRadius: 8,
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    marginHorizontal: 2,
+    borderRadius: width * 0.02,
+    paddingVertical: height * 0.007,
+    paddingHorizontal: width * 0.03,
+    marginHorizontal: width * 0.005,
   },
   speedBtnActive: {
     backgroundColor: '#000',
@@ -578,7 +642,7 @@ const styles = StyleSheet.create({
   speedText: {
     color: '#fff',
     fontWeight: 'bold',
-    fontSize: 15,
+    fontSize: width * 0.0375,
   },
   speedTextActive: {
     color: '#FFD600',
@@ -586,42 +650,65 @@ const styles = StyleSheet.create({
   statRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 6,
+    marginBottom: height * 0.0075,
   },
   statIcon: {
-    marginRight: 10,
+    marginRight: width * 0.025,
   },
   statLabel: {
     color: '#222',
-    fontSize: 15,
+    fontSize: width * 0.0375,
     flexShrink: 1,
   },
   speedSelectorPlayBtn: {
-    marginRight: 10,
+    marginRight: width * 0.025,
     backgroundColor: 'transparent',
-    borderRadius: 20,
-    padding: 4,
+    borderRadius: width * 0.05,
+    padding: width * 0.01,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  overlayZoomControls: {
+  datePickerContainer: {
+    backgroundColor: '#fff',
     position: 'absolute',
-    right: 16,
-    bottom: 140,
-    zIndex: 10,
+    bottom: 0,
+    left: 0,
+    right: 0,
+    zIndex: 1000,
   },
-  zoomControls: {
-    backgroundColor: '#181818',
-    borderRadius: 12,
-    padding: 8,
-    gap: 8,
+  datePickerHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    padding: width * 0.04,
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
+    backgroundColor: '#f8f8f8',
   },
-  zoomButton: {
-    backgroundColor: '#222',
-    borderRadius: 8,
-    width: 40,
-    height: 40,
+  datePickerCancel: {
+    color: '#666',
+    fontSize: width * 0.04,
+    fontWeight: '600',
+  },
+  datePickerConfirm: {
+    color: '#FFD600',
+    fontSize: width * 0.04,
+    fontWeight: '600',
+  },
+  stopCountBadge: {
+    position: 'absolute',
+    top: 10,
+    right: -8,
+    backgroundColor: '#000',
+    borderRadius: width * 0.04,
+    minWidth: width * 0.06,
+    height: width * 0.06,
     alignItems: 'center',
     justifyContent: 'center',
+    paddingHorizontal: width * 0.01,
+  },
+  stopCountText: {
+    color: '#fff',
+    fontSize: width * 0.03,
+    fontWeight: 'bold',
   },
 }); 

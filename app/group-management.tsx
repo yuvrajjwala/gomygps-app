@@ -195,6 +195,7 @@ export default function GroupManagement() {
     const depth = item.depth || 0;
     const hasChildren = item.hasChildren;
     const isExpanded = expandedRows.has(item.id);
+    const childCount = item.children?.length || 0;
 
     return (
       <View style={[styles.groupCard, { marginLeft: depth * 20 }]}>
@@ -202,19 +203,22 @@ export default function GroupManagement() {
           <View style={styles.groupHeader}>
             {hasChildren && (
               <TouchableOpacity
-                onPress={() => toggleRow(item.id)}
                 style={styles.expandButton}
+                onPress={() => toggleRow(item.id)}
               >
                 <MaterialIcons
-                  name={isExpanded ? 'expand-less' : 'expand-more'}
-                  size={24}
-                  color="#666"
+                  name={isExpanded ? "expand-more" : "chevron-right"}
+                  size={30}
+                  color="#2979FF"
                 />
               </TouchableOpacity>
             )}
-            <MaterialIcons name="group" size={28} color="#FFD600" />
+            {!hasChildren && <View style={{ width: 24 }} />}
             <View style={styles.groupDetails}>
-              <Text style={styles.groupName}>{item.name}</Text>
+              <Text style={styles.groupName}>
+                {item.name}
+                {hasChildren && ` (${childCount})`}
+              </Text>
             </View>
           </View>
           <View style={styles.groupCardActions}>
@@ -258,7 +262,7 @@ export default function GroupManagement() {
             autoCapitalize="none"
           />
           <FlatList
-            data={filteredGroups}
+            data={flattenedData}
             keyExtractor={item => item.id}
             contentContainerStyle={{ padding: 2 }}
             renderItem={renderGroupItem}
@@ -367,7 +371,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#FFFFFF",
     borderRadius: 16,
     paddingVertical: 10,
-    paddingHorizontal: 20,
+    paddingHorizontal: 10,
     marginBottom: 16,
     elevation: 2,
     shadowColor: "#000000",
@@ -382,7 +386,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   groupDetails: {
-    marginLeft: 16,
     flex: 1,
   },
   groupCardActions: {
@@ -395,10 +398,9 @@ const styles = StyleSheet.create({
     marginLeft: 2,
   },
   groupName: {
-    fontSize: 18,
-    fontWeight: "600",
+    fontSize: 16,
+    fontWeight: "500",
     color: "#000000",
-    marginLeft: 18,
     letterSpacing: 0.3,
   },
   groupSearchInput: {
@@ -536,6 +538,8 @@ const styles = StyleSheet.create({
   expandButton: {
     padding: 4,
     marginRight: 4,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   emptyText: {
     color: "#888",

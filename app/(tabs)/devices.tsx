@@ -157,6 +157,8 @@ export default function DevicesScreen() {
   const [groupItems, setGroupItems] = useState<DropdownItem[]>([]);
   const [groupSearch, setGroupSearch] = useState("");
 
+  const [loading, setLoading] = useState(true);
+
   const filteredDevices = devices.filter(
     (d) =>
       d.name.toLowerCase().includes(search.toLowerCase()) ||
@@ -186,6 +188,7 @@ export default function DevicesScreen() {
 
   const getDevices = async () => {
     if (!isFocused) return;
+    setLoading(true);
     try {
       const [responseDevices, responsePositions] = await Promise.all([
         Api.call("/api/devices", "GET", {}, false),
@@ -202,6 +205,7 @@ export default function DevicesScreen() {
     } catch (error) {
       console.error("Error fetching data:", error);
     }
+    setLoading(false);
   };
 
   const fetchGroups = async () => {
@@ -396,6 +400,40 @@ export default function DevicesScreen() {
     setExpirationPickerVisible(false);
   };
 
+  // SkeletonDeviceCard component
+  const SkeletonDeviceCard = () => (
+    <View style={[styles.deviceCard, { overflow: 'hidden' }]}> 
+      <View style={styles.deviceRow}>
+        <View style={{ flex: 1 }}>
+          <View style={{ width: '60%', height: 18, backgroundColor: '#e0e0e0', borderRadius: 8, marginBottom: 8 }} />
+        </View>
+        <View style={{ width: 60, height: 22, backgroundColor: '#e0e0e0', borderRadius: 8 }} />
+      </View>
+      <View style={styles.deviceDetailsRow}>
+        <View style={{ width: '40%', height: 14, backgroundColor: '#e0e0e0', borderRadius: 8, marginBottom: 6 }} />
+      </View>
+      <View style={styles.deviceDetailsRow}>
+        <View style={{ width: '40%', height: 14, backgroundColor: '#e0e0e0', borderRadius: 8, marginBottom: 6 }} />
+      </View>
+      <View style={styles.deviceDetailsRow}>
+        <View style={{ width: '40%', height: 14, backgroundColor: '#e0e0e0', borderRadius: 8, marginBottom: 6 }} />
+      </View>
+      <View style={styles.deviceDetailsRow}>
+        <View style={{ width: '40%', height: 14, backgroundColor: '#e0e0e0', borderRadius: 8, marginBottom: 6 }} />
+      </View>
+      <View style={styles.deviceDetailsRow}>
+        <View style={{ width: '60%', height: 14, backgroundColor: '#e0e0e0', borderRadius: 8, marginBottom: 6 }} />
+      </View>
+      <View style={styles.deviceDetailsRow}>
+        <View style={{ width: '60%', height: 14, backgroundColor: '#e0e0e0', borderRadius: 8, marginBottom: 6 }} />
+      </View>
+      <View style={styles.deviceActionsRow}>
+        <View style={{ flex: 1, height: 36, backgroundColor: '#e0e0e0', borderRadius: 8, marginRight: 6 }} />
+        <View style={{ flex: 1, height: 36, backgroundColor: '#e0e0e0', borderRadius: 8, marginLeft: 6 }} />
+      </View>
+    </View>
+  );
+
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor="#fff" />
@@ -418,127 +456,135 @@ export default function DevicesScreen() {
           onChangeText={setSearch}
         />
       </View>
-      <FlatList
-        data={filteredDevices}
-        keyExtractor={(item) => item.id.toString()}
-        contentContainerStyle={{ paddingBottom: 80, paddingTop: 12 }}
-        renderItem={({ item }) => (
-          <TouchableOpacity
-            style={styles.deviceCard}
-            onPress={() =>
-              router.push({
-                pathname: "/map",
-                params: {
-                  ...item,
-                  disabled: item.disabled.toString(),
-                },
-              })
-            }
-            activeOpacity={0.85}
-          >
-            <View style={styles.deviceRow}>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.deviceNumber}>{item.name}</Text>
-              </View>
-              <Text
-                style={[
-                  styles.deviceModel,
-                  {
-                    backgroundColor:
-                      item.status === "online" ? "#43A047" : "#FF7043",
+      {loading && devices.length === 0 ? (
+        <View style={{ paddingTop: 12, paddingBottom: 80 }}>
+          {[...Array(6)].map((_, i) => (
+            <SkeletonDeviceCard key={i} />
+          ))}
+        </View>
+      ) : (
+        <FlatList
+          data={filteredDevices}
+          keyExtractor={(item) => item.id.toString()}
+          contentContainerStyle={{ paddingBottom: 80, paddingTop: 12 }}
+          renderItem={({ item }) => (
+            <TouchableOpacity
+              style={styles.deviceCard}
+              onPress={() =>
+                router.push({
+                  pathname: "/map",
+                  params: {
+                    ...item,
+                    disabled: item.disabled.toString(),
                   },
-                ]}
-              >
-                {item.status}
-              </Text>
-            </View>
-            <View style={styles.deviceDetailsRow}>
-              <Text style={styles.deviceDetail}>
-                Model: {item.model || "-"}
-              </Text>
-            </View>
-            <View style={styles.deviceDetailsRow}>
-              <Text style={styles.deviceDetail}>
-                Category: {item.category || "-"}
-              </Text>
-            </View>
-            <View style={styles.deviceDetailsRow}>
-              <Text style={styles.deviceDetail}>
-                Contact: {item.phone || "-"}
-              </Text>
-            </View>
-            <View style={styles.deviceDetailsRow}>
-              <Text style={styles.deviceDetail}>
-                IMEI: {item.uniqueId || "-"}
-              </Text>
-            </View>
-            <View style={styles.deviceDetailsRow}>
-              <Text style={styles.deviceDetail}>
-                Last Update:{" "}
-                {item.lastUpdate
-                  ? new Date(item.lastUpdate).toLocaleString([], {
-                      month: "short",
-                      day: "numeric",
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    })
-                  : "-"}
-              </Text>
-            </View>
-            <View style={styles.deviceDetailsRow}>
-              {/* <Text style={styles.deviceDetail}>
-                Creation Time:{" "}
-                {item.lastUpdate
-                  ? new Date(item.lastUpdate).toLocaleString([], {
-                      month: "short",
-                      day: "numeric",
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    })
-                  : "-"}
-              </Text> */}
-            </View>
-            <View style={styles.deviceDetailsRow}>
-              <Text style={styles.deviceDetail}>
-                Expiration Time:{" "}
-                {item.expirationTime
-                  ? new Date(item.expirationTime).toLocaleString([], {
-                      month: "short",
-                      day: "numeric",
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    })
-                  : "-"}
-              </Text>
-            </View>
-            <View style={styles.deviceActionsRow}>
-              <TouchableOpacity
-                style={[
-                  styles.deviceActionBtn,
-                  { backgroundColor: "#43A047", flex: 1, marginRight: 6 },
-                ]}
-                onPress={() => openEditModal(item)}
-              >
-                <Text style={styles.deviceActionBtnText}>EDIT</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[
-                  styles.deviceActionBtn,
-                  { backgroundColor: "#FF7043", flex: 1, marginLeft: 6 },
-                ]}
-                onPress={() => {
-                  setSelectedDeviceId(item.deviceId);
-                  setUsersModalVisible(true);
-                }}
-              >
-                <Text style={[styles.deviceActionBtnText, { color: "white" }]}>
-                  USERS
+                })
+              }
+              activeOpacity={0.85}
+            >
+              <View style={styles.deviceRow}>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.deviceNumber}>{item.name}</Text>
+                </View>
+                <Text
+                  style={[
+                    styles.deviceModel,
+                    {
+                      backgroundColor:
+                        item.status === "online" ? "#43A047" : "#FF7043",
+                    },
+                  ]}
+                >
+                  {item.status}
                 </Text>
-              </TouchableOpacity>
-            </View>
-          </TouchableOpacity>
-        )}
-      />
+              </View>
+              <View style={styles.deviceDetailsRow}>
+                <Text style={styles.deviceDetail}>
+                  Model: {item.model || "-"}
+                </Text>
+              </View>
+              <View style={styles.deviceDetailsRow}>
+                <Text style={styles.deviceDetail}>
+                  Category: {item.category || "-"}
+                </Text>
+              </View>
+              <View style={styles.deviceDetailsRow}>
+                <Text style={styles.deviceDetail}>
+                  Contact: {item.phone || "-"}
+                </Text>
+              </View>
+              <View style={styles.deviceDetailsRow}>
+                <Text style={styles.deviceDetail}>
+                  IMEI: {item.uniqueId || "-"}
+                </Text>
+              </View>
+              <View style={styles.deviceDetailsRow}>
+                <Text style={styles.deviceDetail}>
+                  Last Update:{" "}
+                  {item.lastUpdate
+                    ? new Date(item.lastUpdate).toLocaleString([], {
+                        month: "short",
+                        day: "numeric",
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })
+                    : "-"}
+                </Text>
+              </View>
+              <View style={styles.deviceDetailsRow}>
+                {/* <Text style={styles.deviceDetail}>
+                  Creation Time:{" "}
+                  {item.lastUpdate
+                    ? new Date(item.lastUpdate).toLocaleString([], {
+                        month: "short",
+                        day: "numeric",
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })
+                    : "-"}
+                </Text> */}
+              </View>
+              <View style={styles.deviceDetailsRow}>
+                <Text style={styles.deviceDetail}>
+                  Expiration Time:{" "}
+                  {item.expirationTime
+                    ? new Date(item.expirationTime).toLocaleString([], {
+                        month: "short",
+                        day: "numeric",
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })
+                    : "-"}
+                </Text>
+              </View>
+              <View style={styles.deviceActionsRow}>
+                <TouchableOpacity
+                  style={[
+                    styles.deviceActionBtn,
+                    { backgroundColor: "#43A047", flex: 1, marginRight: 6 },
+                  ]}
+                  onPress={() => openEditModal(item)}
+                >
+                  <Text style={styles.deviceActionBtnText}>EDIT</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[
+                    styles.deviceActionBtn,
+                    { backgroundColor: "#FF7043", flex: 1, marginLeft: 6 },
+                  ]}
+                  onPress={() => {
+                    setSelectedDeviceId(item.deviceId);
+                    setUsersModalVisible(true);
+                  }}
+                >
+                  <Text style={[styles.deviceActionBtnText, { color: "white" }]}>
+                    USERS
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </TouchableOpacity>
+          )}
+        />
+      )}
       <TouchableOpacity style={styles.fab} onPress={openAddModal}>
         <MaterialIcons name="add" size={28} color="#fff" />
       </TouchableOpacity>

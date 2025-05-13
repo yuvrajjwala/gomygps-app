@@ -12,7 +12,7 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
-  View,
+  View
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -40,6 +40,7 @@ export default function VehiclesScreen() {
   const [devicesData, setDevicesData] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedFilter, setSelectedFilter] = useState("All");
+  const [loading, setLoading] = useState(true);
   const isFocused = useIsFocused();
 
   useEffect(() => {
@@ -61,6 +62,7 @@ export default function VehiclesScreen() {
 
   const getDevices = async () => {
     if (!isFocused) return;
+    setLoading(true);
     try {
       const [responseDevices, responsePositions] = await Promise.all([
         Api.call("/api/devices", "GET", {}, false),
@@ -77,6 +79,7 @@ export default function VehiclesScreen() {
     } catch (error) {
       console.error("Error fetching data:", error);
     }
+    setLoading(false);
   };
 
   const getDeviceStatus = (device: any) => {
@@ -234,6 +237,29 @@ export default function VehiclesScreen() {
     );
   };
 
+  // SkeletonCard component
+  const SkeletonCard = () => (
+    <View style={[styles.vehicleCardNew, { overflow: 'hidden' }]}> 
+      <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+        <View style={{ width: 72, height: 72, borderRadius: 12, backgroundColor: '#e0e0e0', marginRight: 20 }} />
+        <View style={{ flex: 1 }}>
+          <View style={{ width: '60%', height: 16, backgroundColor: '#e0e0e0', borderRadius: 8, marginBottom: 8 }} />
+          <View style={{ width: '80%', height: 12, backgroundColor: '#e0e0e0', borderRadius: 8, marginBottom: 6 }} />
+          <View style={{ width: '40%', height: 10, backgroundColor: '#e0e0e0', borderRadius: 8 }} />
+        </View>
+        <View style={styles.statsColNew}>
+          <View style={{ width: 38, height: 15, backgroundColor: '#e0e0e0', borderRadius: 8, marginBottom: 6 }} />
+          <View style={{ width: 38, height: 10, backgroundColor: '#e0e0e0', borderRadius: 8, marginBottom: 6 }} />
+        </View>
+      </View>
+      <View style={{ flexDirection: 'row', marginTop: 10, paddingLeft: 100 }}>
+        {[...Array(4)].map((_, i) => (
+          <View key={i} style={{ width: 22, height: 22, borderRadius: 11, backgroundColor: '#e0e0e0', marginHorizontal: 4 }} />
+        ))}
+      </View>
+    </View>
+  );
+
   return (
     <SafeAreaView style={styles.safeArea}>
       <StatusBar barStyle="dark-content" backgroundColor="#fff" />
@@ -286,14 +312,22 @@ export default function VehiclesScreen() {
           />
         </TouchableOpacity>
       </View>
-      {/* Vehicle Cards */}
-      <FlatList
-        data={filteredDevices}
-        renderItem={renderVehicleCard}
-        keyExtractor={(item) => item.id.toString()}
-        contentContainerStyle={{ paddingBottom: 24 }}
-        showsVerticalScrollIndicator={false}
-      />
+      {/* Vehicle Cards or Skeletons */}
+      {loading && devicesData.length === 0 ? (
+        <View style={{ paddingHorizontal: 6, paddingTop: 8 }}>
+          {[...Array(6)].map((_, i) => (
+            <SkeletonCard key={i} />
+          ))}
+        </View>
+      ) : (
+        <FlatList
+          data={filteredDevices}
+          renderItem={renderVehicleCard}
+          keyExtractor={(item) => item.id.toString()}
+          contentContainerStyle={{ paddingBottom: 24 }}
+          showsVerticalScrollIndicator={false}
+        />
+      )}
     </SafeAreaView>
   );
 }

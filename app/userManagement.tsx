@@ -449,7 +449,7 @@ export default function UserManagementScreen() {
       </View>
       <View style={styles.cardButtonsContainer}>
         <TouchableOpacity style={styles.cardButton}>
-          <Text style={styles.cardButtonText}>Dashboard</Text>
+          <Text style={styles.cardButtonText}>Dashboarddd</Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.cardButton1}>
           <Text style={styles.cardButtonText}>Devices</Text>

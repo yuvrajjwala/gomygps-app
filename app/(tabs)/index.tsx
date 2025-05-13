@@ -8,7 +8,7 @@ import {
   StyleSheet,
   Text,
   TouchableOpacity,
-  View,
+  View
 } from "react-native";
 import { PieChart } from "react-native-chart-kit";
 import { Card, useTheme } from "react-native-paper";
@@ -27,6 +27,7 @@ export default function DashboardScreen() {
     { label: "Inactive", count: 0, color: "#00a8d5" },
     { label: "No Data", count: 0, color: "gray" },
   ]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     getDevicesCount();
@@ -77,6 +78,7 @@ export default function DashboardScreen() {
   };
 
   const getDevicesCount = async () => {
+    setLoading(true);
     const [responseDevices, responsePositions] = await Promise.all([
       Api.call("/api/devices", "GET", {}, false),
       Api.call("/api/positions", "GET", {}, false),
@@ -89,6 +91,7 @@ export default function DashboardScreen() {
         ),
       }))
     );
+    setLoading(false);
   };
 
   const getGroupsCount = async () => {
@@ -104,6 +107,20 @@ export default function DashboardScreen() {
     legendFontSize: 16,
   }));
 
+  // Skeleton components
+  const SkeletonStatusCard = () => (
+    <View style={{ width: '31%', borderRadius: 16, alignItems: 'center', paddingVertical: 18, backgroundColor: '#e0e0e0', marginBottom: 8 }} />
+  );
+  const SkeletonChart = () => (
+    <View style={{ margin: 8, borderRadius: 16, height: 200, backgroundColor: '#e0e0e0' }} />
+  );
+  const SkeletonListRow = () => (
+    <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 14, backgroundColor: '#e0e0e0', borderRadius: 10, marginBottom: 8 }}>
+      <View style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: '#d0d0d0', marginRight: 12 }} />
+      <View style={{ width: 100, height: 16, backgroundColor: '#d0d0d0', borderRadius: 8 }} />
+    </View>
+  );
+
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: "#ffffff" }}>
       <StatusBar barStyle="dark-content" backgroundColor="#fff" />
@@ -111,126 +128,160 @@ export default function DashboardScreen() {
         <Text style={styles.blackHeaderText}>Dashboard</Text>
       </View>
       <ScrollView style={{ marginTop: 20 }}>
-        <View style={styles.statusRow}>
-          {vehicleStats.map((filter) => (
-            <TouchableOpacity
-              key={filter.label}
-              style={[
-                styles.statusCard,
-                filter.label === "Idle"
-                  ? { backgroundColor: "#FF6F00" }
-                  : {
-                      backgroundColor: filter.color,
-                      shadowColor: filter.color,
-                    },
-                filter.label === "Idle" && {
-                  borderWidth: 2,
-                  borderColor: "#fff",
-                },
-              ]}
-            >
-              <Text style={styles.statusLabel}>{filter.label}</Text>
-              <Text style={styles.statusCount}>{filter.count}</Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-        <Card style={styles.chartCard}>
-          <Card.Title
-            title="Vehicle Status Distribution"
-            titleStyle={{ color: "#FF1744", fontWeight: "bold" }}
-          />
-          <PieChart
-            data={pieData}
-            width={screenWidth - 32}
-            height={180}
-            chartConfig={{
-              color: (opacity = 1) => `rgba(255,23,68,${opacity})`,
-            }}
-            accessor={"population"}
-            backgroundColor={"transparent"}
-            paddingLeft={"15"}
-            absolute
-          />
-        </Card>
-        {/* Recent Devices */}
-        <Card style={styles.listCard}>
-          <Card.Title title="Recent Devices" titleStyle={styles.listTitle} />
-          <View style={styles.listHeaderRow}>
-            <Text style={styles.listHeader}>NAME</Text>
-            <Text style={styles.listHeader}>STATUS</Text>
-          </View>
-          {devicesData?.length > 0 &&
-            devicesData?.slice(0, 5)?.map((device: any, idx: number) => (
-              <View
-                key={device.name + idx}
-                style={[
-                  styles.listRow,
-                  idx !== devicesData?.length - 1 && styles.listRowBorder,
-                ]}
-              >
-                <View style={styles.listLeft}>
-                  <View style={styles.deviceIconCircle}>
-                    <MaterialIcons
-                      name="local-shipping"
-                      size={24}
-                      color="#fff"
-                      style={{}}
-                    />
-                  </View>
-                  <Text style={styles.deviceName}>{device.name}</Text>
-                </View>
-                <View
+        {loading ? (
+          <>
+            {/* Skeleton Status Cards */}
+            <View style={styles.statusRow}>
+              {[...Array(6)].map((_, i) => (
+                <SkeletonStatusCard key={i} />
+              ))}
+            </View>
+            {/* Skeleton Chart */}
+            <SkeletonChart />
+            {/* Skeleton Recent Devices */}
+            <View style={styles.listCard}>
+              <View style={styles.listHeaderRow}>
+                <View style={{ width: 80, height: 16, backgroundColor: '#e0e0e0', borderRadius: 8 }} />
+                <View style={{ width: 60, height: 16, backgroundColor: '#e0e0e0', borderRadius: 8 }} />
+              </View>
+              {[...Array(5)].map((_, i) => (
+                <SkeletonListRow key={i} />
+              ))}
+            </View>
+            {/* Skeleton Groups */}
+            <View style={styles.listCard}>
+              <View style={styles.listHeaderRow}>
+                <View style={{ width: 80, height: 16, backgroundColor: '#e0e0e0', borderRadius: 8 }} />
+              </View>
+              {[...Array(4)].map((_, i) => (
+                <SkeletonListRow key={i} />
+              ))}
+            </View>
+          </>
+        ) : (
+          <>
+            <View style={styles.statusRow}>
+              {vehicleStats.map((filter) => (
+                <TouchableOpacity
+                  key={filter.label}
                   style={[
-                    styles.statusBadge,
-                    device.status === "online" ? styles.online : styles.offline,
+                    styles.statusCard,
+                    filter.label === "Idle"
+                      ? { backgroundColor: "#FF6F00" }
+                      : {
+                          backgroundColor: filter.color,
+                          shadowColor: filter.color,
+                        },
+                    filter.label === "Idle" && {
+                      borderWidth: 2,
+                      borderColor: "#fff",
+                    },
                   ]}
                 >
+                  <Text style={styles.statusLabel}>{filter.label}</Text>
+                  <Text style={styles.statusCount}>{filter.count}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+            <Card style={styles.chartCard}>
+              <Card.Title
+                title="Vehicle Status Distribution"
+                titleStyle={{ color: "#FF1744", fontWeight: "bold" }}
+              />
+              <PieChart
+                data={pieData}
+                width={screenWidth - 32}
+                height={180}
+                chartConfig={{
+                  color: (opacity = 1) => `rgba(255,23,68,${opacity})`,
+                }}
+                accessor={"population"}
+                backgroundColor={"transparent"}
+                paddingLeft={"15"}
+                absolute
+              />
+            </Card>
+            {/* Recent Devices */}
+            <Card style={styles.listCard}>
+              <Card.Title title="Recent Devices" titleStyle={styles.listTitle} />
+              <View style={styles.listHeaderRow}>
+                <Text style={styles.listHeader}>NAME</Text>
+                <Text style={styles.listHeader}>STATUS</Text>
+              </View>
+              {devicesData?.length > 0 &&
+                devicesData?.slice(0, 5)?.map((device: any, idx: number) => (
                   <View
+                    key={device.name + idx}
                     style={[
-                      styles.statusDot,
-                      device.status === "online"
-                        ? styles.onlineDot
-                        : styles.offlineDot,
-                    ]}
-                  />
-                  <Text
-                    style={[
-                      styles.statusText,
-                      device.status === "online"
-                        ? styles.onlineText
-                        : styles.offlineText,
+                      styles.listRow,
+                      idx !== devicesData?.length - 1 && styles.listRowBorder,
                     ]}
                   >
-                    {device.status}
-                  </Text>
-                </View>
-              </View>
-            ))}
-        </Card>
-        {/* Groups */}
-        <Card style={styles.listCard}>
-          <Card.Title title="Groups" titleStyle={styles.listTitle} />
-          <View style={styles.listHeaderRow}>
-            <Text style={styles.listHeader}>NAME</Text>
-          </View>
-          {groupsData?.length > 0 &&
-            groupsData?.map((group: any, idx: number) => (
-              <View
-                key={group.name}
-                style={[
-                  styles.listRow,
-                  idx !== groupsData?.length - 1 && styles.listRowBorder,
-                ]}
-              >
-                <View style={styles.listLeft}>
-                  <View style={styles.groupIconCircle}>
-                    <MaterialIcons name="layers" size={22} color="#fff" />
+                    <View style={styles.listLeft}>
+                      <View style={styles.deviceIconCircle}>
+                        <MaterialIcons
+                          name="local-shipping"
+                          size={24}
+                          color="#fff"
+                          style={{}}
+                        />
+                      </View>
+                      <Text style={styles.deviceName}>{device.name}</Text>
+                    </View>
+                    <View
+                      style={[
+                        styles.statusBadge,
+                        device.status === "online" ? styles.online : styles.offline,
+                      ]}
+                    >
+                      <View
+                        style={[
+                          styles.statusDot,
+                          device.status === "online"
+                            ? styles.onlineDot
+                            : styles.offlineDot,
+                        ]}
+                      />
+                      <Text
+                        style={[
+                          styles.statusText,
+                          device.status === "online"
+                            ? styles.onlineText
+                            : styles.offlineText,
+                        ]}
+                      >
+                        {device.status}
+                      </Text>
+                    </View>
                   </View>
-                  <Text style={styles.deviceName}>{group.name}</Text>
-                </View>
+                ))}
+            </Card>
+            {/* Groups */}
+            <Card style={styles.listCard}>
+              <Card.Title title="Groups" titleStyle={styles.listTitle} />
+              <View style={styles.listHeaderRow}>
+                <Text style={styles.listHeader}>NAME</Text>
               </View>
-            ))}
-        </Card>
+              {groupsData?.length > 0 &&
+                groupsData?.map((group: any, idx: number) => (
+                  <View
+                    key={group.name}
+                    style={[
+                      styles.listRow,
+                      idx !== groupsData?.length - 1 && styles.listRowBorder,
+                    ]}
+                  >
+                    <View style={styles.listLeft}>
+                      <View style={styles.groupIconCircle}>
+                        <MaterialIcons name="layers" size={22} color="#fff" />
+                      </View>
+                      <Text style={styles.deviceName}>{group.name}</Text>
+                    </View>
+                  </View>
+                ))}
+            </Card>
+          </>
+        )}
       </ScrollView>
     </SafeAreaView>
   );

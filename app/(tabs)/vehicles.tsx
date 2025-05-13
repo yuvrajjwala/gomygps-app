@@ -32,7 +32,7 @@ const carImages = {
   Stop: require("@/assets/images/cars/car-red.png"),
   Default: require("@/assets/images/cars/car-blue.png"),
   "In Active": require("@/assets/images/cars/car-blue.png"),
-  "No Data": require("@/assets/images/cars/car-blue.png"),
+  "No Data": require("@/assets/images/cars/car-gray.png"),
 };
 
 export default function VehiclesScreen() {

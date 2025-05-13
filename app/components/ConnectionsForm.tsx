@@ -3,13 +3,13 @@ import { MaterialIcons } from '@expo/vector-icons';
 import { Picker } from '@react-native-picker/picker';
 import React, { useEffect, useState } from 'react';
 import {
-    Dimensions,
-    Modal,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  Dimensions,
+  Modal,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 
 const { height } = Dimensions.get('window');
@@ -29,12 +29,14 @@ const ConnectionsForm: React.FC<ConnectionsFormProps> = ({
 }) => {
   const [allDevices, setAllDevices] = useState([]);
   const [allGeofences, setAllGeofences] = useState([]);
+  const [allNotifications, setAllNotifications] = useState([]);
   const [groups, setGroups] = useState([]);
   const [users, setUsers] = useState([]);
   const [selectedDevices, setSelectedDevices] = useState([]);
   const [selectedGroups, setSelectedGroups] = useState([]);
   const [selectedUsers, setSelectedUsers] = useState([]);
   const [selectedGeofences, setSelectedGeofences] = useState([]);
+  const [selectedNotifications, setSelectedNotifications] = useState([]);
 
   const reqJSON = { [type]: id };
 
@@ -69,6 +71,15 @@ const ConnectionsForm: React.FC<ConnectionsFormProps> = ({
     try {
       const res = await Api.call(`/api/geofences?${type}=` + id, 'GET', {}, false);
       setSelectedGeofences(res.data);
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
+  const getSelectedNotifications = async () => {
+    try {
+      const res = await Api.call(`/api/notifications?${type}=` + id, 'GET', {}, false);
+      setSelectedNotifications(res.data);
     } catch (error) {
       console.log(error);
     }
@@ -110,6 +121,15 @@ const ConnectionsForm: React.FC<ConnectionsFormProps> = ({
     }
   };
 
+  const addNotification = async (notificationId: string) => {
+    try {
+      await Api.call('/api/permissions', 'POST', { ...reqJSON, notificationId }, false);
+      getSelectedNotifications();
+    } catch (err) {
+      console.error('Error adding notification');
+    }
+  };
+
   const deleteDevice = async (deviceId: string) => {
     try {
       await Api.call('/api/permissions', 'DELETE', { ...reqJSON, deviceId }, false);
@@ -146,10 +166,28 @@ const ConnectionsForm: React.FC<ConnectionsFormProps> = ({
     }
   };
 
+  const deleteNotification = async (notificationId: string) => {
+    try {
+      await Api.call('/api/permissions', 'DELETE', { ...reqJSON, notificationId }, false);
+      getSelectedNotifications();
+    } catch (err) {
+      console.error('Error deleting notification');
+    }
+  };
+
   const getAllGeofences = async () => {
     try {
       const res = await Api.call('/api/geofences', 'GET', {}, false);
       setAllGeofences(res.data);
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
+  const getAllNotifications = async () => {
+    try {
+      const res = await Api.call('/api/notifications?all=true', 'GET', {}, false);
+      setAllNotifications(res.data);
     } catch (error) {
       console.log(error);
     }
@@ -183,8 +221,13 @@ const ConnectionsForm: React.FC<ConnectionsFormProps> = ({
       getSelectedGroups();
       getSelectedUsers();
       getSelectedGeofences();
+      getSelectedNotifications();
     }
   }, [id]);
+
+  useEffect(() => {
+    getAllNotifications();
+  }, []);
 
   if (!open && !id) return null;
 
@@ -237,7 +280,7 @@ const ConnectionsForm: React.FC<ConnectionsFormProps> = ({
           <View style={styles.header}>
             <Text style={styles.headerTitle}>Connections</Text>
             <TouchableOpacity style={styles.closeButton} onPress={onClose}>
-              <MaterialIcons name="close" size={24} color="#fff" />
+              <MaterialIcons name="close" size={24} color="#000000" />
             </TouchableOpacity>
           </View>
           <ScrollView style={styles.content}>
@@ -245,6 +288,7 @@ const ConnectionsForm: React.FC<ConnectionsFormProps> = ({
             {renderSection('Devices', selectedDevices, deleteDevice, addDevice, allDevices)}
             {renderSection('Groups', selectedGroups, deleteGroup, addGroup, groups)}
             {renderSection('Users', selectedUsers, deleteUser, addUser, users)}
+            {renderSection('Notifications', selectedNotifications, deleteNotification, addNotification, allNotifications)}
           </ScrollView>
         </View>
       </View>
@@ -260,13 +304,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   modalContent: {
-    backgroundColor: '#000000',
+    backgroundColor: '#FFFFFF',
     borderRadius: 16,
     width: '90%',
     maxHeight: '80%',
     padding: 20,
     borderWidth: 1,
-    borderColor: '#333',
+    borderColor: '#E0E0E0',
   },
   header: {
     flexDirection: 'row',
@@ -277,7 +321,7 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#FFFFFF',
+    color: '#000000',
   },
   closeButton: {
     padding: 4,
@@ -291,7 +335,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#FFFFFF',
+    color: '#000000',
     marginBottom: 12,
   },
   badgeContainer: {
@@ -301,23 +345,25 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   badge: {
-    backgroundColor: '#333',
+    backgroundColor: '#F5F5F5',
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
   },
   badgeText: {
-    color: '#FFFFFF',
+    color: '#000000',
     fontSize: 14,
   },
   pickerContainer: {
-    backgroundColor: '#1A1A1A',
+    backgroundColor: '#FFFFFF',
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#333',
+    borderColor: '#E0E0E0',
   },
   picker: {
-    color: '#FFFFFF',
+    color: '#000000',
   },
 });
 

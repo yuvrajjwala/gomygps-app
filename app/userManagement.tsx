@@ -456,12 +456,12 @@ export default function UserManagementScreen() {
         </TouchableOpacity>
       </View>
       <View style={styles.cardButtonsContainer}>
-        <TouchableOpacity 
+        {/* <TouchableOpacity 
           style={styles.cardButton}
           onPress={() => handleOptionsPress(item)}
         >
           <Text style={styles.cardButtonText}>Options</Text>
-        </TouchableOpacity>
+        </TouchableOpacity> */}
         <TouchableOpacity style={styles.cardButton1}>
           <Text style={styles.cardButtonText}>Whatsapp</Text>
         </TouchableOpacity>

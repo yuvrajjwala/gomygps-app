@@ -535,7 +535,7 @@ export default function UserManagementScreen() {
                   onPress={() => setAddModal(false)}
                   style={styles.closeButton}
                 >
-                  <MaterialIcons name="close" size={24} color="#fff" />
+                  <MaterialIcons name="close" size={24} color="#000" />
                 </TouchableOpacity>
               </View>
 
@@ -548,7 +548,7 @@ export default function UserManagementScreen() {
                     setFormData({ ...formData, name: text })
                   }
                   placeholder="Enter full name"
-                  placeholderTextColor="#888"
+                  placeholderTextColor="#666"
                 />
 
                 <Text style={styles.geoAddLabel}>Email</Text>
@@ -559,7 +559,7 @@ export default function UserManagementScreen() {
                     setFormData({ ...formData, email: text })
                   }
                   placeholder="Enter email"
-                  placeholderTextColor="#888"
+                  placeholderTextColor="#666"
                   keyboardType="email-address"
                   autoCapitalize="none"
                 />
@@ -574,7 +574,7 @@ export default function UserManagementScreen() {
                         setFormData({ ...formData, password: text })
                       }
                       placeholder="Enter password"
-                      placeholderTextColor="#888"
+                      placeholderTextColor="#666"
                       secureTextEntry
                     />
                   </>
@@ -588,7 +588,7 @@ export default function UserManagementScreen() {
                     setFormData({ ...formData, phone: text })
                   }
                   placeholder="Enter phone number"
-                  placeholderTextColor="#888"
+                  placeholderTextColor="#666"
                   keyboardType="phone-pad"
                 />
 
@@ -599,7 +599,7 @@ export default function UserManagementScreen() {
                     onValueChange={(value) =>
                       setFormData({ ...formData, map: value })
                     }
-                    style={{ color: "#fff" }}
+                    style={{ color: "#000" }}
                   >
                     <Picker.Item label="Select default map" value="" />
                     {DEFAULT_MAP_OPTIONS.map((option) => (
@@ -615,7 +615,7 @@ export default function UserManagementScreen() {
                     onValueChange={(value) =>
                       setFormData({ ...formData, coordinateFormat: value })
                     }
-                    style={{ color: "#fff" }}
+                    style={{ color: "#000" }}
                   >
                     <Picker.Item label="Select coordinates format" value="" />
                     {COORDINATES_FORMAT_OPTIONS.map((option) => (
@@ -632,7 +632,7 @@ export default function UserManagementScreen() {
                     setFormData({ ...formData, expirationTime: text })
                   }
                   placeholder="YYYY-MM-DD"
-                  placeholderTextColor="#888"
+                  placeholderTextColor="#666"
                 />
 
                 <Text style={styles.geoAddLabel}>Device Limit</Text>
@@ -643,7 +643,7 @@ export default function UserManagementScreen() {
                     setFormData({ ...formData, deviceLimit: text })
                   }
                   placeholder="Enter device limit"
-                  placeholderTextColor="#888"
+                  placeholderTextColor="#666"
                   keyboardType="numeric"
                 />
 
@@ -655,7 +655,7 @@ export default function UserManagementScreen() {
                     setFormData({ ...formData, userLimit: text })
                   }
                   placeholder="Enter user limit"
-                  placeholderTextColor="#888"
+                  placeholderTextColor="#666"
                   keyboardType="numeric"
                 />
 
@@ -673,7 +673,7 @@ export default function UserManagementScreen() {
                           : "check-box-outline-blank"
                       }
                       size={24}
-                      color="#fff"
+                      color="#000"
                     />
                     <Text style={styles.checkboxLabel}>Read Only</Text>
                   </TouchableOpacity>
@@ -694,7 +694,7 @@ export default function UserManagementScreen() {
                           : "check-box-outline-blank"
                       }
                       size={24}
-                      color="#fff"
+                      color="#000"
                     />
                     <Text style={styles.checkboxLabel}>Administrator</Text>
                   </TouchableOpacity>
@@ -715,7 +715,7 @@ export default function UserManagementScreen() {
                           : "check-box-outline-blank"
                       }
                       size={24}
-                      color="#fff"
+                      color="#000"
                     />
                     <Text style={styles.checkboxLabel}>Device Read Only</Text>
                   </TouchableOpacity>
@@ -733,7 +733,7 @@ export default function UserManagementScreen() {
                           : "check-box-outline-blank"
                       }
                       size={24}
-                      color="#fff"
+                      color="#000"
                     />
                     <Text style={styles.checkboxLabel}>Disabled</Text>
                   </TouchableOpacity>
@@ -752,7 +752,7 @@ export default function UserManagementScreen() {
                   style={styles.geoAddCancelBtn}
                   onPress={() => setAddModal(false)}
                 >
-                  <MaterialIcons name="close" size={22} color="#fff" />
+                  <MaterialIcons name="close" size={22} color="#000" />
                   <Text style={styles.geoAddCancelText}>Cancel</Text>
                 </TouchableOpacity>
               </View>
@@ -1187,6 +1187,9 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "center",
     marginBottom: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: "#E0E0E0",
+    paddingBottom: 10,
   },
   modalTitle: {
     fontSize: 20,
@@ -1200,28 +1203,28 @@ const styles = StyleSheet.create({
     maxHeight: height - 200,
   },
   geoAddLabel: {
-    color: "#FFFFFF",
+    color: "#000000",
     fontWeight: "600",
     fontSize: 15,
     marginBottom: 6,
     marginTop: 10,
   },
   geoAddInput: {
-    backgroundColor: "#1A1A1A",
+    backgroundColor: "#FFFFFF",
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: "#333",
+    borderColor: "#E0E0E0",
     paddingHorizontal: 12,
     paddingVertical: 8,
     fontSize: 15,
-    color: "#FFFFFF",
+    color: "#000000",
     marginBottom: 8,
   },
   parentGroupSelector: {
-    backgroundColor: "#1A1A1A",
+    backgroundColor: "#FFFFFF",
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: "#333",
+    borderColor: "#E0E0E0",
     marginBottom: 16,
   },
   checkboxContainer: {
@@ -1235,7 +1238,7 @@ const styles = StyleSheet.create({
   checkboxLabel: {
     marginLeft: 8,
     fontSize: 15,
-    color: "#FFFFFF",
+    color: "#000000",
   },
   geoAddBtnRow: {
     flexDirection: "row",
@@ -1247,12 +1250,12 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#43A047",
+    backgroundColor: "#000000",
     borderRadius: 10,
     paddingVertical: 12,
     flex: 1,
     borderWidth: 1,
-    borderColor: "#43A047",
+    borderColor: "#000000",
   },
   geoAddSaveText: {
     color: "#FFFFFF",
@@ -1261,7 +1264,7 @@ const styles = StyleSheet.create({
     marginLeft: 6,
   },
   geoAddCancelBtn: {
-    backgroundColor: "#F7F8FA",
+    backgroundColor: "#FFFFFF",
     borderRadius: 10,
     paddingVertical: 12,
     flex: 1,
@@ -1269,7 +1272,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     flexDirection: "row",
     borderWidth: 1,
-    borderColor: "#E0E0E0",
+    borderColor: "#000000",
   },
   geoAddCancelText: {
     color: "#000000",

@@ -9,6 +9,7 @@ import {
   Modal,
   Pressable,
   ScrollView,
+  StatusBar,
   StyleSheet,
   Switch,
   Text,
@@ -18,6 +19,7 @@ import {
 } from "react-native";
 import DropDownPicker from "react-native-dropdown-picker";
 import DateTimePickerModal from "react-native-modal-datetime-picker";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { z } from "zod";
 
 const CATEGORY_OPTIONS = [
@@ -45,7 +47,6 @@ const CATEGORY_OPTIONS = [
   "Scooter",
 ];
 
-
 const schema = z.object({
   name: z.string().trim().nonempty("Name cannot be empty"),
   uniqueId: z.string().trim().nonempty("Unique ID cannot be empty"),
@@ -57,9 +58,11 @@ const schema = z.object({
   lastUpdate: z.string().trim().optional(),
   expirationTime: z.string().trim().optional(),
   disabled: z.boolean().optional(),
-  attributes: z.object({
-    is_mobilized: z.boolean().optional(),
-  }).optional(),
+  attributes: z
+    .object({
+      is_mobilized: z.boolean().optional(),
+    })
+    .optional(),
 });
 
 interface Device {
@@ -277,7 +280,7 @@ export default function DevicesScreen() {
     // Calculate one year from now
     const oneYearFromNow = new Date();
     oneYearFromNow.setFullYear(oneYearFromNow.getFullYear() + 1);
-    
+
     setForm({
       name: "",
       uniqueId: "",
@@ -288,7 +291,7 @@ export default function DevicesScreen() {
       contact: "",
       category: "Car",
       lastUpdate: "",
-      expirationTime: oneYearFromNow.toISOString().split('T')[0],
+      expirationTime: oneYearFromNow.toISOString().split("T")[0],
       groupId: "0",
       attributes: {
         is_mobilized: true,
@@ -394,7 +397,9 @@ export default function DevicesScreen() {
   };
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container}>
+      <StatusBar barStyle="dark-content" backgroundColor="#fff" />
+
       <View style={styles.headerWrap}>
         <Text style={styles.header}>Devices</Text>
       </View>
@@ -730,11 +735,15 @@ export default function DevicesScreen() {
               <View
                 style={[
                   styles.formField,
-                  { justifyContent: "space-between", flexDirection: "row", alignItems: "center" },
+                  {
+                    justifyContent: "space-between",
+                    flexDirection: "row",
+                    alignItems: "center",
+                  },
                 ]}
               >
                 <Text style={[styles.label, { marginBottom: 0 }]}>
-                Disabled
+                  Disabled
                 </Text>
                 <Switch
                   value={form.disabled}
@@ -748,19 +757,31 @@ export default function DevicesScreen() {
               <View
                 style={[
                   styles.formField,
-                  { justifyContent: "space-between", flexDirection: "row", alignItems: "center" },
+                  {
+                    justifyContent: "space-between",
+                    flexDirection: "row",
+                    alignItems: "center",
+                  },
                 ]}
               >
                 <Text style={[styles.label, { marginBottom: 0 }]}>
-                Immobilizer <Text style={{ fontSize: 12, color: "#888" }}>(on / off)</Text>
+                  Immobilizer{" "}
+                  <Text style={{ fontSize: 12, color: "#888" }}>
+                    (on / off)
+                  </Text>
                 </Text>
                 <Switch
                   value={form.attributes.is_mobilized}
                   onValueChange={(value) =>
-                    setForm((f) => ({ ...f, attributes: { ...f.attributes, is_mobilized: value } }))
+                    setForm((f) => ({
+                      ...f,
+                      attributes: { ...f.attributes, is_mobilized: value },
+                    }))
                   }
                   trackColor={{ false: "#767577", true: "#81b0ff" }}
-                  thumbColor={form.attributes.is_mobilized ? "#f5dd4b" : "#f4f3f4"}
+                  thumbColor={
+                    form.attributes.is_mobilized ? "#f5dd4b" : "#f4f3f4"
+                  }
                 />
               </View>
               <TouchableOpacity
@@ -791,29 +812,26 @@ export default function DevicesScreen() {
           }}
         />
       )}
-    </View>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#F7F8FA" },
   headerWrap: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
     backgroundColor: "#fff",
-    paddingTop: 36,
-    paddingBottom: 12,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
-    shadowRadius: 6,
-    elevation: 4,
-    zIndex: 10,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: "#e0e0e0",
   },
   header: {
-    fontSize: 28,
+    color: "#000",
+    fontSize: 20,
     fontWeight: "bold",
-    alignSelf: "center",
-    color: "#222",
-    letterSpacing: 1,
   },
   deviceCard: {
     backgroundColor: "#fff",

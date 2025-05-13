@@ -234,10 +234,10 @@ export default function TipsReportScreen() {
   return (
     <SafeAreaView style={styles.containerDark}>
       {/* Header */}
-      <StatusBar barStyle="light-content" backgroundColor="#000" />
+      <StatusBar barStyle="dark-content" backgroundColor="#fff" />
       <View style={styles.headerDark}>
         <TouchableOpacity onPress={() => router.back()}>
-          <MaterialIcons name="arrow-back" size={24} color="#fff" />
+          <MaterialIcons name="arrow-back" size={24} color="black" />
         </TouchableOpacity>
         <Text style={styles.headerTitleDark}>
           Trip Report

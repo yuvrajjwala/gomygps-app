@@ -106,32 +106,34 @@ export default function DashboardScreen() {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: "#ffffff" }}>
-      <StatusBar backgroundColor="#000" barStyle="light-content" />
+      <StatusBar barStyle="dark-content" backgroundColor="#fff" />
       <View style={styles.blackHeader}>
         <Text style={styles.blackHeaderText}>Dashboard</Text>
       </View>
-      <ScrollView>
-        {/* <Title style={styles.header}>Fleet Dashboard</Title> */}
+      <ScrollView style={{ marginTop: 20 }}>
         <View style={styles.statusRow}>
-        {vehicleStats.map((filter) => (
-          <TouchableOpacity
-            key={filter.label}
-            style={[
-              styles.statusCard,
-              filter.label === "Idle"
-                ? { backgroundColor: "#FF6F00" }
-                : { backgroundColor: filter.color, shadowColor: filter.color },
-              filter.label === "Idle" && {
-                borderWidth: 2,
-                borderColor: "#fff",
-              },
-            ]}
-          >
-            <Text style={styles.statusLabel}>{filter.label}</Text>
-            <Text style={styles.statusCount}>{filter.count}</Text>
-          </TouchableOpacity>
-        ))}
-      </View>
+          {vehicleStats.map((filter) => (
+            <TouchableOpacity
+              key={filter.label}
+              style={[
+                styles.statusCard,
+                filter.label === "Idle"
+                  ? { backgroundColor: "#FF6F00" }
+                  : {
+                      backgroundColor: filter.color,
+                      shadowColor: filter.color,
+                    },
+                filter.label === "Idle" && {
+                  borderWidth: 2,
+                  borderColor: "#fff",
+                },
+              ]}
+            >
+              <Text style={styles.statusLabel}>{filter.label}</Text>
+              <Text style={styles.statusCount}>{filter.count}</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
         <Card style={styles.chartCard}>
           <Card.Title
             title="Vehicle Status Distribution"
@@ -392,19 +394,21 @@ const styles = StyleSheet.create({
     color: "#A259FF",
   },
   blackHeader: {
-    width: "100%",
-    backgroundColor: "#ffffff",
-    paddingTop: 18,
-    paddingBottom: 18,
+    flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
+    backgroundColor: "#fff",
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: "#e0e0e0",
   },
   blackHeaderText: {
     color: "#000",
-    fontSize: 24,
+    fontSize: 20,
     fontWeight: "bold",
-    letterSpacing: 1,
-  },  statusRow: {
+  },
+  statusRow: {
     flexDirection: "row",
     flexWrap: "wrap",
     marginHorizontal: 8,

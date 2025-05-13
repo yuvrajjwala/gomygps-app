@@ -77,6 +77,21 @@ export default function MapScreen() {
   // Animation ref for details section
   const detailsAnimHeight = useRef(new Animated.Value(0)).current;
 
+  // Add new state for 3D view
+  const [is3DView, setIs3DView] = useState(false);
+
+  // Add new state for camera
+  const [camera, setCamera] = useState({
+    center: {
+      latitude: Number(params?.latitude) || 0,
+      longitude: Number(params?.longitude) || 0,
+    },
+    pitch: 0,
+    heading: 0,
+    altitude: 1000,
+    zoom: 15
+  });
+
   const getVehicleIcon = (): ImageSourcePropType => {
     if (!device?.lastUpdate) {
       return require("@/assets/images/cars/white.png");
@@ -444,6 +459,27 @@ export default function MapScreen() {
       return `${hours} hrs ${minutes} min`;
     }
   };
+
+  // Update useEffect for 3D view
+  useEffect(() => {
+    if (device?.latitude && device?.longitude) {
+      const newCamera = {
+        center: {
+          latitude: device.latitude,
+          longitude: device.longitude,
+        },
+        pitch: is3DView ? 60 : 0,
+        heading: is3DView ? 0 : 0,
+        altitude: is3DView ? 500 : 1000,
+        zoom: is3DView ? 18 : 15
+      };
+      setCamera(newCamera);
+      
+      // Animate to the new camera position
+      mapRef.current?.animateCamera(newCamera, { duration: 1000 });
+    }
+  }, [is3DView, device?.latitude, device?.longitude]);
+
   return (
     <SafeAreaView style={styles.safeArea}>
       <StatusBar barStyle="light-content" backgroundColor="#000" />
@@ -476,11 +512,15 @@ export default function MapScreen() {
         maxZoomLevel={carMode ? 0.005 : 50}
         showsUserLocation={true}
         followsUserLocation={carMode}
-        rotateEnabled={!carMode}
+        rotateEnabled={is3DView && !carMode}
         scrollEnabled={!carMode}
         showsTraffic={showTraffic}
         showsCompass={showCompass}
         mapType={mapType}
+        pitchEnabled={true}
+        camera={camera}
+        showsBuildings={is3DView}
+        showsIndoors={is3DView}
       >
         <Polyline coordinates={carPath} strokeColor="#FFD600" strokeWidth={4} />
         <Marker.Animated coordinate={currentMarkerPosition}>
@@ -849,7 +889,32 @@ export default function MapScreen() {
             color={mapType === "terrain" ? "#43A047" : "#888"}
           />
         </TouchableOpacity>
-        {/* Speed Indicator as a circular orange button */}
+        {/* Add 3D View Toggle */}
+        <TouchableOpacity
+          style={styles.fab}
+          onPress={() => setIs3DView(!is3DView)}
+        >
+          <MaterialIcons
+            name="view-in-ar"
+            size={24}
+            color={is3DView ? "#9C27B0" : "#888"}
+          />
+        </TouchableOpacity>
+        {/* Add Refresh Button */}
+        <TouchableOpacity
+          style={styles.fab}
+          onPress={() => {
+            getPosition();
+            fetchTodaySummary(device?.deviceId);
+          }}
+        >
+          <MaterialIcons
+            name="refresh"
+            size={24}
+            color="#2196F3"
+          />
+        </TouchableOpacity>
+        {/* Speed Indicator */}
         <View style={styles.fabSpeed}>
           <Text style={styles.fabSpeedText}>
             {(Number(device?.speed) * 1.852 || 0).toFixed(0)}

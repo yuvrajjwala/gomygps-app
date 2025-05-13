@@ -371,11 +371,11 @@ export default function GeofencingScreen() {
   };
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: "#000000" }}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: "#ffffff" }}>
       <StatusBar barStyle="light-content" />
       <View style={styles.headerBar}>
         <TouchableOpacity onPress={() => router.back()}>
-          <MaterialIcons name="arrow-back" size={26} color="#fff" />
+          <MaterialIcons name="arrow-back" size={26} color="#000000" />
         </TouchableOpacity>
         <Text style={[styles.headerText, { textAlign: "center" }]}>
           Geofencing
@@ -384,7 +384,7 @@ export default function GeofencingScreen() {
       </View>
       {mode === "list" ? (
         <View
-          style={{ flex: 1, paddingBottom: 10, backgroundColor: "#000000", paddingHorizontal: 15 }}
+          style={{ flex: 1, paddingBottom: 10, backgroundColor: "#ffffff", paddingHorizontal: 15 }}
         >
           <FlatList
             data={geofences}
@@ -394,12 +394,12 @@ export default function GeofencingScreen() {
               <View style={styles.geofenceCard}>
                 <MaterialIcons
                   name={
-                    item.type === "circle" ? "radio-button-checked" : item.type === "polygon" ? "polyline" : "directions"
+                    item.type === "circle" ? "radio-button-checked" : item.type === "polygon" ? "polyline" : "my-location"
                   }
                   size={28}
-                  color={item.type === "circle" ? "#43A047" : item.type === "polygon" ? "#2979FF" : "#FF7043"}
+                  color={item.type === "circle" ? "#43A047" : item.type === "polygon" ? "#2979FF" : "#000000"}
                 />
-                <View style={{ flex: 1 }}>
+                <View style={{ flex: 1, paddingTop: 10, paddingBottom: 10 }}>
                   <Text style={styles.geofenceName}>{item.name}</Text>
                   <Text style={styles.geofenceDescription}>
                     {item.description}
@@ -593,10 +593,10 @@ export default function GeofencingScreen() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: "#000000",
+    backgroundColor: "#ffffff",
   },
   headerBar: {
-    backgroundColor: "#000000",
+    backgroundColor: "#ffffff",
     paddingBottom: 20,
     paddingHorizontal: 15,
     alignItems: "center",
@@ -611,7 +611,7 @@ const styles = StyleSheet.create({
   headerText: {
     fontSize: 24,
     fontWeight: "700",
-    color: "#FFFFFF",
+    color: "#000000",
     letterSpacing: 0.5,
   },
   scrollContent: {
@@ -640,6 +640,7 @@ const styles = StyleSheet.create({
     color: "#000000",
     marginLeft: 18,
     letterSpacing: 0.3,
+    textTransform: "capitalize",
   },
   addBtn: {
     backgroundColor: "#000000",

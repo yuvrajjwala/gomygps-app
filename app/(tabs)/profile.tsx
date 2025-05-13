@@ -61,6 +61,9 @@ export default function DriversScreen() {
     <SafeAreaView style={styles.safeArea}>
       <StatusBar barStyle="light-content" />
       <View style={styles.headerBar}>
+        <TouchableOpacity onPress={() => router.back()} style={{ position: 'absolute', left: 16, top: 20, zIndex: 2 }}>
+          <MaterialIcons name="arrow-back" size={28} color="#000" />
+        </TouchableOpacity>
         <Text style={styles.headerText}>Settings</Text>
       </View>
       <ScrollView
@@ -100,10 +103,10 @@ export default function DriversScreen() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: "#000000",
+    backgroundColor: "#ffffff",
   },
   headerBar: {
-    backgroundColor: "#000000",
+    backgroundColor: "#ffffff",
     paddingTop: 0,
     paddingBottom: 20,
     paddingHorizontal: 0,
@@ -116,7 +119,7 @@ const styles = StyleSheet.create({
   headerText: {
     fontSize: 24,
     fontWeight: "700",
-    color: "#FFFFFF",
+    color: "#000000",
     letterSpacing: 0.5,
     paddingTop: 20,
   },

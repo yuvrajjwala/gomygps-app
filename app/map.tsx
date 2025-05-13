@@ -930,7 +930,7 @@ const { width } = Dimensions.get("window");
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: "#fff",
+    backgroundColor: "black",
   },
   header: {
     flexDirection: "row",

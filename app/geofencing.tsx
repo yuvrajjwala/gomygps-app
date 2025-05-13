@@ -372,7 +372,7 @@ export default function GeofencingScreen() {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: "#ffffff" }}>
-      <StatusBar barStyle="light-content" />
+      <StatusBar barStyle="dark-content" backgroundColor="#fff" />
       <View style={styles.headerBar}>
         <TouchableOpacity onPress={() => router.back()}>
           <MaterialIcons name="arrow-back" size={26} color="#000000" />
@@ -597,22 +597,19 @@ const styles = StyleSheet.create({
   },
   headerBar: {
     backgroundColor: "#ffffff",
-    paddingBottom: 20,
-    paddingHorizontal: 15,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
     alignItems: "center",
     marginBottom: 16,
-    borderBottomWidth: 0.5,
-    borderBottomColor: "gray",
+    borderBottomWidth: 1,
+    borderBottomColor: "#e0e0e0",
     flexDirection: "row",
     justifyContent: "space-between",
-    paddingTop: 20,
-
   },
   headerText: {
-    fontSize: 24,
-    fontWeight: "700",
-    color: "#000000",
-    letterSpacing: 0.5,
+    color: "#000",
+    fontSize: 20,
+    fontWeight: "bold",
   },
   scrollContent: {
     paddingHorizontal: 20,

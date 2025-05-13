@@ -21,7 +21,7 @@ export default function DashboardScreen() {
   const [groupsData, setGroupsData] = useState([]);
   const [vehicleStats, setVehicleStats] = useState([
     { label: "All", count: 0, color: "black" },
-    { label: "Running", count: 0, color: "green" },
+    { label: "Running", count: 0, color: "#43A047" },
     { label: "Idle", count: 0, color: "orange" },
     { label: "Stop", count: 0, color: "red" },
     { label: "Inactive", count: 0, color: "#00a8d5" },
@@ -42,7 +42,7 @@ export default function DashboardScreen() {
   const updateVehicleStats = () => {
     const stats = [
       { label: "All", color: "black", count: 0 },
-      { label: "Running", color: "green", count: 0 },
+      { label: "Running", color: "#43A047", count: 0 },
       { label: "Idle", color: "orange", count: 0 },
       { label: "Stop", color: "red", count: 0 },
       { label: "Inactive", color: "#00a8d5", count: 0 },

@@ -9,12 +9,14 @@ import {
   FlatList,
   Modal,
   ScrollView,
+  StatusBar,
   StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 const { height } = Dimensions.get("window");
 
@@ -270,47 +272,51 @@ export default function GroupManagement() {
   };
 
   return (
-    <View style={styles.container}>
-      <View style={styles.headerWrap}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: "#ffffff" }}>
+      <StatusBar barStyle="dark-content" backgroundColor="#fff" />
+      <View style={styles.headerBar}>
         <TouchableOpacity
           onPress={() => router.back()}
           style={styles.backButton}
         >
-          <MaterialIcons name="arrow-back" size={26} color="#222" />
+          <MaterialIcons name="arrow-back" size={26} color="#000000" />
         </TouchableOpacity>
-        <Text style={styles.header}>Groups</Text>
+        <Text style={[styles.headerText, { textAlign: "center" }]}>
+          Groups
+        </Text>
         <View style={{ width: 26 }} />
       </View>
-      <View style={styles.searchBarWrap}>
-        <MaterialIcons
-          name="search"
-          size={20}
-          color="#bbb"
-          style={{ marginLeft: 8, marginRight: 4 }}
-        />
-        <TextInput
-          style={styles.searchInput}
-          placeholder="Search groups..."
-          placeholderTextColor="#888"
-          value={search}
-          onChangeText={setSearch}
-          autoCapitalize="none"
-        />
-      </View>
-      <View style={{ marginHorizontal: 10 , paddingHorizontal:4}}>
+      <View style={{ flex: 1, paddingBottom: 10, backgroundColor: "#ffffff", paddingHorizontal: 15 }}>
+        <View style={styles.searchBarWrap}>
+          <MaterialIcons
+            name="search"
+            size={20}
+            color="#bbb"
+            style={{ marginLeft: 8, marginRight: 4 }}
+          />
+          <TextInput
+            style={styles.searchInput}
+            placeholder="Search groups..."
+            placeholderTextColor="#888"
+            value={search}
+            onChangeText={setSearch}
+            autoCapitalize="none"
+          />
+        </View>
         <FlatList
           data={flattenedData}
           keyExtractor={(item) => item.id}
-          contentContainerStyle={{ paddingBottom: 80, paddingTop: 12 }}
+          contentContainerStyle={{ padding: 2 }}
           renderItem={renderGroupItem}
           ListEmptyComponent={
             <Text style={styles.emptyText}>No groups found.</Text>
           }
         />
+        <TouchableOpacity style={styles.addBtn} onPress={handleAddGroup}>
+          <MaterialIcons name="add" size={26} color="#fff" />
+          <Text style={styles.addBtnText}>Add Group</Text>
+        </TouchableOpacity>
       </View>
-      <TouchableOpacity style={styles.fab} onPress={handleAddGroup}>
-        <MaterialIcons name="add" size={28} color="#fff" />
-      </TouchableOpacity>
 
       <Modal
         visible={mode !== "list"}
@@ -382,42 +388,33 @@ export default function GroupManagement() {
           </View>
         </View>
       </Modal>
-    </View>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#F7F8FA" },
-  headerWrap: {
-    backgroundColor: "#fff",
-    paddingTop: 36,
-    paddingBottom: 12,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
-    shadowRadius: 6,
-    elevation: 4,
-    zIndex: 10,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
+  headerBar: {
+    backgroundColor: "#ffffff",
     paddingHorizontal: 16,
+    paddingVertical: 12,
+    alignItems: "center",
+    marginBottom: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: "#e0e0e0",
+    flexDirection: "row",
+    justifyContent: "space-between",
   },
-  header: {
-    fontSize: 28,
+  headerText: {
+    color: "#000",
+    fontSize: 20,
     fontWeight: "bold",
-    alignSelf: "center",
-    color: "#222",
-    letterSpacing: 1,
   },
   searchBarWrap: {
     flexDirection: "row",
     alignItems: "center",
     backgroundColor: "#fff",
     borderRadius: 10,
-    marginHorizontal: 16,
-    marginTop: 16,
-    marginBottom: 4,
+    marginBottom: 16,
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderWidth: 1,
@@ -432,18 +429,25 @@ const styles = StyleSheet.create({
     backgroundColor: "transparent",
   },
   groupCard: {
-    backgroundColor: "#fff",
-    borderRadius: 10,
-    padding: 18,
-    justifyContent: "center",
+    flexDirection: "row",
     alignItems: "center",
-    borderWidth: 0.3,
-    borderColor: "black",
-    marginBottom: 4,
+    backgroundColor: "#FFFFFF",
+    borderRadius: 16,
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    marginBottom: 16,
+    elevation: 2,
+    shadowColor: "#000000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    borderWidth: 1,
+    borderColor: "#F0F0F0",
   },
   groupInfo: {
     flexDirection: "row",
     alignItems: "center",
+    flex: 1,
   },
   groupHeader: {
     flexDirection: "row",
@@ -454,18 +458,20 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   groupName: {
-    fontWeight: "bold",
-    fontSize: 19,
-    color: "#222",
+    fontSize: 18,
+    fontWeight: "600",
+    color: "#000000",
+    marginLeft: 18,
+    letterSpacing: 0.3,
+    textTransform: "capitalize",
   },
   groupCardActions: {
     flexDirection: "row",
     alignItems: "center",
-    marginLeft: 8,
   },
   groupActionBtn: {
-    padding: 6,
-    marginLeft: 2,
+    padding: 8,
+    marginLeft: 8,
   },
   expandButton: {
     padding: 4,
@@ -473,21 +479,22 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
-  fab: {
-    position: "absolute",
-    right: 24,
-    bottom: 32,
-    backgroundColor: "#000",
-    borderRadius: 32,
-    width: 56,
-    height: 56,
+  addBtn: {
+    backgroundColor: "#000000",
+    flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    elevation: 6,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.18,
-    shadowRadius: 8,
+    padding: 15,
+    borderRadius: 16,
+    marginTop: 16,
+    borderWidth: 1,
+    borderColor: "#FFFFFF",
+  },
+  addBtnText: {
+    fontSize: 18,
+    fontWeight: "bold",
+    color: "#FFFFFF",
+    marginLeft: 8,
   },
   modalOverlay: {
     flex: 1,
@@ -541,19 +548,6 @@ const styles = StyleSheet.create({
     borderColor: "#E3F2FD",
     marginBottom: 8,
   },
-  addBtn: {
-    backgroundColor: "black",
-    borderRadius: 8,
-    padding: 16,
-    marginTop: 10,
-    alignItems: "center",
-    shadowColor: "#00B8D4",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.12,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  addBtnText: { color: "#fff", fontWeight: "bold", fontSize: 16 },
   cancelBtn: { marginTop: 8, alignItems: "center" },
   cancelBtnText: { color: "#000", fontWeight: "bold", fontSize: 15 },
   emptyText: {

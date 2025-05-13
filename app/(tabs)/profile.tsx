@@ -59,12 +59,9 @@ export default function DriversScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <StatusBar barStyle="light-content" />
-      <View style={styles.headerBar}>
-        <TouchableOpacity onPress={() => router.back()} style={{ position: 'absolute', left: 16, top: 20, zIndex: 2 }}>
-          <MaterialIcons name="arrow-back" size={28} color="#000" />
-        </TouchableOpacity>
-        <Text style={styles.headerText}>Settings</Text>
+      <StatusBar barStyle="dark-content" backgroundColor="#fff" />
+      <View style={styles.blackHeader}>
+        <Text style={styles.blackHeaderText}>Profile</Text>
       </View>
       <ScrollView
         contentContainerStyle={styles.scrollContent}
@@ -126,6 +123,7 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingHorizontal: 20,
     paddingBottom: 32,
+    marginTop: 20,
   },
   optionCard: {
     flexDirection: "row",
@@ -278,5 +276,20 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#E3F2FD",
     marginBottom: 16,
+  },
+  blackHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#fff",
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: "#e0e0e0",
+  },
+  blackHeaderText: {
+    color: "#000",
+    fontSize: 20,
+    fontWeight: "bold",
   },
 });

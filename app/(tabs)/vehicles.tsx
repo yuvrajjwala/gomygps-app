@@ -7,6 +7,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import {
   FlatList,
   Image,
+  StatusBar,
   StyleSheet,
   Text,
   TextInput,
@@ -43,7 +44,7 @@ export default function VehiclesScreen() {
 
   useEffect(() => {
     let interval: ReturnType<typeof setInterval>;
-    
+
     if (isFocused) {
       getDevices();
       interval = setInterval(() => {
@@ -90,9 +91,7 @@ export default function VehiclesScreen() {
     if (device.status === "online" && Number(device.speed) === 0) {
       return "Idle";
     }
-    return device.status === "online"
-      ? "Running"
-      : "Stop";
+    return device.status === "online" ? "Running" : "Stop";
   };
 
   const filteredDevices = useMemo(() => {
@@ -141,8 +140,8 @@ export default function VehiclesScreen() {
       "#66BB6A", // battery-full - green
     ];
     const iconNames = [
-      { "vpn-key":device.attributes.ignition  },
-      { lock:device.attributes.is_mobilized  },
+      { "vpn-key": device.attributes.ignition },
+      { lock: device.attributes.is_mobilized },
       { "ac-unit": device.attributes.is_parked },
       { "motion-photos-on": device.attributes.motion },
     ];
@@ -162,7 +161,9 @@ export default function VehiclesScreen() {
               <View style={styles.vehicleIconWrap}>
                 <Image
                   source={
-                    carImages[getDeviceStatus(device) as keyof typeof carImages] || carImages.Default
+                    carImages[
+                      getDeviceStatus(device) as keyof typeof carImages
+                    ] || carImages.Default
                   }
                   style={{
                     width: 72,
@@ -216,7 +217,14 @@ export default function VehiclesScreen() {
                 color={iconColors[i]}
                 style={{
                   marginHorizontal: 4,
-                  opacity: Object.keys(icon)[0] === 'vpn-key' ? (device.attributes.ignition ? 1 : 0.5) : (Object.values(icon)[0] ? 1 : 0.5),
+                  opacity:
+                    Object.keys(icon)[0] === "vpn-key"
+                      ? device.attributes.ignition
+                        ? 1
+                        : 0.5
+                      : Object.values(icon)[0]
+                      ? 1
+                      : 0.5,
                 }}
               />
             ))}
@@ -228,6 +236,10 @@ export default function VehiclesScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
+      <StatusBar barStyle="dark-content" backgroundColor="#fff" />
+      <View style={styles.blackHeader}>
+        <Text style={styles.blackHeaderText}>Tracking</Text>
+      </View>
       {/* Status Filters */}
       <View style={styles.statusRow}>
         {statusFilters.map((filter) => (
@@ -297,6 +309,7 @@ const styles = StyleSheet.create({
     marginHorizontal: 8,
     marginBottom: 16,
     gap: 8,
+    marginTop: 20,
   },
   statusCard: {
     width: "31%",
@@ -406,5 +419,20 @@ const styles = StyleSheet.create({
     alignSelf: "stretch",
     marginRight: 10,
     marginTop: 30,
+  },
+  blackHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#fff",
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: "#e0e0e0",
+  },
+  blackHeaderText: {
+    color: "#000",
+    fontSize: 20,
+    fontWeight: "bold",
   },
 });

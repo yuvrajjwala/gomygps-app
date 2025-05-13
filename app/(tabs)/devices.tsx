@@ -486,7 +486,7 @@ export default function DevicesScreen() {
               </Text>
             </View>
             <View style={styles.deviceDetailsRow}>
-              <Text style={styles.deviceDetail}>
+              {/* <Text style={styles.deviceDetail}>
                 Creation Time:{" "}
                 {item.lastUpdate
                   ? new Date(item.lastUpdate).toLocaleString([], {
@@ -496,7 +496,7 @@ export default function DevicesScreen() {
                       minute: "2-digit",
                     })
                   : "-"}
-              </Text>
+              </Text> */}
             </View>
             <View style={styles.deviceDetailsRow}>
               <Text style={styles.deviceDetail}>

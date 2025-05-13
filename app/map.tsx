@@ -9,6 +9,9 @@ import {
   Dimensions,
   Image,
   ImageSourcePropType,
+  Modal,
+  Pressable,
+  Share,
   StatusBar,
   StyleSheet,
   Text,
@@ -50,7 +53,7 @@ export default function MapScreen() {
   const isFocused = useIsFocused();
   const [showDetails, setShowDetails] = useState(false);
   // Map options state
-  const [showTraffic, setShowTraffic] = useState(false);
+  const [showTraffic, setShowTraffic] = useState(true);
   const [showCompass, setShowCompass] = useState(true);
   const [mapType, setMapType] = useState<
     "standard" | "satellite" | "terrain" | "hybrid"
@@ -91,6 +94,8 @@ export default function MapScreen() {
     altitude: 1000,
     zoom: 15
   });
+
+  const [shareModalVisible, setShareModalVisible] = useState(false);
 
   const getVehicleIcon = (): ImageSourcePropType => {
     if (!device?.deviceTime) {
@@ -481,6 +486,45 @@ export default function MapScreen() {
     }
   }, [is3DView, device?.latitude, device?.longitude]);
 
+  // Helper to get current coordinates as string
+  const getCurrentCoordsString = () => {
+    const lat = device?.latitude || 0;
+    const lng = device?.longitude || 0;
+    return `https://maps.google.com/?q=${lat},${lng}`;
+  };
+
+  // Share current location
+  const handleShareCurrentLocation = async () => {
+    try {
+      const coordsUrl = getCurrentCoordsString();
+      await Share.share({
+        message: `Here is my current location: ${coordsUrl}`,
+        url: coordsUrl,
+        title: 'Share Current Location',
+      });
+    } catch (error) {
+      console.error('Error sharing location:', error);
+    }
+    setShareModalVisible(false);
+  };
+
+  // Placeholder for live location sharing
+  const handleShareLiveLocation = async () => {
+    // You would generate a live location link here
+    // For now, just share the current location as a placeholder
+    try {
+      const coordsUrl = getCurrentCoordsString();
+      await Share.share({
+        message: `Track my live location here: ${coordsUrl} (Live location coming soon!)`,
+        url: coordsUrl,
+        title: 'Share Live Location',
+      });
+    } catch (error) {
+      console.error('Error sharing live location:', error);
+    }
+    setShareModalVisible(false);
+  };
+
   return (
     <SafeAreaView style={styles.safeArea}>
       <StatusBar barStyle="light-content" backgroundColor="#000" />
@@ -647,7 +691,7 @@ export default function MapScreen() {
             </TouchableOpacity>
 
             {/* Auto Follow */}
-            <TouchableOpacity
+            {/* <TouchableOpacity
               style={[
                 styles.iconCircle,
                 {
@@ -679,6 +723,24 @@ export default function MapScreen() {
                 name="location-on"
                 size={24}
                 color={autoFollow ? "#fff" : "#43A047"}
+              />
+            </TouchableOpacity> */}
+
+            {/* Share */}
+            <TouchableOpacity
+              style={[
+                styles.iconCircle,
+                {
+                  borderColor: '#43A047',
+                  backgroundColor: '#fff',
+                },
+              ]}
+              onPress={() => setShareModalVisible(true)}
+            >
+              <MaterialIcons
+                name="share"
+                size={24}
+                color="#43A047"
               />
             </TouchableOpacity>
           </View>
@@ -838,8 +900,8 @@ export default function MapScreen() {
           </View>
         </View>
       </View>
-      {/* Floating Map Options Menu */}
-      <View style={styles.floatingMenu}>
+      {/* Floating Map Options Menu - Left */}
+      <View style={styles.floatingMenuLeft}>
         <TouchableOpacity
           style={styles.fab}
           onPress={() => setShowTraffic((t) => !t)}
@@ -880,6 +942,10 @@ export default function MapScreen() {
             color={mapType === "satellite" ? "#FFD600" : "#888"}
           />
         </TouchableOpacity>
+      </View>
+
+      {/* Floating Map Options Menu - Right */}
+      <View style={styles.floatingMenuRight}>
         <TouchableOpacity
           style={styles.fab}
           onPress={() => setMapType("terrain")}
@@ -890,7 +956,6 @@ export default function MapScreen() {
             color={mapType === "terrain" ? "#43A047" : "#888"}
           />
         </TouchableOpacity>
-        {/* Add 3D View Toggle */}
         <TouchableOpacity
           style={styles.fab}
           onPress={() => setIs3DView(!is3DView)}
@@ -901,7 +966,6 @@ export default function MapScreen() {
             color={is3DView ? "#9C27B0" : "#888"}
           />
         </TouchableOpacity>
-        {/* Add Refresh Button */}
         <TouchableOpacity
           style={styles.fab}
           onPress={() => {
@@ -923,6 +987,62 @@ export default function MapScreen() {
           <Text style={styles.fabSpeedUnit}>km/h</Text>
         </View>
       </View>
+      <Modal
+        visible={shareModalVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShareModalVisible(false)}
+      >
+        <Pressable
+          style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.3)' }}
+          onPress={() => setShareModalVisible(false)}
+        >
+          <View style={{
+            position: 'absolute',
+            bottom: 0,
+            left: 0,
+            right: 0,
+            backgroundColor: '#fff',
+            borderTopLeftRadius: 18,
+            borderTopRightRadius: 18,
+            padding: 24,
+            alignItems: 'center',
+          }}>
+            <Text style={{ fontSize: 18, fontWeight: 'bold', marginBottom: 18, color: '#222' }}>Share Location</Text>
+            <TouchableOpacity
+              style={{
+                width: '100%',
+                backgroundColor: '#43A047',
+                borderRadius: 10,
+                paddingVertical: 14,
+                alignItems: 'center',
+                marginBottom: 12,
+              }}
+              onPress={handleShareCurrentLocation}
+            >
+              <Text style={{ color: '#fff', fontWeight: 'bold', fontSize: 16 }}>Share Current Location</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={{
+                width: '100%',
+                backgroundColor: '#2979FF',
+                borderRadius: 10,
+                paddingVertical: 14,
+                alignItems: 'center',
+              }}
+              onPress={handleShareLiveLocation}
+            >
+              <Text style={{ color: '#fff', fontWeight: 'bold', fontSize: 16 }}>Share Live Location</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={{ marginTop: 18 }}
+              onPress={() => setShareModalVisible(false)}
+            >
+              <Text style={{ color: '#2979FF', fontWeight: 'bold', fontSize: 16 }}>Cancel</Text>
+            </TouchableOpacity>
+          </View>
+        </Pressable>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -970,8 +1090,8 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: -2 },
     shadowOpacity: 0.12,
     shadowRadius: 8,
-    elevation: 8,
-    zIndex: 3,
+    elevation: 30,
+    zIndex: 100,
     maxHeight: SCREEN_HEIGHT * 0.8,
   },
   bottomSheetContent: {
@@ -1133,11 +1253,18 @@ const styles = StyleSheet.create({
     backgroundColor: "#eee",
     marginVertical: 6,
   },
-  floatingMenu: {
+  floatingMenuLeft: {
     position: "absolute",
     top: 130,
     left: 16,
-    zIndex: 10,
+    zIndex: 5,
+    alignItems: "center",
+  },
+  floatingMenuRight: {
+    position: "absolute",
+    top: 130,
+    right: 16,
+    zIndex: 5,
     alignItems: "center",
   },
   fab: {

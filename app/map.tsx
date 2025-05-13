@@ -93,10 +93,10 @@ export default function MapScreen() {
   });
 
   const getVehicleIcon = (): ImageSourcePropType => {
-    if (!device?.lastUpdate) {
+    if (!device?.deviceTime) {
       return require("@/assets/images/cars/white.png");
     }
-    const lastUpdate = new Date(device.lastUpdate);
+    const lastUpdate = new Date(device.deviceTime);
     const fourHoursAgo = new Date(Date.now() - 1000 * 60 * 60 * 4);
     if (lastUpdate < fourHoursAgo) {
       return require("@/assets/images/cars/blue.png");
@@ -117,9 +117,10 @@ export default function MapScreen() {
       {},
       false
     );
+    console.log(response.data[0]);
+
     const newDevice = { ...device, ...response.data[0] };
     setDevice(newDevice);
-    console.log(newDevice);
     if (newDevice.latitude && newDevice.longitude) {
       markerPosition
         .timing({
@@ -492,7 +493,7 @@ export default function MapScreen() {
           <Text style={styles.headerTitle}>{device?.name}</Text>
           <Text style={styles.headerSubtitle}>
             Last updated:{" "}
-            {moment(device?.lastUpdate).format("DD/MM/YYYY HH:mm")}
+            {moment(device?.deviceTime).format("DD/MM/YYYY HH:mm")}
           </Text>
         </View>
       </View>
@@ -706,8 +707,8 @@ export default function MapScreen() {
                 />
                 <Text style={styles.statsLabel}>Fix Time</Text>
                 <Text style={styles.statsValue}>
-                  {device?.lastUpdate
-                    ? moment(device.lastUpdate).format("DD/MM, HH:mm")
+                  {device?.deviceTime
+                    ? moment(device.deviceTime).format("DD/MM, HH:mm")
                     : moment().format("DD/MM, HH:mm")}
                 </Text>
               </View>

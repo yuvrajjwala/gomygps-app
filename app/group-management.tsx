@@ -240,11 +240,10 @@ export default function GroupManagement() {
                 <MaterialIcons
                   name={isExpanded ? "expand-more" : "chevron-right"}
                   size={30}
-                  color="#2979FF"
+                  color="#000000"
                 />
               </TouchableOpacity>
             )}
-            {!hasChildren && <View style={{ width: 24 }} />}
             <View style={styles.groupDetails}>
               <Text style={styles.groupName}>
                 {item.name}

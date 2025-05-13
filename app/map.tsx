@@ -140,19 +140,19 @@ export default function MapScreen() {
           setCarPath((prev) => [
             ...prev,
             {
-              latitude: newDevice.latitude || 0,
-              longitude: newDevice.longitude || 0,
+              latitude:Number(newDevice.latitude) || 0,
+              longitude:Number(newDevice.longitude) || 0,
             },
           ]);
           setCurrentMarkerPosition({
-            latitude: newDevice.latitude || 0,
-            longitude: newDevice.longitude || 0,
+            latitude: Number(newDevice.latitude) || 0,
+            longitude: Number(newDevice.longitude) || 0,
           });
         });
    
         const newRegion: Region = {
-          latitude: newDevice.latitude || 0,
-          longitude: newDevice.longitude || 0,
+          latitude: Number(newDevice.latitude) || 0,
+          longitude: Number(newDevice.longitude) || 0,
           latitudeDelta: zoomLevel,
           longitudeDelta: zoomLevel * 0.5,
         };
@@ -192,8 +192,8 @@ export default function MapScreen() {
       setZoomLevel(0.002);
       if (device?.latitude && device?.longitude) {
         const newRegion: Region = {
-          latitude: device.latitude,
-          longitude: device.longitude,
+          latitude: Number(device.latitude),
+          longitude: Number(device.longitude),
           latitudeDelta: 0.002,
           longitudeDelta: 0.001,
         };
@@ -207,8 +207,8 @@ export default function MapScreen() {
   useEffect(() => {
     if (autoFollow && device?.latitude && device?.longitude) {
       const newRegion: Region = {
-        latitude: device.latitude,
-        longitude: device.longitude,
+        latitude: Number(device.latitude),
+        longitude: Number(device.longitude),
         latitudeDelta: zoomLevel,
         longitudeDelta: zoomLevel * 0.5,
       };
@@ -471,8 +471,8 @@ export default function MapScreen() {
     if (device?.latitude && device?.longitude) {
       const newCamera = {
         center: {
-          latitude: device.latitude,
-          longitude: device.longitude,
+          latitude: Number(device.latitude) ||  0 ,
+          longitude: Number(device.longitude) ||  0 ,
         },
         pitch: is3DView ? 60 : 0,
         heading: is3DView ? 0 : 0,
@@ -710,8 +710,8 @@ export default function MapScreen() {
                 if (!autoFollow && device?.latitude && device?.longitude) {
                   // When enabling auto-follow, immediately center on current position
                   const newRegion: Region = {
-                    latitude: device.latitude,
-                    longitude: device.longitude,
+                    latitude: Number(device.latitude) || 0,
+                    longitude: Number(device.longitude) || 0,
                     latitudeDelta: zoomLevel,
                     longitudeDelta: zoomLevel * 0.5,
                   };

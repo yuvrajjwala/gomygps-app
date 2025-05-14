@@ -28,15 +28,30 @@ interface ReportData {
   startOdometer: number;
   endOdometer: number;
   distance: number;
-  averageSpeed: number;
+  totalDistance: number;
   maxSpeed: number;
+  averageSpeed: number;
   engineHours: number;
   acHours: number;
   movingDuration: number;
   stoppedDuration: number;
   idleDuration: number;
+  overspeedDuration: number;
+  overspeedDistance: number;
   spentFuel: number;
   mileageFuel: string;
+  currentStatus: string;
+  firstIgnitionOnTime: string;
+  lastIgnitionOffTime: string;
+  firstAddress: string;
+  firstLat: number;
+  firstLon: number;
+  lastAddress: string;
+  lastLat: number;
+  lastLon: number;
+  currentKnownAddress: string;
+  currentKnownLat: number;
+  currentKnownLon: number;
 }
 
 interface DropdownItem {
@@ -164,8 +179,34 @@ export default function SummaryReportScreen() {
       const toDateUTC = new Date(toDate);
       toDateUTC.setHours(toDateUTC.getHours() - 5, toDateUTC.getMinutes() - 30);
 
-      const response = await Api.call('/api/reports/summary?from=' + fromDateUTC.toISOString().slice(0, 19) + 'Z&to=' + toDateUTC.toISOString().slice(0, 19) + 'Z' + (deviceValue ? '&deviceId=' + deviceValue : '') + (groupValue ? '&groupId=' + groupValue : ''), 'GET', {}, false);
-      setReportData(response.data || []);
+      // Fetch summary data
+      const summaryResponse = await Api.call('/api/reports/summary?from=' + fromDateUTC.toISOString().slice(0, 19) + 'Z&to=' + toDateUTC.toISOString().slice(0, 19) + 'Z' + (deviceValue ? '&deviceId=' + deviceValue : '') + (groupValue ? '&groupId=' + groupValue : ''), 'GET', {}, false);
+      
+      // Fetch trips data
+      const tripsResponse = await Api.call('/api/reports/trips?from=' + fromDateUTC.toISOString().slice(0, 19) + 'Z&to=' + toDateUTC.toISOString().slice(0, 19) + 'Z' + (deviceValue ? '&deviceId=' + deviceValue : ''), 'GET', {}, false);
+
+      // Combine the data
+      const combinedData = summaryResponse.data.map((summary: any) => {
+        const trip = tripsResponse.data.find((t: any) => t.deviceId === summary.deviceId);
+        return {
+          ...summary,
+          totalDistance: trip?.distance || 0,
+          firstIgnitionOnTime: trip?.startTime || '',
+          lastIgnitionOffTime: trip?.endTime || '',
+          firstAddress: trip?.startAddress || '',
+          firstLat: trip?.startLat || 0,
+          firstLon: trip?.startLon || 0,
+          lastAddress: trip?.endAddress || '',
+          lastLat: trip?.endLat || 0,
+          lastLon: trip?.endLon || 0,
+          currentKnownAddress: trip?.endAddress || '',
+          currentKnownLat: trip?.endLat || 0,
+          currentKnownLon: trip?.endLon || 0,
+          currentStatus: 'Active' // You might want to get this from another API
+        };
+      });
+
+      setReportData(combinedData);
       setCurrentPage(1); // Reset to first page after fetching new data
     } catch (error) {
       console.error('Error fetching report:', error);
@@ -179,20 +220,35 @@ export default function SummaryReportScreen() {
       const worksheet = XLSX.utils.json_to_sheet(
         reportData.map((entry) => ({
           "Vehicle Number": entry?.deviceName || "",
-          "Start Date": formatDate(entry?.startTime),
-          "End Date": formatDate(entry?.endTime),
-          "Odometer Start (km)": (entry?.startOdometer / 1000).toFixed(2),
-          "Odometer End (km)": (entry?.endOdometer / 1000).toFixed(2),
-          "Distance (km)": (entry?.distance / 1000).toFixed(2),
-          "Average Speed (km/h)": (entry?.averageSpeed * 1.852).toFixed(2),
-          "Maximum Speed (km/h)": (entry?.maxSpeed * 1.852).toFixed(2),
-          "Engine Hours (hr)": (entry?.engineHours/3600).toFixed(2) || "0",
-          "AC Hours (hr)": entry?.acHours || "0",
-          "Running Time (hr)": (entry?.movingDuration/3600).toFixed(2) || "0",
-          "Stopped Time (hr)": (entry?.stoppedDuration/3600).toFixed(2) || "0",
-          "Idle Time (hr)": (entry?.idleDuration/3600).toFixed(2) || "0",
-          "Spent Fuel (L)": entry?.spentFuel?.toFixed(2) || "0",
-          "Mileage Fuel": entry?.mileageFuel || "N/A"
+          "Start Date & Time": entry?.startTime ? formatDate(entry.startTime) : "N/A",
+          "End Date & Time": entry?.endTime ? formatDate(entry.endTime) : "N/A",
+          "Start Odometer (km)": entry?.startOdometer ? (entry.startOdometer / 1000).toFixed(2) : "N/A",
+          "End Odometer (km)": entry?.endOdometer ? (entry.endOdometer / 1000).toFixed(2) : "N/A",
+          "Distance (km)": entry?.distance ? (entry.distance / 1000).toFixed(2) : "N/A",
+          "Total Distance (km)": entry?.totalDistance ? (entry.totalDistance / 1000).toFixed(2) : "N/A",
+          "Top Speed (km/h)": entry?.maxSpeed ? (entry.maxSpeed * 1.852).toFixed(2) : "N/A",
+          "Average Speed (km/h)": entry?.averageSpeed ? (entry.averageSpeed * 1.852).toFixed(2) : "N/A",
+          "Engine Hours (hr)": entry?.engineHours ? (entry.engineHours/3600).toFixed(2) : "N/A",
+          "AC Hours (hr)": entry?.acHours ? entry.acHours : "N/A",
+          "Running Hours (hr)": entry?.movingDuration ? (entry.movingDuration/3600).toFixed(2) : "N/A",
+          "Stopped Hours (hr)": entry?.stoppedDuration ? (entry.stoppedDuration/3600).toFixed(2) : "N/A",
+          "Idle Hours (hr)": entry?.idleDuration ? (entry.idleDuration/3600).toFixed(2) : "N/A",
+          "Overspeed Duration (hr)": entry?.overspeedDuration ? (entry.overspeedDuration/3600).toFixed(2) : "N/A",
+          "Overspeed Distance (km)": entry?.overspeedDistance ? (entry.overspeedDistance/1000).toFixed(2) : "N/A",
+          "Spent Fuel (L)": entry?.spentFuel ? entry.spentFuel.toFixed(2) : "N/A",
+          "Mileage Fuel": entry?.mileageFuel || "N/A",
+          "Current Status": entry?.currentStatus || "N/A",
+          "First Ignition On Time": entry?.firstIgnitionOnTime ? formatDate(entry.firstIgnitionOnTime) : "N/A",
+          "Last Ignition Off Time": entry?.lastIgnitionOffTime ? formatDate(entry.lastIgnitionOffTime) : "N/A",
+          "First Address": entry?.firstAddress || "N/A",
+          "First Latitude": entry?.firstLat ? entry.firstLat.toFixed(6) : "N/A",
+          "First Longitude": entry?.firstLon ? entry.firstLon.toFixed(6) : "N/A",
+          "Last Address": entry?.lastAddress || "N/A",
+          "Last Latitude": entry?.lastLat ? entry.lastLat.toFixed(6) : "N/A",
+          "Last Longitude": entry?.lastLon ? entry.lastLon.toFixed(6) : "N/A",
+          "Current Known Address": entry?.currentKnownAddress || "N/A",
+          "Current Known Latitude": entry?.currentKnownLat ? entry.currentKnownLat.toFixed(6) : "N/A",
+          "Current Known Longitude": entry?.currentKnownLon ? entry.currentKnownLon.toFixed(6) : "N/A"
         }))
       );
       const workbook = XLSX.utils.book_new();
@@ -356,47 +412,77 @@ export default function SummaryReportScreen() {
                   <Row
                     data={[
                       'Vehicle Number',
-                      'Start Date',
-                      'End Date',
-                      'Odometer Start',
-                      'Odometer End',
+                      'Start Date & Time',
+                      'End Date & Time',
+                      'Start Odometer',
+                      'End Odometer',
                       'Distance',
+                      'Total Distance',
+                      'Top Speed',
                       'Average Speed',
-                      'Maximum Speed',
                       'Engine Hours',
                       'AC Hours',
-                      'Running Time',
-                      'Stopped Time',
-                      'Idle Time',
+                      'Running Hours',
+                      'Stopped Hours',
+                      'Idle Hours',
+                      'Overspeed Duration',
+                      'Overspeed Distance',
                       'Spent Fuel',
-                      'Mileage Fuel'
+                      'Mileage Fuel',
+                      'Current Status',
+                      'First Ignition On Time',
+                      'Last Ignition Off Time',
+                      'First Address',
+                      'First Latitude',
+                      'First Longitude',
+                      'Last Address',
+                      'Last Latitude',
+                      'Last Longitude',
+                      'Current Known Address',
+                      'Current Known Latitude',
+                      'Current Known Longitude'
                     ]}
                     style={styles.tableHeaderDark}
                     textStyle={styles.tableHeaderTextDark}
-                    widthArr={[150, 150, 150, 120, 120, 120, 120, 120, 120, 120, 120, 120, 120, 120, 120]}
+                    widthArr={[150, 150, 150, 120, 120, 120, 120, 120, 120, 120, 120, 120, 120, 120, 120, 120, 120, 120, 120, 150, 150, 200, 120, 120, 200, 120, 120, 200, 120, 120]}
                   />
                   <TableWrapper style={styles.tableWrapperDark}>
                     <Rows
                       data={currentRecords.map(entry => [
-                        String(entry?.deviceName || ""),
-                        String(formatDate(entry?.startTime)),
-                        String(formatDate(entry?.endTime)),
-                        String((entry?.startOdometer / 1000).toFixed(2) + " km"),
-                        String((entry?.endOdometer / 1000).toFixed(2) + " km"),
-                        String((entry?.distance / 1000).toFixed(2) + " km"),
-                        String((entry?.averageSpeed * 1.852).toFixed(2) + " km/h"),
-                        String((entry?.maxSpeed * 1.852).toFixed(2) + " km/h"),
-                        String((entry?.engineHours/3600).toFixed(2) + " hr"),
-                        String(entry?.acHours + " hr"),
-                        String((entry?.movingDuration/3600).toFixed(2) + " hr"),
-                        String((entry?.stoppedDuration/3600).toFixed(2) + " hr"),
-                        String((entry?.idleDuration/3600).toFixed(2) + " hr"),
-                        String(entry?.spentFuel?.toFixed(2) + " L"),
-                        String(entry?.mileageFuel || "N/A")
+                        String(entry?.deviceName || "N/A"),
+                        String(entry?.startTime ? formatDate(entry.startTime) : "N/A"),
+                        String(entry?.endTime ? formatDate(entry.endTime) : "N/A"),
+                        String(entry?.startOdometer ? (entry.startOdometer / 1000).toFixed(2) + " km" : "N/A"),
+                        String(entry?.endOdometer ? (entry.endOdometer / 1000).toFixed(2) + " km" : "N/A"),
+                        String(entry?.distance ? (entry.distance / 1000).toFixed(2) + " km" : "N/A"),
+                        String(entry?.totalDistance ? (entry.totalDistance / 1000).toFixed(2) + " km" : "N/A"),
+                        String(entry?.maxSpeed ? (entry.maxSpeed * 1.852).toFixed(2) + " km/h" : "N/A"),
+                        String(entry?.averageSpeed ? (entry.averageSpeed * 1.852).toFixed(2) + " km/h" : "N/A"),
+                        String(entry?.engineHours ? (entry.engineHours/3600).toFixed(2) + " hr" : "N/A"),
+                        String(entry?.acHours ? entry.acHours + " hr" : "N/A"),
+                        String(entry?.movingDuration ? (entry.movingDuration/3600).toFixed(2) + " hr" : "N/A"),
+                        String(entry?.stoppedDuration ? (entry.stoppedDuration/3600).toFixed(2) + " hr" : "N/A"),
+                        String(entry?.idleDuration ? (entry.idleDuration/3600).toFixed(2) + " hr" : "N/A"),
+                        String(entry?.overspeedDuration ? (entry.overspeedDuration/3600).toFixed(2) + " hr" : "N/A"),
+                        String(entry?.overspeedDistance ? (entry.overspeedDistance/1000).toFixed(2) + " km" : "N/A"),
+                        String(entry?.spentFuel ? entry.spentFuel.toFixed(2) + " L" : "N/A"),
+                        String(entry?.mileageFuel || "N/A"),
+                        String(entry?.currentStatus || "N/A"),
+                        String(entry?.firstIgnitionOnTime ? formatDate(entry.firstIgnitionOnTime) : "N/A"),
+                        String(entry?.lastIgnitionOffTime ? formatDate(entry.lastIgnitionOffTime) : "N/A"),
+                        String(entry?.firstAddress || "N/A"),
+                        String(entry?.firstLat ? entry.firstLat.toFixed(6) : "N/A"),
+                        String(entry?.firstLon ? entry.firstLon.toFixed(6) : "N/A"),
+                        String(entry?.lastAddress || "N/A"),
+                        String(entry?.lastLat ? entry.lastLat.toFixed(6) : "N/A"),
+                        String(entry?.lastLon ? entry.lastLon.toFixed(6) : "N/A"),
+                        String(entry?.currentKnownAddress || "N/A"),
+                        String(entry?.currentKnownLat ? entry.currentKnownLat.toFixed(6) : "N/A"),
+                        String(entry?.currentKnownLon ? entry.currentKnownLon.toFixed(6) : "N/A")
                       ])}
                       textStyle={styles.tableCellTextDark}
                       style={styles.tableRowDark}
-                      widthArr={[150, 150, 150, 120, 120, 120, 120, 120, 120, 120, 120, 120, 120, 120, 120]}
+                      widthArr={[150, 150, 150, 120, 120, 120, 120, 120, 120, 120, 120, 120, 120, 120, 120, 120, 120, 120, 120, 150, 150, 200, 120, 120, 200, 120, 120, 200, 120, 120]}
                     />
                   </TableWrapper>
                 </Table>

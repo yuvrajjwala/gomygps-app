@@ -5,10 +5,10 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import * as Sharing from 'expo-sharing';
 import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, ScrollView, StatusBar, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import DropDownPicker from 'react-native-dropdown-picker';
 import DateTimePickerModal from "react-native-modal-datetime-picker";
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as XLSX from 'xlsx';
+import SearchableDropdown from '../components/SearchableDropdown';
 
 interface Device {
   id: string;
@@ -76,12 +76,10 @@ export default function StopReportScreen() {
   const [groups, setGroups] = useState<Group[]>([]);
   
   // Device dropdown states
-  const [deviceOpen, setDeviceOpen] = useState(false);
   const [deviceValue, setDeviceValue] = useState<string | null>(null);
   const [deviceItems, setDeviceItems] = useState<DropdownItem[]>([]);
   
   // Group dropdown states
-  const [groupOpen, setGroupOpen] = useState(false);
   const [groupValue, setGroupValue] = useState<string | null>(null);
   const [groupItems, setGroupItems] = useState<DropdownItem[]>([]);
 
@@ -209,6 +207,20 @@ export default function StopReportScreen() {
     setToDatePickerVisible(false);
   };
 
+  const handleDeviceChange = (value: string | null) => {
+    setDeviceValue(value);
+    if (value) {
+      setGroupValue(null);
+    }
+  };
+
+  const handleGroupChange = (value: string | null) => {
+    setGroupValue(value);
+    if (value) {
+      setDeviceValue(null);
+    }
+  };
+
   return (
     <SafeAreaView style={styles.containerDark}>
       {/* Header */}
@@ -229,48 +241,25 @@ export default function StopReportScreen() {
         <View style={styles.filterCardDark}>
           <View style={styles.filterFieldBlock}>
             <Text style={styles.filterLabelDark}>Device</Text>
-            <DropDownPicker
-              open={deviceOpen}
-              value={deviceValue}
+            <SearchableDropdown
               items={deviceItems}
-              setOpen={setDeviceOpen}
-              setValue={setDeviceValue}
-              setItems={setDeviceItems}
-              style={styles.dropdown}
-              textStyle={styles.dropdownText}
+              value={deviceValue}
+              onValueChange={handleDeviceChange}
               placeholder="Select device"
-              placeholderStyle={styles.dropdownPlaceholder}
-              dropDownContainerStyle={styles.dropdownContainer}
-              listItemLabelStyle={styles.dropdownItemText}
-              searchable={true}
-              searchPlaceholder="Search devices..."
-              searchContainerStyle={styles.dropdownSearchContainer}
-              searchTextInputStyle={styles.dropdownSearchInput}
-              zIndex={3000}
               disabled={!!groupValue}
+              zIndex={3000}
             />
           </View>
 
           <View style={styles.filterFieldBlock}>
             <Text style={styles.filterLabelDark}>Group</Text>
-            <DropDownPicker
-              open={groupOpen}
-              value={groupValue}
+            <SearchableDropdown
               items={groupItems}
-              setOpen={setGroupOpen}
-              setValue={setGroupValue}
-              setItems={setGroupItems}
-              style={styles.dropdown}
-              textStyle={styles.dropdownText}
+              value={groupValue}
+              onValueChange={handleGroupChange}
               placeholder="Select group"
-              placeholderStyle={styles.dropdownPlaceholder}
-              dropDownContainerStyle={styles.dropdownContainer}
-              listItemLabelStyle={styles.dropdownItemText}
-              searchPlaceholder="Search groups..."
-              searchContainerStyle={styles.dropdownSearchContainer}
-              searchTextInputStyle={styles.dropdownSearchInput}
-              zIndex={2000}
               disabled={!!deviceValue}
+              zIndex={2000}
             />
           </View>
 
@@ -323,7 +312,7 @@ export default function StopReportScreen() {
               ) : (
                 <>
                   <MaterialIcons name="search" size={20} color="#fff" />
-                  <Text style={styles.generateButtonTextDark}>Generate Report</Text>
+                  <Text style={styles.generateButtonTextDark}>Generate</Text>
                 </>
               )}
             </TouchableOpacity>
@@ -339,8 +328,8 @@ export default function StopReportScreen() {
           </View>
         </View>
 
-        {/* Report Data */}
-        {reportData.length > 0 && (
+        {/* Report Data */}   
+        {reportData.length > 0 ? (
           <View style={styles.tableContainerDark}>
             <View style={styles.tableWrapperDark}>
               <ScrollView horizontal showsHorizontalScrollIndicator={false}>
@@ -453,7 +442,11 @@ export default function StopReportScreen() {
               </TouchableOpacity>
             </View>
           </View>
-        )}
+        ) : (
+          <View style={styles.noDataContainer}>
+            <Text style={styles.noDataText}>No data found</Text>
+          </View>
+        )}  
       </ScrollView>
     </SafeAreaView>
   );
@@ -659,5 +652,15 @@ const styles = StyleSheet.create({
   },
   filterDownloadButton: {
     // Add any specific styles for the filter download button
+  },
+  noDataContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  noDataText: {
+    fontSize: 16,
+    color: '#666',
+    fontWeight: '500',
   },
 }); 

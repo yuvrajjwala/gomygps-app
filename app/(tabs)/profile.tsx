@@ -1,6 +1,6 @@
 import { MaterialIcons } from "@expo/vector-icons";
 import { router } from "expo-router";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   Alert,
   ScrollView,
@@ -15,10 +15,31 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useDispatch } from "react-redux";
 import { logout } from "../store/slices/authSlice";
 import { removeNotificationToken } from "../utils/notificationToken";
+import { isNotificationsEnabled, setNotificationsEnabled } from "../utils/notifications";
 
 export default function DriversScreen() {
   const dispatch = useDispatch();
-  const [notificationsEnabled, setNotificationsEnabled] = useState(true);
+  const [notificationsEnabled, setNotificationsEnabledState] = useState(true);
+
+  useEffect(() => {
+    // Load initial notification state and ensure notifications are enabled by default
+    const loadNotificationState = async () => {
+      const enabled = await isNotificationsEnabled();
+      setNotificationsEnabledState(enabled);
+      
+      // If notifications are not enabled, enable them by default
+      if (!enabled) {
+        await setNotificationsEnabled(true);
+        setNotificationsEnabledState(true);
+      }
+    };
+    loadNotificationState();
+  }, []);
+
+  const handleNotificationToggle = async (value: boolean) => {
+    setNotificationsEnabledState(value);
+    await setNotificationsEnabled(value);
+  };
 
   const options = [
     {
@@ -27,7 +48,7 @@ export default function DriversScreen() {
       color: "#000000",
       isToggle: true,
       value: notificationsEnabled,
-      onToggle: (value: boolean) => setNotificationsEnabled(value),
+      onToggle: handleNotificationToggle,
     },
     {
       label: "Geofencing",

@@ -1209,8 +1209,8 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   markerImage: {
-    width: 48,
-    height: 48,
+    width: 30,
+    height: 30,
     resizeMode: "contain",
   },
   statsRow: {
@@ -1222,7 +1222,7 @@ const styles = StyleSheet.create({
   statsCol: {
     flex: 1,
     alignItems: "center",
-    padding: 10,
+    padding: 5,
     borderRadius: 8,
     backgroundColor: "#f8f9fa",
     marginHorizontal: 2,
@@ -1236,12 +1236,12 @@ const styles = StyleSheet.create({
   },
   statsValue: {
     fontWeight: "bold",
-    fontSize: 12,
+    fontSize: 10,
     color: "#000",
     marginTop: 2,
   },
   statsLabel: {
-    fontSize: 10,
+    fontSize: 9,
     color: "#666",
     textAlign: "center",
     fontWeight: "500",
@@ -1253,14 +1253,14 @@ const styles = StyleSheet.create({
   },
   floatingMenuLeft: {
     position: "absolute",
-    top: 130,
+    top: 120,
     left: 16,
     zIndex: 5,
     alignItems: "center",
   },
   floatingMenuRight: {
     position: "absolute",
-    top: 130,
+    top: 120,
     right: 16,
     zIndex: 5,
     alignItems: "center",

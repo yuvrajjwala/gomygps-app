@@ -7,7 +7,6 @@ import {
   StatusBar,
   StyleSheet,
   Text,
-  TouchableOpacity,
   View
 } from "react-native";
 import { PieChart } from "react-native-chart-kit";
@@ -162,7 +161,7 @@ export default function DashboardScreen() {
           <>
             <View style={styles.statusRow}>
               {vehicleStats.map((filter) => (
-                <TouchableOpacity
+                <View
                   key={filter.label}
                   style={[
                     styles.statusCard,
@@ -180,7 +179,7 @@ export default function DashboardScreen() {
                 >
                   <Text style={styles.statusLabel}>{filter.label}</Text>
                   <Text style={styles.statusCount}>{filter.count}</Text>
-                </TouchableOpacity>
+                </View>
               ))}
             </View>
             <Card style={styles.chartCard}>

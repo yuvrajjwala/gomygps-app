@@ -5,10 +5,10 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import * as Sharing from 'expo-sharing';
 import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, ScrollView, StatusBar, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import DropDownPicker from 'react-native-dropdown-picker';
 import DateTimePickerModal from "react-native-modal-datetime-picker";
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as XLSX from 'xlsx';
+import SearchableDropdown from '../components/SearchableDropdown';
 
 interface Device {
   id: string;
@@ -73,12 +73,10 @@ export default function RouteReportScreen() {
   const [groups, setGroups] = useState<Group[]>([]);
   
   // Device dropdown states
-  const [deviceOpen, setDeviceOpen] = useState(false);
   const [deviceValue, setDeviceValue] = useState<string | null>(null);
   const [deviceItems, setDeviceItems] = useState<DropdownItem[]>([]);
   
   // Group dropdown states
-  const [groupOpen, setGroupOpen] = useState(false);
   const [groupValue, setGroupValue] = useState<string | null>(null);
   const [groupItems, setGroupItems] = useState<DropdownItem[]>([]);
 
@@ -205,6 +203,20 @@ export default function RouteReportScreen() {
     setToDatePickerVisible(false);
   };
 
+  const handleDeviceChange = (value: string | null) => {
+    setDeviceValue(value);
+    if (value) {
+      setGroupValue(null);
+    }
+  };
+
+  const handleGroupChange = (value: string | null) => {
+    setGroupValue(value);
+    if (value) {
+      setDeviceValue(null);
+    }
+  };
+
   return (
     <SafeAreaView style={styles.containerDark}>
       {/* Header */}
@@ -225,24 +237,25 @@ export default function RouteReportScreen() {
         <View style={styles.filterCardDark}>
           <View style={styles.filterFieldBlock}>
             <Text style={styles.filterLabelDark}>Device</Text>
-            <DropDownPicker
-              open={deviceOpen}
-              value={deviceValue}
+            <SearchableDropdown
               items={deviceItems}
-              setOpen={setDeviceOpen}
-              setValue={setDeviceValue}
-              setItems={setDeviceItems}
-              style={styles.dropdown}
-              textStyle={styles.dropdownText}
+              value={deviceValue}
+              onValueChange={handleDeviceChange}
               placeholder="Select device"
-              placeholderStyle={styles.dropdownPlaceholder}
-              dropDownContainerStyle={styles.dropdownContainer}
-              listItemLabelStyle={styles.dropdownItemText}
-              searchable={true}
-              searchPlaceholder="Search devices..."
-              searchContainerStyle={styles.dropdownSearchContainer}
-              searchTextInputStyle={styles.dropdownSearchInput}
+              disabled={!!groupValue}
               zIndex={3000}
+            />
+          </View>
+
+          <View style={styles.filterFieldBlock}>
+            <Text style={styles.filterLabelDark}>Group</Text>
+            <SearchableDropdown
+              items={groupItems}
+              value={groupValue}
+              onValueChange={handleGroupChange}
+              placeholder="Select group"
+              disabled={!!deviceValue}
+              zIndex={2000}
             />
           </View>
 
@@ -295,7 +308,7 @@ export default function RouteReportScreen() {
               ) : (
                 <>
                   <MaterialIcons name="search" size={20} color="#fff" />
-                  <Text style={styles.generateButtonTextDark}>Generate Report</Text>
+                  <Text style={styles.generateButtonTextDark}>Generate</Text>
                 </>
               )}
             </TouchableOpacity>
@@ -313,7 +326,7 @@ export default function RouteReportScreen() {
         </View>
 
         {/* Report Data */}
-        {reportData.length > 0 && (
+        {reportData.length > 0 ? (
           <View style={styles.tableContainerDark}>
             <View style={styles.tableWrapperDark}>
               <ScrollView horizontal showsHorizontalScrollIndicator={false}>
@@ -436,7 +449,11 @@ export default function RouteReportScreen() {
               <Text style={styles.downloadButtonTextDark}>Download Report</Text>
             </TouchableOpacity>
           </View>
-        )}
+        ) : (
+          <View style={styles.noDataContainer}>
+            <Text style={styles.noDataText}>No data found</Text>
+          </View>
+        )    }  
       </ScrollView>
     </SafeAreaView>
   );
@@ -643,5 +660,15 @@ const styles = StyleSheet.create({
   filterDownloadButton: {
     flex: 1,
     marginTop: 0,
+    },
+  noDataContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  noDataText: {
+    fontSize: 16,
+    color: '#666',
+    fontWeight: '500',
   },
 }); 

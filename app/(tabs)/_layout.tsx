@@ -2,7 +2,6 @@ import { router, Tabs } from 'expo-router';
 import React from 'react';
 import { useSelector } from 'react-redux';
 
-import { HapticTab } from '@/components/HapticTab';
 import { IconSymbol } from '@/components/ui/IconSymbol';
 import { MaterialIcons } from '@expo/vector-icons';
 
@@ -18,7 +17,6 @@ export default function TabLayout() {
       screenOptions={{
         tabBarActiveTintColor: 'white',
         headerShown: false,
-        tabBarButton: HapticTab,
         tabBarStyle: [
           {
             backgroundColor: 'black',

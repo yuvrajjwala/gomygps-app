@@ -1,7 +1,7 @@
 import Api from '@/config/Api';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
-import { Image, ImageBackground, KeyboardAvoidingView, Platform, StatusBar, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Image, ImageBackground, KeyboardAvoidingView, Platform, StatusBar, StyleSheet, Text, View } from 'react-native';
 import { Button, TextInput } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useDispatch } from 'react-redux';
@@ -14,11 +14,13 @@ export default function LoginScreen() {
   const [password, setPassword] = useState('');
   const [secure, setSecure] = useState(true);
   const [error, setError] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
   const dispatch = useDispatch();
   const router = useRouter();
 
   const handleLogin = async () => {
     setError('');
+    setIsLoading(true);
     try {
       const response = await Api.call(
         `/api/session`,
@@ -38,6 +40,8 @@ export default function LoginScreen() {
       }
     } catch (err) {
       setError('Please check your email or password.');
+    } finally {
+      setIsLoading(false);
     }
   };
   useEffect(() => {
@@ -96,7 +100,11 @@ export default function LoginScreen() {
                 textColor="#000000"
                 onPress={handleLogin}
               >
-                Login
+                {isLoading ? (
+                  <ActivityIndicator size="small" color="#000000" />
+                ) : (
+                  'Login'
+                )}
               </Button>
             </View>
           </KeyboardAvoidingView>

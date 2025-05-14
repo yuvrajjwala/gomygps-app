@@ -12,7 +12,7 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
-  View
+  View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -136,17 +136,17 @@ export default function VehiclesScreen() {
     const vehicleNumberColor = "#2EAD4B";
     const iconColors = [
       device.attributes.ignition ? "#66BB6A" : "#EF5350",
-      "#EF5350", // key - red
-      "#EF5350", // lock - red
-      "#29B6F6", // ac-unit - sky blue
-      "#FFB74D", // local-gas-station - orange (a bit darker)
-      "#66BB6A", // battery-full - green
+      "#EF5350",
+      "#EF5350",
+      "#29B6F6",
+      device?.attributes?.batteryLevel ? "#66BB6A" : "#EF5350",
     ];
     const iconNames = [
       { "vpn-key": device.attributes.ignition },
       { lock: device.attributes.is_mobilized },
       { "ac-unit": device.attributes.is_parked },
       { "motion-photos-on": device.attributes.motion },
+      { "battery-full": device?.attributes?.batteryLevel },
     ];
     return (
       <TouchableOpacity
@@ -239,22 +239,78 @@ export default function VehiclesScreen() {
 
   // SkeletonCard component
   const SkeletonCard = () => (
-    <View style={[styles.vehicleCardNew, { overflow: 'hidden' }]}> 
-      <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-        <View style={{ width: 72, height: 72, borderRadius: 12, backgroundColor: '#e0e0e0', marginRight: 20 }} />
+    <View style={[styles.vehicleCardNew, { overflow: "hidden" }]}>
+      <View style={{ flexDirection: "row", alignItems: "center" }}>
+        <View
+          style={{
+            width: 72,
+            height: 72,
+            borderRadius: 12,
+            backgroundColor: "#e0e0e0",
+            marginRight: 20,
+          }}
+        />
         <View style={{ flex: 1 }}>
-          <View style={{ width: '60%', height: 16, backgroundColor: '#e0e0e0', borderRadius: 8, marginBottom: 8 }} />
-          <View style={{ width: '80%', height: 12, backgroundColor: '#e0e0e0', borderRadius: 8, marginBottom: 6 }} />
-          <View style={{ width: '40%', height: 10, backgroundColor: '#e0e0e0', borderRadius: 8 }} />
+          <View
+            style={{
+              width: "60%",
+              height: 16,
+              backgroundColor: "#e0e0e0",
+              borderRadius: 8,
+              marginBottom: 8,
+            }}
+          />
+          <View
+            style={{
+              width: "80%",
+              height: 12,
+              backgroundColor: "#e0e0e0",
+              borderRadius: 8,
+              marginBottom: 6,
+            }}
+          />
+          <View
+            style={{
+              width: "40%",
+              height: 10,
+              backgroundColor: "#e0e0e0",
+              borderRadius: 8,
+            }}
+          />
         </View>
         <View style={styles.statsColNew}>
-          <View style={{ width: 38, height: 15, backgroundColor: '#e0e0e0', borderRadius: 8, marginBottom: 6 }} />
-          <View style={{ width: 38, height: 10, backgroundColor: '#e0e0e0', borderRadius: 8, marginBottom: 6 }} />
+          <View
+            style={{
+              width: 38,
+              height: 15,
+              backgroundColor: "#e0e0e0",
+              borderRadius: 8,
+              marginBottom: 6,
+            }}
+          />
+          <View
+            style={{
+              width: 38,
+              height: 10,
+              backgroundColor: "#e0e0e0",
+              borderRadius: 8,
+              marginBottom: 6,
+            }}
+          />
         </View>
       </View>
-      <View style={{ flexDirection: 'row', marginTop: 10, paddingLeft: 100 }}>
+      <View style={{ flexDirection: "row", marginTop: 10, paddingLeft: 100 }}>
         {[...Array(4)].map((_, i) => (
-          <View key={i} style={{ width: 22, height: 22, borderRadius: 11, backgroundColor: '#e0e0e0', marginHorizontal: 4 }} />
+          <View
+            key={i}
+            style={{
+              width: 22,
+              height: 22,
+              borderRadius: 11,
+              backgroundColor: "#e0e0e0",
+              marginHorizontal: 4,
+            }}
+          />
         ))}
       </View>
     </View>

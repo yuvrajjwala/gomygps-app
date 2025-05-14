@@ -1,14 +1,22 @@
-import Api from '@/config/Api';
-import { MaterialIcons } from '@expo/vector-icons';
-import * as FileSystem from 'expo-file-system';
-import { useLocalSearchParams, useRouter } from 'expo-router';
-import * as Sharing from 'expo-sharing';
-import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, ScrollView, StatusBar, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import Api from "@/config/Api";
+import { MaterialIcons } from "@expo/vector-icons";
+import * as FileSystem from "expo-file-system";
+import { useLocalSearchParams, useRouter } from "expo-router";
+import * as Sharing from "expo-sharing";
+import React, { useEffect, useState } from "react";
+import {
+  ActivityIndicator,
+  ScrollView,
+  StatusBar,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
 import DateTimePickerModal from "react-native-modal-datetime-picker";
-import { SafeAreaView } from 'react-native-safe-area-context';
-import * as XLSX from 'xlsx';
-import SearchableDropdown from '../components/SearchableDropdown';
+import { SafeAreaView } from "react-native-safe-area-context";
+import * as XLSX from "xlsx";
+import SearchableDropdown from "../components/SearchableDropdown";
 
 interface Device {
   id: string;
@@ -43,34 +51,34 @@ interface DropdownItem {
 }
 
 const formatDate = (dateStr: string) => {
-  if (!dateStr) return '';
+  if (!dateStr) return "";
   const date = new Date(dateStr);
-  return date.toLocaleDateString('en-US', { 
-    month: 'short', 
-    day: 'numeric',
-    hour: 'numeric',
-    minute: '2-digit',
-    hour12: true 
+  return date.toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+    hour12: true,
   });
 };
 
 const getColumnWidth = (key: string) => {
   switch (key.toLowerCase()) {
-    case 'vehicle number':
-    case 'start address':
-    case 'end address':
-    case 'mileage fuel':
+    case "vehicle number":
+    case "start address":
+    case "end address":
+    case "mileage fuel":
       return 2;
-    case 'start time':
-    case 'end time':
-    case 'odometer start':
-    case 'odometer end':
-    case 'distance':
-    case 'duration':
-    case 'average speed':
-    case 'maximum speed':
-    case 'ac hours':
-    case 'spent fuel':
+    case "start time":
+    case "end time":
+    case "odometer start":
+    case "odometer end":
+    case "distance":
+    case "duration":
+    case "average speed":
+    case "maximum speed":
+    case "ac hours":
+    case "spent fuel":
       return 1.5;
     default:
       return 1;
@@ -84,18 +92,18 @@ export default function TipsReportScreen() {
   const [reportData, setReportData] = useState<ReportData[]>([]);
   const [devices, setDevices] = useState<Device[]>([]);
   const [groups, setGroups] = useState<Group[]>([]);
-  
+
   // Device dropdown states
   const [deviceValue, setDeviceValue] = useState<string | null>(null);
   const [deviceItems, setDeviceItems] = useState<DropdownItem[]>([]);
-  
+
   // Group dropdown states
   const [groupValue, setGroupValue] = useState<string | null>(null);
   const [groupItems, setGroupItems] = useState<DropdownItem[]>([]);
 
   const [fromDate, setFromDate] = useState(() => {
     const date = new Date();
-    date.setHours(date.getHours() - 24); 
+    date.setHours(date.getHours() - 24);
     return date;
   });
   const [toDate, setToDate] = useState(new Date());
@@ -111,43 +119,43 @@ export default function TipsReportScreen() {
 
   useEffect(() => {
     // Transform devices data for dropdown
-    const deviceDropdownItems = devices.map(device => ({
+    const deviceDropdownItems = devices.map((device) => ({
       label: device.name,
-      value: device.id
+      value: device.id,
     }));
     setDeviceItems(deviceDropdownItems);
   }, [devices]);
 
   useEffect(() => {
     // Transform groups data for dropdown
-    const groupDropdownItems = groups.map(group => ({
+    const groupDropdownItems = groups.map((group) => ({
       label: group.name,
-      value: group.id
+      value: group.id,
     }));
     setGroupItems(groupDropdownItems);
   }, [groups]);
 
   const fetchDevices = async () => {
     try {
-      const response = await Api.call('/api/devices', 'GET', {}, false); 
+      const response = await Api.call("/api/devices", "GET", {}, false);
       setDevices(response.data || []);
     } catch (error) {
-      console.error('Error fetching devices:', error);
+      console.error("Error fetching devices:", error);
     }
   };
 
   const fetchGroups = async () => {
     try {
-      const response = await Api.call('/api/groups', 'GET', {}, false);
+      const response = await Api.call("/api/groups", "GET", {}, false);
       setGroups(response.data || []);
     } catch (error) {
-      console.error('Error fetching groups:', error);
+      console.error("Error fetching groups:", error);
     }
   };
 
   const handleGenerateReport = async () => {
     if (!deviceValue && !groupValue) {
-      alert('Please select a device or group');
+      alert("Please select a device or group");
       return;
     }
 
@@ -155,8 +163,11 @@ export default function TipsReportScreen() {
     try {
       // Convert to UTC and format properly
       const fromDateUTC = new Date(fromDate);
-      fromDateUTC.setHours(fromDateUTC.getHours() - 5, fromDateUTC.getMinutes() - 30);
-      
+      fromDateUTC.setHours(
+        fromDateUTC.getHours() - 5,
+        fromDateUTC.getMinutes() - 30
+      );
+
       const toDateUTC = new Date(toDate);
       toDateUTC.setHours(toDateUTC.getHours() - 5, toDateUTC.getMinutes() - 30);
 
@@ -167,12 +178,17 @@ export default function TipsReportScreen() {
         ...(groupValue ? { groupId: groupValue } : {}),
       };
 
-      const response = await Api.call(`/api/reports/trips`, 'GET', params, false);
+      const response = await Api.call(
+        `/api/reports/trips?from=${fromDateUTC.toISOString()}&to=${toDateUTC.toISOString()}&deviceId=${deviceValue}`,
+        "GET",
+        params,
+        false
+      );
       setReportData(response.data || []);
       setCurrentPage(1);
     } catch (error) {
-      console.error('Error generating report:', error);
-      alert('Failed to generate report. Please try again.');
+      console.error("Error generating report:", error);
+      alert("Failed to generate report. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -182,7 +198,8 @@ export default function TipsReportScreen() {
     try {
       const worksheet = XLSX.utils.json_to_sheet(
         reportData.map((trip) => ({
-          "Vehicle Number": devices.find((device) => device.id === trip?.deviceId)?.name || "",
+          "Vehicle Number":
+            devices.find((device) => device.id === trip?.deviceId)?.name || "",
           "Start Time": formatDate(trip.startTime),
           "End Time": formatDate(trip.endTime),
           "Odometer Start": trip.startOdometer || "0",
@@ -195,21 +212,21 @@ export default function TipsReportScreen() {
           "Maximum Speed (km/h)": (trip.maxSpeed * 1.852).toFixed(2),
           "AC Hours": trip.acHours || "0",
           "Spent Fuel (L)": trip.spentFuel || "0",
-          "Mileage Fuel": trip.mileageFuel || "N/A"
+          "Mileage Fuel": trip.mileageFuel || "N/A",
         }))
       );
       const workbook = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(workbook, worksheet, "Trip Report");
-      
-      const wbout = XLSX.write(workbook, { type: 'base64', bookType: 'xlsx' });
+
+      const wbout = XLSX.write(workbook, { type: "base64", bookType: "xlsx" });
       const uri = FileSystem.documentDirectory + "Trip_Report.xlsx";
       await FileSystem.writeAsStringAsync(uri, wbout, {
         encoding: FileSystem.EncodingType.Base64,
       });
-      
+
       await Sharing.shareAsync(uri);
     } catch (error) {
-      console.error('Error exporting to Excel:', error);
+      console.error("Error exporting to Excel:", error);
     }
   };
 
@@ -240,7 +257,10 @@ export default function TipsReportScreen() {
   // Calculate pagination
   const indexOfLastRecord = currentPage * recordsPerPage;
   const indexOfFirstRecord = indexOfLastRecord - recordsPerPage;
-  const currentRecords = reportData.slice(indexOfFirstRecord, indexOfLastRecord);
+  const currentRecords = reportData.slice(
+    indexOfFirstRecord,
+    indexOfLastRecord
+  );
   const totalPages = Math.ceil(reportData.length / recordsPerPage);
 
   return (
@@ -251,9 +271,7 @@ export default function TipsReportScreen() {
         <TouchableOpacity onPress={() => router.back()}>
           <MaterialIcons name="arrow-back" size={24} color="black" />
         </TouchableOpacity>
-        <Text style={styles.headerTitleDark}>
-          Trip Report
-        </Text>
+        <Text style={styles.headerTitleDark}>Trip Report</Text>
         <View style={{ width: 24 }} />
       </View>
 
@@ -286,12 +304,19 @@ export default function TipsReportScreen() {
 
           <View style={styles.filterFieldBlock}>
             <Text style={styles.filterLabelDark}>From</Text>
-            <TouchableOpacity 
-              style={styles.dateInputDark} 
+            <TouchableOpacity
+              style={styles.dateInputDark}
               onPress={() => setFromDatePickerVisible(true)}
             >
-              <Text style={styles.dateInputTextDark}>{fromDate.toLocaleString()}</Text>
-              <MaterialIcons name="calendar-today" size={18} color="#666" style={{ marginLeft: 6 }} />
+              <Text style={styles.dateInputTextDark}>
+                {fromDate.toLocaleString()}
+              </Text>
+              <MaterialIcons
+                name="calendar-today"
+                size={18}
+                color="#666"
+                style={{ marginLeft: 6 }}
+              />
             </TouchableOpacity>
             <DateTimePickerModal
               isVisible={isFromDatePickerVisible}
@@ -305,12 +330,19 @@ export default function TipsReportScreen() {
 
           <View style={styles.filterFieldBlock}>
             <Text style={styles.filterLabelDark}>To</Text>
-            <TouchableOpacity 
-              style={styles.dateInputDark} 
+            <TouchableOpacity
+              style={styles.dateInputDark}
               onPress={() => setToDatePickerVisible(true)}
             >
-              <Text style={styles.dateInputTextDark}>{toDate.toLocaleString()}</Text>
-              <MaterialIcons name="calendar-today" size={18} color="#666" style={{ marginLeft: 6 }} />
+              <Text style={styles.dateInputTextDark}>
+                {toDate.toLocaleString()}
+              </Text>
+              <MaterialIcons
+                name="calendar-today"
+                size={18}
+                color="#666"
+                style={{ marginLeft: 6 }}
+              />
             </TouchableOpacity>
             <DateTimePickerModal
               isVisible={isToDatePickerVisible}
@@ -323,8 +355,11 @@ export default function TipsReportScreen() {
           </View>
 
           <View style={styles.buttonContainer}>
-            <TouchableOpacity 
-              style={[styles.generateButtonDark, loading && styles.generateButtonDisabledDark]} 
+            <TouchableOpacity
+              style={[
+                styles.generateButtonDark,
+                loading && styles.generateButtonDisabledDark,
+              ]}
               onPress={handleGenerateReport}
               disabled={loading}
             >
@@ -338,8 +373,11 @@ export default function TipsReportScreen() {
               )}
             </TouchableOpacity>
 
-            <TouchableOpacity 
-              style={[styles.downloadButtonDark, !reportData.length && styles.generateButtonDisabledDark]}
+            <TouchableOpacity
+              style={[
+                styles.downloadButtonDark,
+                !reportData.length && styles.generateButtonDisabledDark,
+              ]}
               onPress={exportToExcel}
               disabled={!reportData.length}
             >
@@ -357,119 +395,277 @@ export default function TipsReportScreen() {
                 <View>
                   {/* Table Header */}
                   <View style={styles.tableRowDark}>
-                    <View style={[styles.tableHeaderCellDark, { flex: getColumnWidth('vehicle number') }]}>
-                      <Text style={styles.tableHeaderTextDark}>Vehicle Number</Text>
+                    <View
+                      style={[
+                        styles.tableHeaderCellDark,
+                        { flex: getColumnWidth("vehicle number") },
+                      ]}
+                    >
+                      <Text style={styles.tableHeaderTextDark}>
+                        Vehicle Number
+                      </Text>
                     </View>
-                    <View style={[styles.tableHeaderCellDark, { flex: getColumnWidth('start time') }]}>
+                    <View
+                      style={[
+                        styles.tableHeaderCellDark,
+                        { flex: getColumnWidth("start time") },
+                      ]}
+                    >
                       <Text style={styles.tableHeaderTextDark}>Start Time</Text>
                     </View>
-                    <View style={[styles.tableHeaderCellDark, { flex: getColumnWidth('end time') }]}>
+                    <View
+                      style={[
+                        styles.tableHeaderCellDark,
+                        { flex: getColumnWidth("end time") },
+                      ]}
+                    >
                       <Text style={styles.tableHeaderTextDark}>End Time</Text>
                     </View>
-                    <View style={[styles.tableHeaderCellDark, { flex: getColumnWidth('odometer start') }]}>
-                      <Text style={styles.tableHeaderTextDark}>Odometer Start</Text>
+                    <View
+                      style={[
+                        styles.tableHeaderCellDark,
+                        { flex: getColumnWidth("odometer start") },
+                      ]}
+                    >
+                      <Text style={styles.tableHeaderTextDark}>
+                        Odometer Start
+                      </Text>
                     </View>
-                    <View style={[styles.tableHeaderCellDark, { flex: getColumnWidth('odometer end') }]}>
-                      <Text style={styles.tableHeaderTextDark}>Odometer End</Text>
+                    <View
+                      style={[
+                        styles.tableHeaderCellDark,
+                        { flex: getColumnWidth("odometer end") },
+                      ]}
+                    >
+                      <Text style={styles.tableHeaderTextDark}>
+                        Odometer End
+                      </Text>
                     </View>
-                    <View style={[styles.tableHeaderCellDark, { flex: getColumnWidth('distance') }]}>
+                    <View
+                      style={[
+                        styles.tableHeaderCellDark,
+                        { flex: getColumnWidth("distance") },
+                      ]}
+                    >
                       <Text style={styles.tableHeaderTextDark}>Distance</Text>
                     </View>
-                    <View style={[styles.tableHeaderCellDark, { flex: getColumnWidth('duration') }]}>
+                    <View
+                      style={[
+                        styles.tableHeaderCellDark,
+                        { flex: getColumnWidth("duration") },
+                      ]}
+                    >
                       <Text style={styles.tableHeaderTextDark}>Duration</Text>
                     </View>
-                    <View style={[styles.tableHeaderCellDark, { flex: getColumnWidth('start address') }]}>
-                      <Text style={styles.tableHeaderTextDark}>Start Address</Text>
+                    <View
+                      style={[
+                        styles.tableHeaderCellDark,
+                        { flex: getColumnWidth("start address") },
+                      ]}
+                    >
+                      <Text style={styles.tableHeaderTextDark}>
+                        Start Address
+                      </Text>
                     </View>
-                    <View style={[styles.tableHeaderCellDark, { flex: getColumnWidth('end address') }]}>
-                      <Text style={styles.tableHeaderTextDark}>End Address</Text>
+                    <View
+                      style={[
+                        styles.tableHeaderCellDark,
+                        { flex: getColumnWidth("end address") },
+                      ]}
+                    >
+                      <Text style={styles.tableHeaderTextDark}>
+                        End Address
+                      </Text>
                     </View>
-                    <View style={[styles.tableHeaderCellDark, { flex: getColumnWidth('average speed') }]}>
-                      <Text style={styles.tableHeaderTextDark}>Average Speed</Text>
+                    <View
+                      style={[
+                        styles.tableHeaderCellDark,
+                        { flex: getColumnWidth("average speed") },
+                      ]}
+                    >
+                      <Text style={styles.tableHeaderTextDark}>
+                        Average Speed
+                      </Text>
                     </View>
-                    <View style={[styles.tableHeaderCellDark, { flex: getColumnWidth('maximum speed') }]}>
-                      <Text style={styles.tableHeaderTextDark}>Maximum Speed</Text>
+                    <View
+                      style={[
+                        styles.tableHeaderCellDark,
+                        { flex: getColumnWidth("maximum speed") },
+                      ]}
+                    >
+                      <Text style={styles.tableHeaderTextDark}>
+                        Maximum Speed
+                      </Text>
                     </View>
-                    <View style={[styles.tableHeaderCellDark, { flex: getColumnWidth('ac hours') }]}>
+                    <View
+                      style={[
+                        styles.tableHeaderCellDark,
+                        { flex: getColumnWidth("ac hours") },
+                      ]}
+                    >
                       <Text style={styles.tableHeaderTextDark}>AC Hours</Text>
                     </View>
-                    <View style={[styles.tableHeaderCellDark, { flex: getColumnWidth('spent fuel') }]}>
+                    <View
+                      style={[
+                        styles.tableHeaderCellDark,
+                        { flex: getColumnWidth("spent fuel") },
+                      ]}
+                    >
                       <Text style={styles.tableHeaderTextDark}>Spent Fuel</Text>
                     </View>
-                    <View style={[styles.tableHeaderCellDark, { flex: getColumnWidth('mileage fuel') }]}>
-                      <Text style={styles.tableHeaderTextDark}>Mileage Fuel</Text>
+                    <View
+                      style={[
+                        styles.tableHeaderCellDark,
+                        { flex: getColumnWidth("mileage fuel") },
+                      ]}
+                    >
+                      <Text style={styles.tableHeaderTextDark}>
+                        Mileage Fuel
+                      </Text>
                     </View>
                   </View>
 
                   {/* Table Rows */}
                   {currentRecords.map((trip, index) => (
                     <View key={index} style={styles.tableRowDark}>
-                      <View style={[styles.tableCellDark, { flex: getColumnWidth('vehicle number') }]}>
+                      <View
+                        style={[
+                          styles.tableCellDark,
+                          { flex: getColumnWidth("vehicle number") },
+                        ]}
+                      >
                         <Text style={styles.tableCellTextDark}>
-                          {devices.find((device) => device.id === trip?.deviceId)?.name || ""}
+                          {devices.find(
+                            (device) => device.id === trip?.deviceId
+                          )?.name || ""}
                         </Text>
                       </View>
-                      <View style={[styles.tableCellDark, { flex: getColumnWidth('start time') }]}>
+                      <View
+                        style={[
+                          styles.tableCellDark,
+                          { flex: getColumnWidth("start time") },
+                        ]}
+                      >
                         <Text style={styles.tableCellTextDark}>
                           {formatDate(trip.startTime)}
                         </Text>
                       </View>
-                      <View style={[styles.tableCellDark, { flex: getColumnWidth('end time') }]}>
+                      <View
+                        style={[
+                          styles.tableCellDark,
+                          { flex: getColumnWidth("end time") },
+                        ]}
+                      >
                         <Text style={styles.tableCellTextDark}>
                           {formatDate(trip.endTime)}
                         </Text>
                       </View>
-                      <View style={[styles.tableCellDark, { flex: getColumnWidth('odometer start') }]}>
+                      <View
+                        style={[
+                          styles.tableCellDark,
+                          { flex: getColumnWidth("odometer start") },
+                        ]}
+                      >
                         <Text style={styles.tableCellTextDark}>
                           {trip.startOdometer || "0"}
                         </Text>
                       </View>
-                      <View style={[styles.tableCellDark, { flex: getColumnWidth('odometer end') }]}>
+                      <View
+                        style={[
+                          styles.tableCellDark,
+                          { flex: getColumnWidth("odometer end") },
+                        ]}
+                      >
                         <Text style={styles.tableCellTextDark}>
                           {trip.endOdometer || "0"}
                         </Text>
                       </View>
-                      <View style={[styles.tableCellDark, { flex: getColumnWidth('distance') }]}>
+                      <View
+                        style={[
+                          styles.tableCellDark,
+                          { flex: getColumnWidth("distance") },
+                        ]}
+                      >
                         <Text style={styles.tableCellTextDark}>
                           {(trip.distance / 1000).toFixed(2)} km
                         </Text>
                       </View>
-                      <View style={[styles.tableCellDark, { flex: getColumnWidth('duration') }]}>
+                      <View
+                        style={[
+                          styles.tableCellDark,
+                          { flex: getColumnWidth("duration") },
+                        ]}
+                      >
                         <Text style={styles.tableCellTextDark}>
                           {(trip.duration / 60000).toFixed(2)} min
                         </Text>
                       </View>
-                      <View style={[styles.tableCellDark, { flex: getColumnWidth('start address') }]}>
+                      <View
+                        style={[
+                          styles.tableCellDark,
+                          { flex: getColumnWidth("start address") },
+                        ]}
+                      >
                         <Text style={styles.tableCellTextDark}>
                           {trip.startAddress || "N/A"}
                         </Text>
                       </View>
-                      <View style={[styles.tableCellDark, { flex: getColumnWidth('end address') }]}>
+                      <View
+                        style={[
+                          styles.tableCellDark,
+                          { flex: getColumnWidth("end address") },
+                        ]}
+                      >
                         <Text style={styles.tableCellTextDark}>
                           {trip.endAddress || "N/A"}
                         </Text>
                       </View>
-                      <View style={[styles.tableCellDark, { flex: getColumnWidth('average speed') }]}>
+                      <View
+                        style={[
+                          styles.tableCellDark,
+                          { flex: getColumnWidth("average speed") },
+                        ]}
+                      >
                         <Text style={styles.tableCellTextDark}>
                           {(trip.averageSpeed * 3.5).toFixed(2)} km/h
                         </Text>
                       </View>
-                      <View style={[styles.tableCellDark, { flex: getColumnWidth('maximum speed') }]}>
+                      <View
+                        style={[
+                          styles.tableCellDark,
+                          { flex: getColumnWidth("maximum speed") },
+                        ]}
+                      >
                         <Text style={styles.tableCellTextDark}>
                           {(trip.maxSpeed * 1.852).toFixed(2)} km/h
                         </Text>
                       </View>
-                      <View style={[styles.tableCellDark, { flex: getColumnWidth('ac hours') }]}>
+                      <View
+                        style={[
+                          styles.tableCellDark,
+                          { flex: getColumnWidth("ac hours") },
+                        ]}
+                      >
                         <Text style={styles.tableCellTextDark}>
                           {trip.acHours || "0"}
                         </Text>
                       </View>
-                      <View style={[styles.tableCellDark, { flex: getColumnWidth('spent fuel') }]}>
+                      <View
+                        style={[
+                          styles.tableCellDark,
+                          { flex: getColumnWidth("spent fuel") },
+                        ]}
+                      >
                         <Text style={styles.tableCellTextDark}>
                           {trip.spentFuel || "0"} L
                         </Text>
                       </View>
-                      <View style={[styles.tableCellDark, { flex: getColumnWidth('mileage fuel') }]}>
+                      <View
+                        style={[
+                          styles.tableCellDark,
+                          { flex: getColumnWidth("mileage fuel") },
+                        ]}
+                      >
                         <Text style={styles.tableCellTextDark}>
                           {trip.mileageFuel || "N/A"}
                         </Text>
@@ -483,7 +679,10 @@ export default function TipsReportScreen() {
             {/* Pagination */}
             <View style={styles.paginationContainerDark}>
               <TouchableOpacity
-                style={[styles.paginationButtonDark, currentPage === 1 && styles.paginationButtonDisabledDark]}
+                style={[
+                  styles.paginationButtonDark,
+                  currentPage === 1 && styles.paginationButtonDisabledDark,
+                ]}
                 onPress={() => setCurrentPage(currentPage - 1)}
                 disabled={currentPage === 1}
               >
@@ -495,7 +694,11 @@ export default function TipsReportScreen() {
               </Text>
 
               <TouchableOpacity
-                style={[styles.paginationButtonDark, currentPage === totalPages && styles.paginationButtonDisabledDark]}
+                style={[
+                  styles.paginationButtonDark,
+                  currentPage === totalPages &&
+                    styles.paginationButtonDisabledDark,
+                ]}
                 onPress={() => setCurrentPage(currentPage + 1)}
                 disabled={currentPage === totalPages}
               >
@@ -503,12 +706,11 @@ export default function TipsReportScreen() {
               </TouchableOpacity>
             </View>
           </View>
-        )
-      :
-      <View style={styles.noDataContainer}>
-        <Text style={styles.noDataText}>No data found</Text>
-      </View>
-      }
+        ) : (
+          <View style={styles.noDataContainer}>
+            <Text style={styles.noDataText}>No data found</Text>
+          </View>
+        )}
       </ScrollView>
     </SafeAreaView>
   );
@@ -517,34 +719,34 @@ export default function TipsReportScreen() {
 const styles = StyleSheet.create({
   containerDark: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: "#fff",
   },
   headerDark: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: '#fff',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    backgroundColor: "#fff",
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
+    borderBottomColor: "#e0e0e0",
   },
   headerTitleDark: {
-    color: '#000',
+    color: "#000",
     fontSize: 20,
-    fontWeight: 'bold',
+    fontWeight: "bold",
   },
   filterCardDark: {
-    backgroundColor: '#fff',
+    backgroundColor: "#fff",
     borderRadius: 18,
     margin: 16,
     padding: 18,
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 8,
     borderWidth: 1,
-    borderColor: '#e0e0e0',
+    borderColor: "#e0e0e0",
     elevation: 4,
     marginBottom: 18,
   },
@@ -552,63 +754,63 @@ const styles = StyleSheet.create({
     marginBottom: 18,
   },
   filterLabelDark: {
-    color: '#000',
-    fontWeight: 'bold',
+    color: "#000",
+    fontWeight: "bold",
     marginBottom: 6,
     fontSize: 15,
   },
   dropdown: {
-    backgroundColor: '#fff',
-    borderColor: '#e0e0e0',
+    backgroundColor: "#fff",
+    borderColor: "#e0e0e0",
     borderRadius: 10,
     minHeight: 45,
   },
   dropdownText: {
-    color: '#000',
+    color: "#000",
     fontSize: 15,
   },
   dropdownPlaceholder: {
-    color: '#666',
+    color: "#666",
   },
   dropdownContainer: {
-    backgroundColor: '#fff',
-    borderColor: '#e0e0e0',
+    backgroundColor: "#fff",
+    borderColor: "#e0e0e0",
     borderRadius: 10,
   },
   dropdownItemText: {
-    color: '#000',
+    color: "#000",
     fontSize: 14,
   },
   dropdownSearchContainer: {
-    borderBottomColor: '#e0e0e0',
+    borderBottomColor: "#e0e0e0",
   },
   dropdownSearchInput: {
-    color: '#000',
-    borderColor: '#e0e0e0',
-    backgroundColor: '#fff',
+    color: "#000",
+    borderColor: "#e0e0e0",
+    backgroundColor: "#fff",
   },
   dateInputDark: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     borderWidth: 1,
-    borderColor: '#e0e0e0',
+    borderColor: "#e0e0e0",
     borderRadius: 10,
     padding: 12,
-    backgroundColor: '#fff',
+    backgroundColor: "#fff",
     marginTop: 2,
   },
   dateInputTextDark: {
-    color: '#000',
+    color: "#000",
     fontSize: 15,
   },
   generateButtonDark: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#FF7043',
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#FF7043",
     paddingVertical: 16,
     paddingHorizontal: 18,
     borderRadius: 10,
-    justifyContent: 'center',
+    justifyContent: "center",
     elevation: 2,
     flex: 1,
   },
@@ -616,8 +818,8 @@ const styles = StyleSheet.create({
     opacity: 0.5,
   },
   generateButtonTextDark: {
-    color: '#fff',
-    fontWeight: 'bold',
+    color: "#fff",
+    fontWeight: "bold",
     marginLeft: 8,
     fontSize: 16,
     letterSpacing: 0.5,
@@ -625,50 +827,50 @@ const styles = StyleSheet.create({
   tableContainerDark: {
     flex: 1,
     padding: 16,
-    backgroundColor: '#fff',
+    backgroundColor: "#fff",
   },
   tableWrapperDark: {
     borderRadius: 8,
-    backgroundColor: '#fff',
+    backgroundColor: "#fff",
     borderWidth: 1,
-    borderColor: '#e0e0e0',
-    overflow: 'hidden',
+    borderColor: "#e0e0e0",
+    overflow: "hidden",
   },
   tableRowDark: {
-    flexDirection: 'row',
+    flexDirection: "row",
     borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
+    borderBottomColor: "#e0e0e0",
   },
   tableHeaderCellDark: {
     padding: 12,
-    backgroundColor: '#f5f5f5',
-    justifyContent: 'center',
+    backgroundColor: "#f5f5f5",
+    justifyContent: "center",
     minWidth: 120,
   },
   tableHeaderTextDark: {
-    color: '#000',
-    fontWeight: 'bold',
+    color: "#000",
+    fontWeight: "bold",
     fontSize: 14,
-    textTransform: 'capitalize',
+    textTransform: "capitalize",
   },
   tableCellDark: {
     padding: 12,
-    justifyContent: 'center',
+    justifyContent: "center",
     minWidth: 120,
   },
   tableCellTextDark: {
-    color: '#000',
+    color: "#000",
     fontSize: 14,
   },
   paginationContainerDark: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
     padding: 16,
-    backgroundColor: '#fff',
+    backgroundColor: "#fff",
   },
   paginationButtonDark: {
-    backgroundColor: '#f5f5f5',
+    backgroundColor: "#f5f5f5",
     paddingVertical: 8,
     paddingHorizontal: 16,
     borderRadius: 8,
@@ -678,52 +880,51 @@ const styles = StyleSheet.create({
     opacity: 0.5,
   },
   paginationButtonTextDark: {
-    color: '#000',
+    color: "#000",
     fontSize: 14,
-    fontWeight: 'bold',
+    fontWeight: "bold",
   },
   paginationTextDark: {
-    color: '#000',
+    color: "#000",
     fontSize: 14,
     marginHorizontal: 16,
   },
   downloadButtonDark: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#43A047',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#43A047",
     padding: 0,
     borderRadius: 8,
     height: 52,
     width: 100,
   },
   downloadButtonTextDark: {
-    color: '#fff',
+    color: "#fff",
     fontSize: 16,
-    fontWeight: 'bold',
+    fontWeight: "bold",
     marginLeft: 8,
   },
   scrollContent: {
     paddingBottom: 32,
   },
   buttonContainer: {
-    flexDirection: 'row',
+    flexDirection: "row",
     gap: 10,
     marginTop: 10,
-    alignItems: 'center',
+    alignItems: "center",
   },
   filterDownloadButton: {
     // Add any specific styles for the filter download button
   },
   noDataContainer: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   noDataText: {
     fontSize: 16,
-    color: '#666',
-    fontWeight: '500',
+    color: "#666",
+    fontWeight: "500",
   },
-  
-}); 
+});

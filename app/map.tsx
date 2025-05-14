@@ -568,14 +568,12 @@ export default function MapScreen() {
         showsIndoors={is3DView}
       >
         <Polyline coordinates={carPath} strokeColor="#FFD600" strokeWidth={4} />
-        <Marker.Animated coordinate={currentMarkerPosition}>
+        <Marker.Animated coordinate={currentMarkerPosition} anchor={{ x: 0.5, y: 0.5 }}>
           <Image
             source={getVehicleIcon()}
             style={[
               styles.markerImage,
-              {
-                transform: [{ rotate: `${device?.course || 0}deg` }],
-              },
+              { transform: [{ rotate: `${device?.course || 0}deg` }] },
             ]}
           />
         </Marker.Animated>
@@ -1211,8 +1209,8 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   markerImage: {
-    width: 30,
-    height: 30,
+    width: 48,
+    height: 48,
     resizeMode: "contain",
   },
   statsRow: {

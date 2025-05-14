@@ -1,7 +1,7 @@
 import Api from '@/config/Api';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
-import { Image, ImageBackground, StatusBar, StyleSheet, Text, View } from 'react-native';
+import { Image, ImageBackground, KeyboardAvoidingView, Platform, StatusBar, StyleSheet, Text, View } from 'react-native';
 import { Button, TextInput } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useDispatch } from 'react-redux';
@@ -13,24 +13,31 @@ export default function LoginScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [secure, setSecure] = useState(true);
+  const [error, setError] = useState('');
   const dispatch = useDispatch();
   const router = useRouter();
 
   const handleLogin = async () => {
-    const response = await Api.call(
-      `/api/session`,
-      'POST',
-      { email, password },
-      true
-    );
-    console.log(response.data);
-    if (response.data) {
-      dispatch(setCredentials({
-        token: response.data.token || "",
-        user: response.data || {}
-      }));
-      await updateNotificationToken();
-      router.push('/(tabs)');
+    setError('');
+    try {
+      const response = await Api.call(
+        `/api/session`,
+        'POST',
+        { email, password },
+        true
+      );
+      if (response.data) {
+        dispatch(setCredentials({
+          token: response.data.token || "",
+          user: response.data || {}
+        }));
+        await updateNotificationToken();
+        router.push('/(tabs)');
+      } else {
+        setError('Please check your email or password.');
+      }
+    } catch (err) {
+      setError('Please check your email or password.');
     }
   };
   useEffect(() => {
@@ -46,44 +53,53 @@ export default function LoginScreen() {
       <View style={styles.overlay}>
         <SafeAreaView style={styles.safeArea}>
           <StatusBar barStyle="light-content" />
-          <View style={styles.container}>
-            <Image source={require('../assets/images/icon.png')} style={styles.logo} />
-            <Text style={styles.heading}>Welcome Back</Text>
-            <Text style={styles.subheading}>Login to your account</Text>
-            <TextInput
-              label="Email"
-              value={email}
-              onChangeText={setEmail}
-              style={styles.input}
-              mode="flat"
-              left={<TextInput.Icon icon="email" />}
-              keyboardType="email-address"
-              autoCapitalize="none"
-              theme={{ colors: { primary: 'black' } }}
-            />
-            <TextInput
-              label="Password"
-              value={password}
-              onChangeText={setPassword}
-              style={styles.input}
-              mode="flat"
-              left={<TextInput.Icon icon="lock" />}
-              right={<TextInput.Icon icon={secure ? 'eye-off' : 'eye'} onPress={() => setSecure(!secure)} />}
-              secureTextEntry={secure}
-              theme={{ colors: { primary: 'black' } }}
-            />
-            <Button
-              mode="contained"
-              style={styles.loginBtn}
-              contentStyle={{ paddingVertical: 8 }}
-              labelStyle={{ fontWeight: 'bold', fontSize: 16 }}
-              buttonColor="#FFFFFF"
-              textColor="#000000"
-              onPress={handleLogin}
-            >
-              Login
-            </Button>
-          </View>
+          <KeyboardAvoidingView
+            style={{ flex: 1 }}
+            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+            keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 24}
+          >
+            <View style={styles.container}>
+              <Image source={require('../assets/images/icon.png')} style={styles.logo} />
+              <Text style={styles.heading}>Welcome Back</Text>
+              <Text style={styles.subheading}>Login to your account</Text>
+              <TextInput
+                label="Email"
+                value={email}
+                onChangeText={setEmail}
+                style={styles.input}
+                mode="flat"
+                left={<TextInput.Icon icon="email" />}
+                keyboardType="email-address"
+                autoCapitalize="none"
+                theme={{ colors: { primary: 'black' } }}
+              />
+              <TextInput
+                label="Password"
+                value={password}
+                onChangeText={setPassword}
+                style={styles.input}
+                mode="flat"
+                left={<TextInput.Icon icon="lock" />}
+                right={<TextInput.Icon icon={secure ? 'eye-off' : 'eye'} onPress={() => setSecure(!secure)} />}
+                secureTextEntry={secure}
+                theme={{ colors: { primary: 'black' } }}
+              />
+              {error ? (
+                <Text style={{ color: '#FF3D00', marginBottom: 10, fontWeight: 'bold', textAlign: 'center' }}>{error}</Text>
+              ) : null}
+              <Button
+                mode="contained"
+                style={styles.loginBtn}
+                contentStyle={{ paddingVertical: 8 }}
+                labelStyle={{ fontWeight: 'bold', fontSize: 16 }}
+                buttonColor="#FFFFFF"
+                textColor="#000000"
+                onPress={handleLogin}
+              >
+                Login
+              </Button>
+            </View>
+          </KeyboardAvoidingView>
         </SafeAreaView>
       </View>
     </ImageBackground>

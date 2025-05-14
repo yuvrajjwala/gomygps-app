@@ -7,6 +7,7 @@ import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, ScrollView, StatusBar, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import DateTimePickerModal from "react-native-modal-datetime-picker";
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Row, Rows, Table, TableWrapper } from 'react-native-table-component';
 import * as XLSX from 'xlsx';
 import SearchableDropdown from '../components/SearchableDropdown';
 
@@ -349,141 +350,58 @@ export default function SummaryReportScreen() {
         {/* Report Data */}
         {reportData.length > 0 ? (
           <View style={styles.tableContainerDark}>
-            <View style={styles.tableWrapperDark}>
-              <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-                <View>
-                  {/* Table Header */}
-                  <View style={styles.tableRowDark}>
-                    <View style={[styles.tableHeaderCellDark, { flex: getColumnWidth('vehicle number') }]}>
-                      <Text style={styles.tableHeaderTextDark}>Vehicle Number</Text>
-                    </View>
-                    <View style={[styles.tableHeaderCellDark, { flex: getColumnWidth('start date') }]}>
-                      <Text style={styles.tableHeaderTextDark}>Start Date</Text>
-                    </View>
-                    <View style={[styles.tableHeaderCellDark, { flex: getColumnWidth('end date') }]}>
-                      <Text style={styles.tableHeaderTextDark}>End Date</Text>
-                    </View>
-                    <View style={[styles.tableHeaderCellDark, { flex: getColumnWidth('odometer start') }]}>
-                      <Text style={styles.tableHeaderTextDark}>Odometer Start</Text>
-                    </View>
-                    <View style={[styles.tableHeaderCellDark, { flex: getColumnWidth('odometer end') }]}>
-                      <Text style={styles.tableHeaderTextDark}>Odometer End</Text>
-                    </View>
-                    <View style={[styles.tableHeaderCellDark, { flex: getColumnWidth('distance') }]}>
-                      <Text style={styles.tableHeaderTextDark}>Distance</Text>
-                    </View>
-                    <View style={[styles.tableHeaderCellDark, { flex: getColumnWidth('average speed') }]}>
-                      <Text style={styles.tableHeaderTextDark}>Average Speed</Text>
-                    </View>
-                    <View style={[styles.tableHeaderCellDark, { flex: getColumnWidth('maximum speed') }]}>
-                      <Text style={styles.tableHeaderTextDark}>Maximum Speed</Text>
-                    </View>
-                    <View style={[styles.tableHeaderCellDark, { flex: getColumnWidth('engine hours') }]}>
-                      <Text style={styles.tableHeaderTextDark}>Engine Hours</Text>
-                    </View>
-                    <View style={[styles.tableHeaderCellDark, { flex: getColumnWidth('ac hours') }]}>
-                      <Text style={styles.tableHeaderTextDark}>AC Hours</Text>
-                    </View>
-                    <View style={[styles.tableHeaderCellDark, { flex: getColumnWidth('running time') }]}>
-                      <Text style={styles.tableHeaderTextDark}>Running Time</Text>
-                    </View>
-                    <View style={[styles.tableHeaderCellDark, { flex: getColumnWidth('stopped time') }]}>
-                      <Text style={styles.tableHeaderTextDark}>Stopped Time</Text>
-                    </View>
-                    <View style={[styles.tableHeaderCellDark, { flex: getColumnWidth('idle time') }]}>
-                      <Text style={styles.tableHeaderTextDark}>Idle Time</Text>
-                    </View>
-                    <View style={[styles.tableHeaderCellDark, { flex: getColumnWidth('spent fuel') }]}>
-                      <Text style={styles.tableHeaderTextDark}>Spent Fuel</Text>
-                    </View>
-                    <View style={[styles.tableHeaderCellDark, { flex: getColumnWidth('mileage fuel') }]}>
-                      <Text style={styles.tableHeaderTextDark}>Mileage Fuel</Text>
-                    </View>
-                  </View>
-
-                  {/* Table Rows */}
-                  {currentRecords.map((entry, index) => (
-                    <View key={index} style={styles.tableRowDark}>
-                      <View style={[styles.tableCellDark, { flex: getColumnWidth('vehicle number') }]}>
-                        <Text style={styles.tableCellTextDark}>
-                          {entry?.deviceName || ""}
-                        </Text>
-                      </View>
-                      <View style={[styles.tableCellDark, { flex: getColumnWidth('start date') }]}>
-                        <Text style={styles.tableCellTextDark}>
-                          {formatDate(entry?.startTime)}
-                        </Text>
-                      </View>
-                      <View style={[styles.tableCellDark, { flex: getColumnWidth('end date') }]}>
-                        <Text style={styles.tableCellTextDark}>
-                          {formatDate(entry?.endTime)}
-                        </Text>
-                      </View>
-                      <View style={[styles.tableCellDark, { flex: getColumnWidth('odometer start') }]}>
-                        <Text style={styles.tableCellTextDark}>
-                          {(entry?.startOdometer / 1000).toFixed(2)} km
-                        </Text>
-                      </View>
-                      <View style={[styles.tableCellDark, { flex: getColumnWidth('odometer end') }]}>
-                        <Text style={styles.tableCellTextDark}>
-                          {(entry?.endOdometer / 1000).toFixed(2)} km
-                        </Text>
-                      </View>
-                      <View style={[styles.tableCellDark, { flex: getColumnWidth('distance') }]}>
-                        <Text style={styles.tableCellTextDark}>
-                          {(entry?.distance / 1000).toFixed(2)} km
-                        </Text>
-                      </View>
-                      <View style={[styles.tableCellDark, { flex: getColumnWidth('average speed') }]}>
-                        <Text style={styles.tableCellTextDark}>
-                          {(entry?.averageSpeed * 1.852).toFixed(2)} km/h
-                        </Text>
-                      </View>
-                      <View style={[styles.tableCellDark, { flex: getColumnWidth('maximum speed') }]}>
-                        <Text style={styles.tableCellTextDark}>
-                          {(entry?.maxSpeed * 1.852).toFixed(2)} km/h
-                        </Text>
-                      </View>
-                      <View style={[styles.tableCellDark, { flex: getColumnWidth('engine hours') }]}>
-                        <Text style={styles.tableCellTextDark}>
-                          {(entry?.engineHours/3600).toFixed(2) || "0"} hr
-                        </Text>
-                      </View>
-                      <View style={[styles.tableCellDark, { flex: getColumnWidth('ac hours') }]}>
-                        <Text style={styles.tableCellTextDark}>
-                          {entry?.acHours || "0"} hr
-                        </Text>
-                      </View>
-                      <View style={[styles.tableCellDark, { flex: getColumnWidth('running time') }]}>
-                        <Text style={styles.tableCellTextDark}>
-                          {(entry?.movingDuration/3600).toFixed(2) || "0"} hr
-                        </Text>
-                      </View>
-                      <View style={[styles.tableCellDark, { flex: getColumnWidth('stopped time') }]}>
-                        <Text style={styles.tableCellTextDark}>
-                          {(entry?.stoppedDuration/3600).toFixed(2) || "0"} hr
-                        </Text>
-                      </View>
-                      <View style={[styles.tableCellDark, { flex: getColumnWidth('idle time') }]}>
-                        <Text style={styles.tableCellTextDark}>
-                          {(entry?.idleDuration/3600).toFixed(2) || "0"} hr
-                        </Text>
-                      </View>
-                      <View style={[styles.tableCellDark, { flex: getColumnWidth('spent fuel') }]}>
-                        <Text style={styles.tableCellTextDark}>
-                          {entry?.spentFuel?.toFixed(2) || "0"} L
-                        </Text>
-                      </View>
-                      <View style={[styles.tableCellDark, { flex: getColumnWidth('mileage fuel') }]}>
-                        <Text style={styles.tableCellTextDark}>
-                          {entry?.mileageFuel || "N/A"}
-                        </Text>
-                      </View>
-                    </View>
-                  ))}
-                </View>
-              </ScrollView>
-            </View>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+              <View>
+                <Table borderStyle={{ borderWidth: 1, borderColor: '#e0e0e0' }}>
+                  <Row
+                    data={[
+                      'Vehicle Number',
+                      'Start Date',
+                      'End Date',
+                      'Odometer Start',
+                      'Odometer End',
+                      'Distance',
+                      'Average Speed',
+                      'Maximum Speed',
+                      'Engine Hours',
+                      'AC Hours',
+                      'Running Time',
+                      'Stopped Time',
+                      'Idle Time',
+                      'Spent Fuel',
+                      'Mileage Fuel'
+                    ]}
+                    style={styles.tableHeaderDark}
+                    textStyle={styles.tableHeaderTextDark}
+                    widthArr={[150, 150, 150, 120, 120, 120, 120, 120, 120, 120, 120, 120, 120, 120, 120]}
+                  />
+                  <TableWrapper style={styles.tableWrapperDark}>
+                    <Rows
+                      data={currentRecords.map(entry => [
+                        String(entry?.deviceName || ""),
+                        String(formatDate(entry?.startTime)),
+                        String(formatDate(entry?.endTime)),
+                        String((entry?.startOdometer / 1000).toFixed(2) + " km"),
+                        String((entry?.endOdometer / 1000).toFixed(2) + " km"),
+                        String((entry?.distance / 1000).toFixed(2) + " km"),
+                        String((entry?.averageSpeed * 1.852).toFixed(2) + " km/h"),
+                        String((entry?.maxSpeed * 1.852).toFixed(2) + " km/h"),
+                        String((entry?.engineHours/3600).toFixed(2) + " hr"),
+                        String(entry?.acHours + " hr"),
+                        String((entry?.movingDuration/3600).toFixed(2) + " hr"),
+                        String((entry?.stoppedDuration/3600).toFixed(2) + " hr"),
+                        String((entry?.idleDuration/3600).toFixed(2) + " hr"),
+                        String(entry?.spentFuel?.toFixed(2) + " L"),
+                        String(entry?.mileageFuel || "N/A")
+                      ])}
+                      textStyle={styles.tableCellTextDark}
+                      style={styles.tableRowDark}
+                      widthArr={[150, 150, 150, 120, 120, 120, 120, 120, 120, 120, 120, 120, 120, 120, 120]}
+                    />
+                  </TableWrapper>
+                </Table>
+              </View>
+            </ScrollView>
 
             {/* Pagination */}
             <View style={styles.paginationContainerDark}>
@@ -643,11 +561,11 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#e0e0e0',
   },
-  tableHeaderCellDark: {
-    padding: 12,
+  tableHeaderDark: {
     backgroundColor: '#f5f5f5',
-    justifyContent: 'center',
-    minWidth: 120,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
   },
   tableHeaderTextDark: {
     color: '#000',
@@ -663,6 +581,8 @@ const styles = StyleSheet.create({
   tableCellTextDark: {
     color: '#000',
     fontSize: 14,
+    textAlign: 'center',
+    padding: 12,
   },
   paginationContainerDark: {
     flexDirection: 'row',

@@ -7,6 +7,7 @@ import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, ScrollView, StatusBar, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import DateTimePickerModal from "react-native-modal-datetime-picker";
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Row, Rows, Table, TableWrapper } from 'react-native-table-component';
 import * as XLSX from 'xlsx';
 import SearchableDropdown from '../components/SearchableDropdown';
 
@@ -252,11 +253,9 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#e0e0e0',
   },
-  tableHeaderCellDark: {
-    padding: 12,
+  tableHeaderDark: {
     backgroundColor: '#f5f5f5',
-    justifyContent: 'center',
-    minWidth: 120,
+    padding: 12,
   },
   tableHeaderTextDark: {
     color: '#000',
@@ -272,6 +271,8 @@ const styles = StyleSheet.create({
   tableCellTextDark: {
     color: '#000',
     fontSize: 14,
+    textAlign: 'center',
+    padding: 12,
   },
   paginationContainerDark: {
     flexDirection: 'row',
@@ -642,79 +643,44 @@ export default function EventReportScreen() {
           </View>
         ) : reportData.length > 0 ? (
           <View style={styles.tableContainerDark}>
-            <View style={styles.tableWrapperDark}>
-              <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-                <View>
-                  {/* Table Header */}
-                  <View style={styles.tableRowDark}>
-                    <View style={[styles.tableHeaderCellDark, { flex: getColumnWidth('vehicle number') }]}>
-                      <Text style={styles.tableHeaderTextDark}>Vehicle Number</Text>
-                    </View>
-                    <View style={[styles.tableHeaderCellDark, { flex: getColumnWidth('type') }]}>
-                      <Text style={styles.tableHeaderTextDark}>Type</Text>
-                    </View>
-                    <View style={[styles.tableHeaderCellDark, { flex: getColumnWidth('date & time') }]}>
-                      <Text style={styles.tableHeaderTextDark}>Date & Time</Text>
-                    </View>
-                    <View style={[styles.tableHeaderCellDark, { flex: getColumnWidth('geofence') }]}>
-                      <Text style={styles.tableHeaderTextDark}>Geofence</Text>
-                    </View>
-                    <View style={[styles.tableHeaderCellDark, { flex: getColumnWidth('command type') }]}>
-                      <Text style={styles.tableHeaderTextDark}>Command Type</Text>
-                    </View>
-                    <View style={[styles.tableHeaderCellDark, { flex: getColumnWidth('command operator') }]}>
-                      <Text style={styles.tableHeaderTextDark}>Command Operator</Text>
-                    </View>
-                    <View style={[styles.tableHeaderCellDark, { flex: getColumnWidth('maintenance') }]}>
-                      <Text style={styles.tableHeaderTextDark}>Maintenance</Text>
-                    </View>
-                  </View>
-
-                  {/* Table Rows */}
-                  {currentRecords.map((entry, index) => (
-                    <View key={index} style={styles.tableRowDark}>
-                      <View style={[styles.tableCellDark, { flex: getColumnWidth('vehicle number') }]}>
-                        <Text style={styles.tableCellTextDark}>
-                          {devices.find((device) => device.id === entry?.deviceId)?.name || ""}
-                        </Text>
-                      </View>
-                      <View style={[styles.tableCellDark, { flex: getColumnWidth('type') }]}>
-                        <Text style={styles.tableCellTextDark}>
-                          {formatType(entry?.type) || ""}
-                        </Text>
-                      </View>
-                      <View style={[styles.tableCellDark, { flex: getColumnWidth('date & time') }]}>
-                        <Text style={styles.tableCellTextDark}>
-                          {formatDate(entry?.eventTime)}
-                        </Text>
-                      </View>
-                      <View style={[styles.tableCellDark, { flex: getColumnWidth('geofence') }]}>
-                        <Text style={styles.tableCellTextDark}>
-                          {entry?.geofenceId ? entry?.geofence?.name : "-"}
-                        </Text>
-                      </View>
-                      <View style={[styles.tableCellDark, { flex: getColumnWidth('command type') }]}>
-                        <Text style={styles.tableCellTextDark}>
-                          {entry?.attributes?.commandType || "-"}
-                        </Text>
-                      </View>
-                      <View style={[styles.tableCellDark, { flex: getColumnWidth('command operator') }]}>
-                        <Text style={styles.tableCellTextDark}>
-                          {entry?.attributes?.command || entry?.attributes?.operator 
-                            ? `${entry?.attributes?.command || ""}${entry?.attributes?.command && entry?.attributes?.operator ? " " : ""}${entry?.attributes?.operator ? `(${entry?.attributes?.operator})` : ""}`
-                            : "-"}
-                        </Text>
-                      </View>
-                      <View style={[styles.tableCellDark, { flex: getColumnWidth('maintenance') }]}>
-                        <Text style={styles.tableCellTextDark}>
-                          {entry?.attributes?.maintenance || "-"}
-                        </Text>
-                      </View>
-                    </View>
-                  ))}
-                </View>
-              </ScrollView>
-            </View>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+              <View>
+                <Table borderStyle={{ borderWidth: 1, borderColor: '#e0e0e0' }}>
+                  <Row
+                    data={[
+                      'Vehicle Number',
+                      'Type',
+                      'Date & Time',
+                      'Geofence',
+                      'Command Type',
+                      'Command Operator',
+                      'Maintenance'
+                    ]}
+                    style={styles.tableHeaderDark}
+                    textStyle={styles.tableHeaderTextDark}
+                    widthArr={[150, 150, 150, 150, 150, 200, 150]}
+                  />
+                  <TableWrapper style={styles.tableWrapperDark}>
+                    <Rows
+                      data={currentRecords.map(entry => [
+                        String(devices.find((device) => device.id === entry?.deviceId)?.name || ""),
+                        String(formatType(entry?.type) || ""),
+                        String(formatDate(entry?.eventTime)),
+                        String(entry?.geofenceId ? entry?.geofence?.name : "-"),
+                        String(entry?.attributes?.commandType || "-"),
+                        String(entry?.attributes?.command || entry?.attributes?.operator 
+                          ? `${entry?.attributes?.command || ""}${entry?.attributes?.command && entry?.attributes?.operator ? " " : ""}${entry?.attributes?.operator ? `(${entry?.attributes?.operator})` : ""}`
+                          : "-"),
+                        String(entry?.attributes?.maintenance || "-")
+                      ])}
+                      textStyle={styles.tableCellTextDark}
+                      style={styles.tableRowDark}
+                      widthArr={[150, 150, 150, 150, 150, 200, 150]}
+                    />
+                  </TableWrapper>
+                </Table>
+              </View>
+            </ScrollView>
 
             {/* Pagination */}
             <View style={styles.paginationContainerDark}>

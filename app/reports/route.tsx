@@ -7,6 +7,7 @@ import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, ScrollView, StatusBar, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import DateTimePickerModal from "react-native-modal-datetime-picker";
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Row, Rows, Table, TableWrapper } from 'react-native-table-component';
 import * as XLSX from 'xlsx';
 import SearchableDropdown from '../components/SearchableDropdown';
 
@@ -328,94 +329,46 @@ export default function RouteReportScreen() {
         {/* Report Data */}
         {reportData.length > 0 ? (
           <View style={styles.tableContainerDark}>
-            <View style={styles.tableWrapperDark}>
-              <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-                <View>
-                  {/* Table Header */}
-                  <View style={styles.tableRowDark}>
-                    <View style={[styles.tableHeaderCellDark, { flex: getColumnWidth('vehicle number') }]}>
-                      <Text style={styles.tableHeaderTextDark}>Vehicle Number</Text>
-                    </View>
-                    <View style={[styles.tableHeaderCellDark, { flex: getColumnWidth('date & time') }]}>
-                      <Text style={styles.tableHeaderTextDark}>Date & Time</Text>
-                    </View>
-                    <View style={[styles.tableHeaderCellDark, { flex: getColumnWidth('distance') }]}>
-                      <Text style={styles.tableHeaderTextDark}>Distance</Text>
-                    </View>
-                    <View style={[styles.tableHeaderCellDark, { flex: getColumnWidth('speed') }]}>
-                      <Text style={styles.tableHeaderTextDark}>Speed</Text>
-                    </View>
-                    <View style={[styles.tableHeaderCellDark, { flex: getColumnWidth('ac') }]}>
-                      <Text style={styles.tableHeaderTextDark}>AC</Text>
-                    </View>
-                    <View style={[styles.tableHeaderCellDark, { flex: getColumnWidth('odometer') }]}>
-                      <Text style={styles.tableHeaderTextDark}>Odometer</Text>
-                    </View>
-                    <View style={[styles.tableHeaderCellDark, { flex: getColumnWidth('latitude') }]}>
-                      <Text style={styles.tableHeaderTextDark}>Latitude</Text>
-                    </View>
-                    <View style={[styles.tableHeaderCellDark, { flex: getColumnWidth('longitude') }]}>
-                      <Text style={styles.tableHeaderTextDark}>Longitude</Text>
-                    </View>
-                    <View style={[styles.tableHeaderCellDark, {  width: "15%"}]}>
-                      <Text style={styles.tableHeaderTextDark}>Address</Text>
-                    </View>
-                  </View>
-
-                  {/* Table Rows */}
-                  {currentRecords.map((entry, index) => (
-                    <View key={index} style={styles.tableRowDark}>
-                      <View style={[styles.tableCellDark, { flex: getColumnWidth('vehicle number') }]}>
-                        <Text style={styles.tableCellTextDark}>
-                          {deviceItems.find(option => option.value === deviceValue)?.label}
-                        </Text>
-                      </View>
-                      <View style={[styles.tableCellDark, { flex: getColumnWidth('date & time') }]}>
-                        <Text style={styles.tableCellTextDark}>{formatDate(entry.fixTime)}</Text>
-                      </View>
-                      <View style={[styles.tableCellDark, { flex: getColumnWidth('distance') }]}>
-                        <Text style={styles.tableCellTextDark}>
-                          {((entry?.attributes?.distance) / 1000).toFixed(2)} KM
-                        </Text>
-                      </View>
-                      <View style={[styles.tableCellDark, { flex: getColumnWidth('speed') }]}>
-                        <Text style={styles.tableCellTextDark}>
-                          {(entry?.speed * 1.852).toFixed(2)} km/hr
-                        </Text>
-                      </View>
-                      <View style={[styles.tableCellDark, { flex: getColumnWidth('ac') }]}>
-                        <Text style={[
-                          styles.tableCellTextDark,
-                          { color: entry?.attributes?.ac ? '#43A047' : '#E53935' }
-                        ]}>
-                          {entry?.attributes?.ac ? "Yes" : "No"}
-                        </Text>
-                      </View>
-                      <View style={[styles.tableCellDark, { flex: getColumnWidth('odometer') }]}>
-                        <Text style={styles.tableCellTextDark}>
-                          {(entry?.attributes?.odometer/1000).toFixed(2)} km
-                        </Text>
-                      </View>
-                      <View style={[styles.tableCellDark, { flex: getColumnWidth('latitude') }]}>
-                        <Text style={styles.tableCellTextDark}>
-                          {entry?.latitude?.toFixed(4)}°
-                        </Text>
-                      </View>
-                      <View style={[styles.tableCellDark, { flex: getColumnWidth('longitude') }]}>
-                        <Text style={styles.tableCellTextDark}>
-                          {entry?.longitude?.toFixed(4)}°
-                        </Text>
-                      </View>
-                      <View style={[styles.tableCellDark, { alignItems:"flex-end", justifyContent:"flex-end" , width: "15%"}]}>
-                        <Text style={[styles.tableCellTextDark]}>
-                          {entry?.address || "N/A"}
-                        </Text>
-                      </View>
-                    </View>
-                  ))}
-                </View>
-              </ScrollView>
-            </View>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+              <View>
+                <Table borderStyle={{ borderWidth: 1, borderColor: '#e0e0e0' }}>
+                  <Row
+                    data={[
+                      'Vehicle Number',
+                      'Date & Time',
+                      'Distance',
+                      'Speed',
+                      'AC',
+                      'Odometer',
+                      'Latitude',
+                      'Longitude',
+                      'Address'
+                    ]}
+                    style={styles.tableHeaderDark}
+                    textStyle={styles.tableHeaderTextDark}
+                    widthArr={[150, 150, 100, 100, 80, 120, 120, 120, 200]}
+                  />
+                  <TableWrapper style={styles.tableWrapperDark}>
+                    <Rows
+                      data={currentRecords.map(entry => [
+                        String(deviceItems.find(option => option.value === deviceValue)?.label || ""),
+                        String(formatDate(entry.fixTime)),
+                        String(((entry?.attributes?.distance) / 1000).toFixed(2) + " KM"),
+                        String((entry?.speed * 1.852).toFixed(2) + " km/hr"),
+                        String(entry?.attributes?.ac ? "Yes" : "No"),
+                        String((entry?.attributes?.odometer/1000).toFixed(2) + " km"),
+                        String(entry?.latitude?.toFixed(4) + "°"),
+                        String(entry?.longitude?.toFixed(4) + "°"),
+                        String(entry?.address || "N/A")
+                      ])}
+                      textStyle={styles.tableCellTextDark}
+                      style={styles.tableRowDark}
+                      widthArr={[150, 150, 100, 100, 80, 120, 120, 120, 200]}
+                    />
+                  </TableWrapper>
+                </Table>
+              </View>
+            </ScrollView>
 
             {/* Pagination */}
             <View style={styles.paginationContainerDark}>
@@ -453,7 +406,7 @@ export default function RouteReportScreen() {
           <View style={styles.noDataContainer}>
             <Text style={styles.noDataText}>No data found</Text>
           </View>
-        )    }  
+        )}   
       </ScrollView>
     </SafeAreaView>
   );
@@ -584,11 +537,9 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#e0e0e0',
   },
-  tableHeaderCellDark: {
+  tableHeaderDark: {
+    backgroundColor: '#f5f5f5',
     padding: 12,
-    backgroundColor: '#f8f8f8',
-    justifyContent: 'center',
-    minWidth: 120,
   },
   tableHeaderTextDark: {
     color: '#000',
@@ -604,6 +555,7 @@ const styles = StyleSheet.create({
   tableCellTextDark: {
     color: '#000',
     fontSize: 14,
+    textAlign: 'center',
   },
   paginationContainerDark: {
     flexDirection: 'row',

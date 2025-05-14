@@ -34,7 +34,6 @@
         "android.permission.ACCESS_FINE_LOCATION",
         "android.permission.FOREGROUND_SERVICE"
       ],
-      "edgeToEdgeEnabled": true,
       "package": "com.gomygps.app",
       "googleServicesFile": "./google-services.json",
       "versionCode": 1,

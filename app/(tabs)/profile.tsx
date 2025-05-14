@@ -1,11 +1,12 @@
 import { MaterialIcons } from "@expo/vector-icons";
 import { router } from "expo-router";
-import React from "react";
+import React, { useState } from "react";
 import {
   Alert,
   ScrollView,
   StatusBar,
   StyleSheet,
+  Switch,
   Text,
   TouchableOpacity,
   View,
@@ -17,7 +18,17 @@ import { removeNotificationToken } from "../utils/notificationToken";
 
 export default function DriversScreen() {
   const dispatch = useDispatch();
+  const [notificationsEnabled, setNotificationsEnabled] = useState(true);
+
   const options = [
+    {
+      label: "Notifications",
+      icon: "notifications",
+      color: "#000000",
+      isToggle: true,
+      value: notificationsEnabled,
+      onToggle: (value: boolean) => setNotificationsEnabled(value),
+    },
     {
       label: "Geofencing",
       icon: "my-location",
@@ -84,12 +95,23 @@ export default function DriversScreen() {
             <Text style={[styles.optionLabel, { color: opt.color }]}>
               {opt.label}
             </Text>
-            <MaterialIcons
-              name="chevron-right"
-              size={24}
-              color={opt.color}
-              style={{ marginLeft: "auto" }}
-            />
+            {opt.isToggle ? (
+              <Switch
+                value={opt.value}
+                onValueChange={opt.onToggle}
+                trackColor={{ false: "#E0E0E0", true: "#000000" }}
+                thumbColor="#FFFFFF"
+                ios_backgroundColor="#E0E0E0"
+                style={{ marginLeft: "auto" }}
+              />
+            ) : (
+              <MaterialIcons
+                name="chevron-right"
+                size={24}
+                color={opt.color}
+                style={{ marginLeft: "auto" }}
+              />
+            )}
           </TouchableOpacity>
         ))}
       </ScrollView>

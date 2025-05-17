@@ -93,6 +93,7 @@ export default function TipsReportScreen() {
   const [reportData, setReportData] = useState<ReportData[]>([]);
   const [devices, setDevices] = useState<Device[]>([]);
   const [groups, setGroups] = useState<Group[]>([]);
+  const [isLoadingVehicles, setIsLoadingVehicles] = useState(false);
 
   // Device dropdown states
   const [deviceValue, setDeviceValue] = useState<string | null>(null);
@@ -138,10 +139,13 @@ export default function TipsReportScreen() {
 
   const fetchDevices = async () => {
     try {
-      const response = await Api.call("/api/devices", "GET", {}, false);
+      setIsLoadingVehicles(true);
+      const response = await Api.call('/api/devices', 'GET', {}, false);   
       setDevices(response.data || []);
     } catch (error) {
-      console.error("Error fetching devices:", error);
+      console.error('Error fetching devices:', error);
+    } finally {
+      setIsLoadingVehicles(false);
     }
   };
 
@@ -285,8 +289,8 @@ export default function TipsReportScreen() {
               items={deviceItems}
               value={deviceValue}
               onValueChange={handleDeviceChange}
-              placeholder="Select device"
-              disabled={!!groupValue}
+              placeholder={isLoadingVehicles ? "Loading vehicles..." : "Select device"}
+              disabled={!!groupValue || isLoadingVehicles}
               zIndex={3000}
             />
           </View>
@@ -377,10 +381,11 @@ export default function TipsReportScreen() {
             <TouchableOpacity
               style={[
                 styles.downloadButtonDark,
-                !reportData.length && styles.generateButtonDisabledDark,
+                styles.filterDownloadButton,
+                reportData.length === 0 && styles.downloadButtonDisabledDark
               ]}
               onPress={exportToExcel}
-              disabled={!reportData.length}
+              disabled={reportData.length === 0}
             >
               <MaterialIcons name="download" size={20} color="#fff" />
               <Text style={styles.downloadButtonTextDark}>Excel</Text>
@@ -658,6 +663,10 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     height: 52,
     width: 100,
+  },
+  downloadButtonDisabledDark: {
+    opacity: 0.5,
+    backgroundColor: "#a5d6a7",
   },
   downloadButtonTextDark: {
     color: "#fff",

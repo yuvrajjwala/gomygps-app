@@ -311,6 +311,10 @@ const styles = StyleSheet.create({
     height: 52,
     width: 100,
   },
+  downloadButtonDisabledDark: {
+    opacity: 0.5,
+    backgroundColor: '#a5d6a7',
+  },
   downloadButtonTextDark: {
     color: '#fff',
     fontSize: 16,
@@ -626,7 +630,11 @@ export default function EventReportScreen() {
             </TouchableOpacity>
 
             <TouchableOpacity 
-              style={[styles.downloadButtonDark, styles.filterDownloadButton]}
+              style={[
+                styles.downloadButtonDark, 
+                styles.filterDownloadButton,
+                reportData.length === 0 && styles.downloadButtonDisabledDark
+              ]}
               onPress={exportToExcel}
               disabled={reportData.length === 0}
             >

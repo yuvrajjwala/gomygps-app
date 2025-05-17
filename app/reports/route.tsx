@@ -72,6 +72,7 @@ export default function RouteReportScreen() {
   const [reportData, setReportData] = useState<ReportData[]>([]);
   const [devices, setDevices] = useState<Device[]>([]);
   const [groups, setGroups] = useState<Group[]>([]);
+  const [isLoadingVehicles, setIsLoadingVehicles] = useState(false);
   
   // Device dropdown states
   const [deviceValue, setDeviceValue] = useState<string | null>(null);
@@ -117,10 +118,13 @@ export default function RouteReportScreen() {
 
   const fetchDevices = async () => {
     try {
+      setIsLoadingVehicles(true);
       const response = await Api.call('/api/devices', 'GET', {}, false);   
       setDevices(response.data || []);
     } catch (error) {
       console.error('Error fetching devices:', error);
+    } finally {
+      setIsLoadingVehicles(false);
     }
   };
 
@@ -242,8 +246,8 @@ export default function RouteReportScreen() {
               items={deviceItems}
               value={deviceValue}
               onValueChange={handleDeviceChange}
-              placeholder="Select device"
-              disabled={!!groupValue}
+              placeholder={isLoadingVehicles ? "Loading vehicles..." : "Select device"}
+              disabled={!!groupValue || isLoadingVehicles}
               zIndex={3000}
             />
           </View>
@@ -315,7 +319,11 @@ export default function RouteReportScreen() {
             </TouchableOpacity>
 
             <TouchableOpacity 
-              style={[styles.downloadButtonDark, styles.filterDownloadButton]}
+              style={[
+                styles.downloadButtonDark, 
+                styles.filterDownloadButton,
+                reportData.length === 0 && styles.downloadButtonDisabledDark
+              ]}
               onPress={exportToExcel}
               disabled={reportData.length === 0}
             >
@@ -395,8 +403,12 @@ export default function RouteReportScreen() {
 
             {/* Download Button */}
             <TouchableOpacity 
-              style={styles.downloadButtonDark}
+              style={[
+                styles.downloadButtonDark,
+                reportData.length === 0 && styles.downloadButtonDisabledDark
+              ]}
               onPress={exportToExcel}
+              disabled={reportData.length === 0}
             >
               <MaterialIcons name="download" size={20} color="#fff" />
               <Text style={styles.downloadButtonTextDark}>Download Report</Text>
@@ -592,7 +604,10 @@ const styles = StyleSheet.create({
     padding: 0,
     borderRadius: 8,
     height: 52,
-
+  },
+  downloadButtonDisabledDark: {
+    opacity: 0.5,
+    backgroundColor: '#a5d6a7', // lighter green when disabled
   },
   downloadButtonTextDark: {
     color: '#fff',

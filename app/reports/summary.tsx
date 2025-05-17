@@ -102,6 +102,7 @@ export default function SummaryReportScreen() {
   const [reportData, setReportData] = useState<ReportData[]>([]);
   const [devices, setDevices] = useState<Device[]>([]);
   const [groups, setGroups] = useState<Group[]>([]);
+  const [isLoadingVehicles, setIsLoadingVehicles] = useState(false);
   
   // Device dropdown states
   const [deviceValue, setDeviceValue] = useState<string | null>(null);
@@ -147,10 +148,13 @@ export default function SummaryReportScreen() {
 
   const fetchDevices = async () => {
     try {
-      const response = await Api.call('/api/devices', 'GET', {}, false); 
+      setIsLoadingVehicles(true);
+      const response = await Api.call('/api/devices', 'GET', {}, false);   
       setDevices(response.data || []);
     } catch (error) {
       console.error('Error fetching devices:', error);
+    } finally {
+      setIsLoadingVehicles(false);
     }
   };
 
@@ -320,8 +324,8 @@ export default function SummaryReportScreen() {
               items={deviceItems}
               value={deviceValue}
               onValueChange={handleDeviceChange}
-              placeholder="Select device"
-              disabled={!!groupValue}
+              placeholder={isLoadingVehicles ? "Loading vehicles..." : "Select device"}
+              disabled={!!groupValue || isLoadingVehicles}
               zIndex={3000}
             />
           </View>
@@ -393,7 +397,11 @@ export default function SummaryReportScreen() {
             </TouchableOpacity>
 
             <TouchableOpacity 
-              style={[styles.downloadButtonDark, styles.filterDownloadButton]}
+              style={[
+                styles.downloadButtonDark, 
+                styles.filterDownloadButton,
+                reportData.length === 0 && styles.downloadButtonDisabledDark
+              ]}
               onPress={exportToExcel}
               disabled={reportData.length === 0}
             >
@@ -706,6 +714,10 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     height: 52,
     width: 100,
+  },
+  downloadButtonDisabledDark: {
+    opacity: 0.5,
+    backgroundColor: '#a5d6a7', // lighter green when disabled
   },
   downloadButtonTextDark: {
     color: '#fff',

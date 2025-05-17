@@ -73,6 +73,7 @@ export default function RouteReportScreen() {
   const [devices, setDevices] = useState<Device[]>([]);
   const [groups, setGroups] = useState<Group[]>([]);
   const [isLoadingVehicles, setIsLoadingVehicles] = useState(false);
+  const [isDownloading, setIsDownloading] = useState(false);
   
   // Device dropdown states
   const [deviceValue, setDeviceValue] = useState<string | null>(null);
@@ -164,6 +165,7 @@ export default function RouteReportScreen() {
 
   const exportToExcel = async () => {
     try {
+      setIsDownloading(true);
       const worksheet = XLSX.utils.json_to_sheet(
         reportData.map((entry) => ({
           "Vehicle Number": deviceItems.find(option => option.value === deviceValue)?.label || "N/A",
@@ -189,6 +191,8 @@ export default function RouteReportScreen() {
       await Sharing.shareAsync(uri);
     } catch (error) {
       console.error('Error exporting to Excel:', error);
+    } finally {
+      setIsDownloading(false);
     }
   };
 
@@ -325,10 +329,16 @@ export default function RouteReportScreen() {
                 reportData.length === 0 && styles.downloadButtonDisabledDark
               ]}
               onPress={exportToExcel}
-              disabled={reportData.length === 0}
+              disabled={reportData.length === 0 || isDownloading}
             >
-              <MaterialIcons name="download" size={20} color="#fff" />
-              <Text style={styles.downloadButtonTextDark}>Excel</Text>
+              {isDownloading ? (
+                <ActivityIndicator color="#fff" size="small" />
+              ) : (
+                <>
+                  <MaterialIcons name="download" size={20} color="#fff" />
+                  <Text style={styles.downloadButtonTextDark}>Excel</Text>
+                </>
+              )}
             </TouchableOpacity>
             
           </View>
@@ -408,10 +418,16 @@ export default function RouteReportScreen() {
                 reportData.length === 0 && styles.downloadButtonDisabledDark
               ]}
               onPress={exportToExcel}
-              disabled={reportData.length === 0}
+              disabled={reportData.length === 0 || isDownloading}
             >
-              <MaterialIcons name="download" size={20} color="#fff" />
-              <Text style={styles.downloadButtonTextDark}>Download Report</Text>
+              {isDownloading ? (
+                <ActivityIndicator color="#fff" size="small" />
+              ) : (
+                <>
+                  <MaterialIcons name="download" size={20} color="#fff" />
+                  <Text style={styles.downloadButtonTextDark}>Download Report</Text>
+                </>
+              )}
             </TouchableOpacity>
           </View>
         ) : (

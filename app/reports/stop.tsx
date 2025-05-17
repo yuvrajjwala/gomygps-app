@@ -76,6 +76,7 @@ export default function StopReportScreen() {
   const [devices, setDevices] = useState<Device[]>([]);
   const [groups, setGroups] = useState<Group[]>([]);
   const [isLoadingVehicles, setIsLoadingVehicles] = useState(false);
+  const [isDownloading, setIsDownloading] = useState(false);
   
   // Device dropdown states
   const [deviceValue, setDeviceValue] = useState<string | null>(null);
@@ -168,6 +169,7 @@ export default function StopReportScreen() {
 
   const exportToExcel = async () => {
     try {
+      setIsDownloading(true);
       const worksheet = XLSX.utils.json_to_sheet(
         reportData.map((entry) => ({
           "Vehicle Number": devices.find((device) => device.id === entry?.deviceId)?.name || "",
@@ -193,6 +195,8 @@ export default function StopReportScreen() {
       await Sharing.shareAsync(uri);
     } catch (error) {
       console.error('Error exporting to Excel:', error);
+    } finally {
+      setIsDownloading(false);
     }
   };
 
@@ -322,17 +326,23 @@ export default function StopReportScreen() {
               )}
             </TouchableOpacity>
 
+            {/* Download Button */}
             <TouchableOpacity 
               style={[
-                styles.downloadButtonDark, 
-                styles.filterDownloadButton,
+                styles.downloadButtonDark,
                 reportData.length === 0 && styles.downloadButtonDisabledDark
               ]}
               onPress={exportToExcel}
-              disabled={reportData.length === 0}
+              disabled={reportData.length === 0 || isDownloading}
             >
-              <MaterialIcons name="download" size={20} color="#fff" />
-              <Text style={styles.downloadButtonTextDark}>Excel</Text>
+              {isDownloading ? (
+                <ActivityIndicator color="#fff" size="small" />
+              ) : (
+                <>
+                  <MaterialIcons name="download" size={20} color="#fff" />
+                  <Text style={styles.downloadButtonTextDark}>Excel</Text>
+                </>
+              )}
             </TouchableOpacity>
           </View>
         </View>

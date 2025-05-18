@@ -4,7 +4,7 @@ import * as FileSystem from 'expo-file-system';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import * as Sharing from 'expo-sharing';
 import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, ScrollView, StatusBar, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Animated, ScrollView, StatusBar, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import DateTimePickerModal from "react-native-modal-datetime-picker";
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Row, Rows, Table, TableWrapper } from 'react-native-table-component';
@@ -124,6 +124,12 @@ export default function SummaryReportScreen() {
   const [currentPage, setCurrentPage] = useState(1);
   const recordsPerPage = 50;
 
+  const [downloadProgress] = useState(new Animated.Value(0));
+  const [downloadStatus, setDownloadStatus] = useState('');
+  const [generatingProgress] = useState(new Animated.Value(0));
+  const [targetProgress, setTargetProgress] = useState(0);
+  const [generatingStatus, setGeneratingStatus] = useState('');
+
   useEffect(() => {
     fetchDevices();
     fetchGroups();
@@ -168,29 +174,40 @@ export default function SummaryReportScreen() {
     }
   };
 
-  const fetchReport = async () => {
+  const handleGenerateReport = async () => {
     if (!deviceValue && !groupValue) {
       alert("Please select a device or group.");
       return;
     }
 
     setLoading(true);
+    setGeneratingStatus('Initializing report generation...');
+    animateGeneratingProgress(20);
 
     try {
-      // Convert local time to UTC with +5:30 offset
       const fromDateUTC = new Date(fromDate);
-      fromDateUTC.setHours(fromDateUTC.getHours() - 5, fromDateUTC.getMinutes() - 30);
+      fromDateUTC.setHours(fromDateUTC.getHours(), fromDateUTC.getMinutes());
       
-      const toDateUTC = new Date(toDate);
-      toDateUTC.setHours(toDateUTC.getHours() - 5, toDateUTC.getMinutes() - 30);
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      setGeneratingStatus('Processing date range...');
+      animateGeneratingProgress(30);
 
-      // Fetch summary data
+      const toDateUTC = new Date(toDate);
+      toDateUTC.setHours(toDateUTC.getHours(), toDateUTC.getMinutes());
+
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      setGeneratingStatus('Fetching summary data...');
+      animateGeneratingProgress(50);
+
       const summaryResponse = await Api.call('/api/reports/summary?from=' + fromDateUTC.toISOString().slice(0, 19) + 'Z&to=' + toDateUTC.toISOString().slice(0, 19) + 'Z' + (deviceValue ? '&deviceId=' + deviceValue : '') + (groupValue ? '&groupId=' + groupValue : ''), 'GET', {}, false);
       
-      // Fetch trips data
+      setGeneratingStatus('Processing response...');
+      animateGeneratingProgress(70);
+
       const tripsResponse = await Api.call('/api/reports/trips?from=' + fromDateUTC.toISOString().slice(0, 19) + 'Z&to=' + toDateUTC.toISOString().slice(0, 19) + 'Z' + (deviceValue ? '&deviceId=' + deviceValue : ''), 'GET', {}, false);
 
-      // Combine the data
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
       const combinedData = summaryResponse.data.map((summary: any) => {
         const trip = tripsResponse.data.find((t: any) => t.deviceId === summary.deviceId);
         return {
@@ -207,71 +224,119 @@ export default function SummaryReportScreen() {
           currentKnownAddress: trip?.endAddress || '',
           currentKnownLat: trip?.endLat || 0,
           currentKnownLon: trip?.endLon || 0,
-          currentStatus: 'Active' // You might want to get this from another API
+          currentStatus: 'Active'
         };
       });
 
       setReportData(combinedData);
-      setCurrentPage(1); // Reset to first page after fetching new data
+      setCurrentPage(1);
+
+      setGeneratingStatus('Completing report generation...');
+      animateGeneratingProgress(100);
     } catch (error) {
       console.error('Error fetching report:', error);
     } finally {
-      setLoading(false);
+      setTimeout(() => {
+        setLoading(false);
+        generatingProgress.setValue(0);
+        setTargetProgress(0);
+      }, 1000);
     }
   };
 
   const exportToExcel = async () => {
-    try {
-      setIsDownloading(true);
-      const worksheet = XLSX.utils.json_to_sheet(
-        reportData.map((entry) => ({
-          "Vehicle Number": entry?.deviceName || "",
-          "Start Date & Time": entry?.startTime ? formatDate(entry.startTime) : "N/A",
-          "End Date & Time": entry?.endTime ? formatDate(entry.endTime) : "N/A",
-          "Start Odometer (km)": entry?.startOdometer ? (entry.startOdometer / 1000).toFixed(2) : "N/A",
-          "End Odometer (km)": entry?.endOdometer ? (entry.endOdometer / 1000).toFixed(2) : "N/A",
-          "Distance (km)": entry?.distance ? (entry.distance / 1000).toFixed(2) : "N/A",
-          "Total Distance (km)": entry?.totalDistance ? (entry.totalDistance / 1000).toFixed(2) : "N/A",
-          "Top Speed (km/h)": entry?.maxSpeed ? (entry.maxSpeed * 1.852).toFixed(2) : "N/A",
-          "Average Speed (km/h)": entry?.averageSpeed ? (entry.averageSpeed * 1.852).toFixed(2) : "N/A",
-          "Engine Hours (hr)": entry?.engineHours ? (entry.engineHours/3600).toFixed(2) : "N/A",
-          "AC Hours (hr)": entry?.acHours ? entry.acHours : "N/A",
-          "Running Hours (hr)": entry?.movingDuration ? (entry.movingDuration/3600).toFixed(2) : "N/A",
-          "Stopped Hours (hr)": entry?.stoppedDuration ? (entry.stoppedDuration/3600).toFixed(2) : "N/A",
-          "Idle Hours (hr)": entry?.idleDuration ? (entry.idleDuration/3600).toFixed(2) : "N/A",
-          "Overspeed Duration (hr)": entry?.overspeedDuration ? (entry.overspeedDuration/3600).toFixed(2) : "N/A",
-          "Overspeed Distance (km)": entry?.overspeedDistance ? (entry.overspeedDistance/1000).toFixed(2) : "N/A",
-          "Spent Fuel (L)": entry?.spentFuel ? entry.spentFuel.toFixed(2) : "N/A",
-          "Mileage Fuel": entry?.mileageFuel || "N/A",
-          "Current Status": entry?.currentStatus || "N/A",
-          "First Ignition On Time": entry?.firstIgnitionOnTime ? formatDate(entry.firstIgnitionOnTime) : "N/A",
-          "Last Ignition Off Time": entry?.lastIgnitionOffTime ? formatDate(entry.lastIgnitionOffTime) : "N/A",
-          "First Address": entry?.firstAddress || "N/A",
-          "First Latitude": entry?.firstLat ? entry.firstLat.toFixed(6) : "N/A",
-          "First Longitude": entry?.firstLon ? entry.firstLon.toFixed(6) : "N/A",
-          "Last Address": entry?.lastAddress || "N/A",
-          "Last Latitude": entry?.lastLat ? entry.lastLat.toFixed(6) : "N/A",
-          "Last Longitude": entry?.lastLon ? entry.lastLon.toFixed(6) : "N/A",
-          "Current Known Address": entry?.currentKnownAddress || "N/A",
-          "Current Known Latitude": entry?.currentKnownLat ? entry.currentKnownLat.toFixed(6) : "N/A",
-          "Current Known Longitude": entry?.currentKnownLon ? entry.currentKnownLon.toFixed(6) : "N/A"
-        }))
-      );
-      const workbook = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(workbook, worksheet, "Summary Report");
-      
-      const wbout = XLSX.write(workbook, { type: 'base64', bookType: 'xlsx' });
-      const uri = FileSystem.documentDirectory + "Summary_Report.xlsx";
-      await FileSystem.writeAsStringAsync(uri, wbout, {
-        encoding: FileSystem.EncodingType.Base64,
-      });
-      
-      await Sharing.shareAsync(uri);
-    } catch (error) {
-      console.error('Error exporting to Excel:', error);
-    } finally {
-      setIsDownloading(false);
-    }
+    setIsDownloading(true);
+    setDownloadStatus('Preparing report data...');
+    
+    Animated.timing(downloadProgress, {
+      toValue: 30,
+      duration: 800,
+      useNativeDriver: false
+    }).start();
+
+    setTimeout(async () => {
+      try {
+        const worksheet = XLSX.utils.json_to_sheet(
+          reportData.map((entry) => ({
+            "Vehicle Number": entry?.deviceName || "",
+            "Start Date & Time": entry?.startTime ? formatDate(entry.startTime) : "N/A",
+            "End Date & Time": entry?.endTime ? formatDate(entry.endTime) : "N/A",
+            "Start Odometer (km)": entry?.startOdometer ? (entry.startOdometer / 1000).toFixed(2) : "N/A",
+            "End Odometer (km)": entry?.endOdometer ? (entry.endOdometer / 1000).toFixed(2) : "N/A",
+            "Distance (km)": entry?.distance ? (entry.distance / 1000).toFixed(2) : "N/A",
+            "Total Distance (km)": entry?.totalDistance ? (entry.totalDistance / 1000).toFixed(2) : "N/A",
+            "Top Speed (km/h)": entry?.maxSpeed ? (entry.maxSpeed * 1.852).toFixed(2) : "N/A",
+            "Average Speed (km/h)": entry?.averageSpeed ? (entry.averageSpeed * 1.852).toFixed(2) : "N/A",
+            "Engine Hours (hr)": entry?.engineHours ? (entry.engineHours/3600).toFixed(2) : "N/A",
+            "AC Hours (hr)": entry?.acHours ? entry.acHours : "N/A",
+            "Running Hours (hr)": entry?.movingDuration ? (entry.movingDuration/3600).toFixed(2) : "N/A",
+            "Stopped Hours (hr)": entry?.stoppedDuration ? (entry.stoppedDuration/3600).toFixed(2) : "N/A",
+            "Idle Hours (hr)": entry?.idleDuration ? (entry.idleDuration/3600).toFixed(2) : "N/A",
+            "Overspeed Duration (hr)": entry?.overspeedDuration ? (entry.overspeedDuration/3600).toFixed(2) : "N/A",
+            "Overspeed Distance (km)": entry?.overspeedDistance ? (entry.overspeedDistance/1000).toFixed(2) : "N/A",
+            "Spent Fuel (L)": entry?.spentFuel ? entry.spentFuel.toFixed(2) : "N/A",
+            "Mileage Fuel": entry?.mileageFuel || "N/A",
+            "Current Status": entry?.currentStatus || "N/A",
+            "First Ignition On Time": entry?.firstIgnitionOnTime ? formatDate(entry.firstIgnitionOnTime) : "N/A",
+            "Last Ignition Off Time": entry?.lastIgnitionOffTime ? formatDate(entry.lastIgnitionOffTime) : "N/A",
+            "First Address": entry?.firstAddress || "N/A",
+            "First Latitude": entry?.firstLat ? entry.firstLat.toFixed(6) : "N/A",
+            "First Longitude": entry?.firstLon ? entry.firstLon.toFixed(6) : "N/A",
+            "Last Address": entry?.lastAddress || "N/A",
+            "Last Latitude": entry?.lastLat ? entry.lastLat.toFixed(6) : "N/A",
+            "Last Longitude": entry?.lastLon ? entry.lastLon.toFixed(6) : "N/A",
+            "Current Known Address": entry?.currentKnownAddress || "N/A",
+            "Current Known Latitude": entry?.currentKnownLat ? entry.currentKnownLat.toFixed(6) : "N/A",
+            "Current Known Longitude": entry?.currentKnownLon ? entry.currentKnownLon.toFixed(6) : "N/A"
+          }))
+        );
+
+        setDownloadStatus('Generating Excel file...');
+        Animated.timing(downloadProgress, {
+          toValue: 60,
+          duration: 600,
+          useNativeDriver: false
+        }).start();
+
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, "Summary Report");
+        
+        setDownloadStatus('Saving file...');
+        Animated.timing(downloadProgress, {
+          toValue: 85,
+          duration: 500,
+          useNativeDriver: false
+        }).start();
+
+        const wbout = XLSX.write(workbook, { type: 'base64', bookType: 'xlsx' });
+        const uri = FileSystem.documentDirectory + "Summary_Report.xlsx";
+        await FileSystem.writeAsStringAsync(uri, wbout, {
+          encoding: FileSystem.EncodingType.Base64,
+        });
+
+        setDownloadStatus('Ready to share!');
+        Animated.timing(downloadProgress, {
+          toValue: 100,
+          duration: 400,
+          useNativeDriver: false
+        }).start();
+        
+        await Sharing.shareAsync(uri);
+      } catch (error) {
+        console.error('Error exporting to Excel:', error);
+        setDownloadStatus('Download failed. Please try again.');
+      } finally {
+        setTimeout(() => {
+          Animated.timing(downloadProgress, {
+            toValue: 0,
+            duration: 300,
+            useNativeDriver: false
+          }).start(() => {
+            setIsDownloading(false);
+          });
+        }, 1000);
+      }
+    }, 0);
   };
 
   // Calculate pagination
@@ -302,6 +367,73 @@ export default function SummaryReportScreen() {
     if (value) {
       setDeviceValue(null);
     }
+  };
+
+  const animateGeneratingProgress = (value: number) => {
+    Animated.timing(generatingProgress, {
+      toValue: value,
+      duration: 1000,
+      useNativeDriver: false
+    }).start();
+  };
+
+  const LoadingOverlay = () => {
+    if (!loading) return null;
+
+    return (
+      <View style={styles.downloadOverlay}>
+        <View style={styles.downloadCard}>
+          <MaterialIcons name="sync" size={40} color="#FF7043" />
+          <Text style={styles.downloadStatusText}>{generatingStatus}</Text>
+          <View style={styles.progressBarContainer}>
+            <Animated.View 
+              style={[
+                styles.progressBar,
+                {
+                  width: generatingProgress.interpolate({
+                    inputRange: [0, 100],
+                    outputRange: ['0%', '100%']
+                  })
+                }
+              ]} 
+            />
+          </View>
+          <Text style={styles.downloadStatusText1}>Generating Report...</Text>
+        </View>
+      </View>
+    );
+  };
+
+  const DownloadOverlay = () => {
+    if (!isDownloading) return null;
+
+    return (
+      <View style={styles.downloadOverlay}>
+        <View style={styles.downloadCard}>
+          <MaterialIcons name="cloud-download" size={40} color="#FF7043" />
+          <Text style={styles.downloadStatusText}>{downloadStatus}</Text>
+          
+          <View style={styles.sliderContainer}>
+            <View style={styles.sliderTrack} />
+            <Animated.View 
+              style={[
+                styles.sliderBall,
+                {
+                  left: downloadProgress.interpolate({
+                    inputRange: [0, 100],
+                    outputRange: ['0%', '92%']
+                  })
+                }
+              ]} 
+            >
+              <MaterialIcons name="fiber-manual-record" size={24} color="#FF7043" />
+            </Animated.View>
+          </View>
+
+          <Text style={styles.downloadStatusText1}>Downloading Report...</Text>
+        </View>
+      </View>
+    );
   };
 
   return (
@@ -388,7 +520,7 @@ export default function SummaryReportScreen() {
             <TouchableOpacity 
               style={[styles.generateButtonDark, loading && styles.generateButtonDisabledDark]} 
               disabled={loading}
-              onPress={fetchReport}
+              onPress={handleGenerateReport}
             >
               {loading ? (
                 <ActivityIndicator color="#fff" size="small" />
@@ -536,6 +668,8 @@ export default function SummaryReportScreen() {
           </View>
         )}
       </ScrollView>
+      <LoadingOverlay />
+      <DownloadOverlay />
     </SafeAreaView>
   );
 }
@@ -757,5 +891,83 @@ const styles = StyleSheet.create({
     color: '#666',
     fontWeight: '500',
   },
-  
+  downloadOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 9999,
+  },
+  downloadCard: {
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    padding: 24,
+    alignItems: 'center',
+    width: '80%',
+    maxWidth: 300,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
+  },
+  downloadStatusText: {
+    color: '#000',
+    fontSize: 16,
+    fontWeight: '600',
+    marginTop: 16,
+    marginBottom: 20,
+    textAlign: 'center',
+  },
+  downloadStatusText1: {
+    color: '#000',
+    fontSize: 12,
+    fontWeight: '500',
+    marginTop: 16,
+    marginBottom: 20,
+    textAlign: 'center',
+  },
+  progressBarContainer: {
+    width: '100%',
+    height: 6,
+    backgroundColor: '#f0f0f0',
+    borderRadius: 3,
+    overflow: 'hidden',
+  },
+  progressBar: {
+    height: '100%',
+    backgroundColor: '#FF7043',
+  },
+  sliderContainer: {
+    width: '100%',
+    height: 40,
+    justifyContent: 'center',
+    position: 'relative',
+    marginBottom: 10,
+  },
+  sliderTrack: {
+    width: '100%',
+    height: 4,
+    backgroundColor: '#f0f0f0',
+    borderRadius: 2,
+    position: 'absolute',
+  },
+  sliderBall: {
+    position: 'absolute',
+    width: 24,
+    height: 24,
+    justifyContent: 'center',
+    alignItems: 'center',
+    transform: [{ translateX: -12 }],
+  },
+  percentageContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 10,
+  },
 }); 

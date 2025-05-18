@@ -20,7 +20,10 @@
         "NSLocationWhenInUseUsageDescription": "This app uses location to show your position on the map",
         "NSLocationAlwaysUsageDescription": "This app uses location to track your position in the background",
         "NSLocationAlwaysAndWhenInUseUsageDescription": "This app uses location to track your position in the background and foreground",
-        "ITSAppUsesNonExemptEncryption": false
+        "ITSAppUsesNonExemptEncryption": false,
+        "NSPhotoLibraryUsageDescription": "This app needs access to your photo library to save and share files",
+        "NSPhotoLibraryAddUsageDescription": "This app needs access to your photo library to save files",
+        "NSDocumentsFolderUsageDescription": "This app needs access to your documents folder to save files"
       },
       "googleServicesFile": "./GoogleService-Info.plist"
     },
@@ -32,7 +35,10 @@
       "permissions": [
         "android.permission.ACCESS_COARSE_LOCATION",
         "android.permission.ACCESS_FINE_LOCATION",
-        "android.permission.FOREGROUND_SERVICE"
+        "android.permission.FOREGROUND_SERVICE",
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.WRITE_EXTERNAL_STORAGE",
+        "android.permission.MANAGE_EXTERNAL_STORAGE"
       ],
       "package": "com.gomygps.app",
       "googleServicesFile": "./google-services.json",

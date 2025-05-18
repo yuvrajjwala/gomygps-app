@@ -139,7 +139,7 @@ export default function VehiclesScreen() {
       "#EF5350",
       "#EF5350",
       "#29B6F6",
-      device?.attributes?.batteryLevel ? "#66BB6A" : "#EF5350",
+      device?.attributes?.batteryLevel ? ( device?.attributes?.batteryLevel>10 ? "#66BB6A" : "#EF5350") : device.attributes.ignition ? "green" : device.status === "online" ? "green" : "red",
     ];
     const iconNames = [
       { "vpn-key": device.attributes.ignition },

@@ -3,8 +3,18 @@ import { MaterialIcons } from '@expo/vector-icons';
 import * as FileSystem from 'expo-file-system';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import * as Sharing from 'expo-sharing';
-import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, ScrollView, StatusBar, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import React, { useEffect, useState, useRef } from 'react';
+import { 
+  ActivityIndicator, 
+  Animated, 
+  Alert, 
+  ScrollView, 
+  StatusBar, 
+  StyleSheet, 
+  Text, 
+  TouchableOpacity, 
+  View 
+} from 'react-native';
 import DateTimePickerModal from "react-native-modal-datetime-picker";
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Row, Rows, Table, TableWrapper } from 'react-native-table-component';
@@ -93,6 +103,12 @@ export default function RouteReportScreen() {
   const [isToDatePickerVisible, setToDatePickerVisible] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const recordsPerPage = 50;
+  const [downloadProgress] = useState(new Animated.Value(0));
+  const [downloadStatus, setDownloadStatus] = useState('');
+  const [generatingProgress] = useState(new Animated.Value(0));
+  const [targetProgress, setTargetProgress] = useState(0);
+  const [generatingStatus, setGeneratingStatus] = useState('');
+  const loadingAnimation = useRef(new Animated.Value(45)).current;
 
   useEffect(() => {
     fetchDevices();
@@ -117,6 +133,25 @@ export default function RouteReportScreen() {
     setGroupItems(groupDropdownItems);
   }, [groups]);
 
+  useEffect(() => {
+    if (targetProgress > 0) {
+      let currentValue = 0;
+      const listener = generatingProgress.addListener(({ value }) => {
+        currentValue = value;
+      });
+      
+      Animated.timing(generatingProgress, {
+        toValue: targetProgress,
+        duration: (targetProgress - currentValue) * 50, // 50ms per number
+        useNativeDriver: false
+      }).start();
+
+      return () => {
+        generatingProgress.removeListener(listener);
+      };
+    }
+  }, [targetProgress, generatingProgress]);
+
   const fetchDevices = async () => {
     try {
       setIsLoadingVehicles(true);
@@ -138,36 +173,137 @@ export default function RouteReportScreen() {
     }
   };
 
+  const startLoadingAnimation = () => {
+    Animated.sequence([
+      Animated.timing(loadingAnimation, {
+        toValue: 75,
+        duration: 1500,
+        useNativeDriver: false
+      }),
+      Animated.timing(loadingAnimation, {
+        toValue: 45,
+        duration: 1500,
+        useNativeDriver: false
+      })
+    ]).start((finished) => {
+      if (finished && loading) {
+        startLoadingAnimation(); // Restart animation if still loading
+      }
+    });
+  };
+
+  const animateGeneratingProgress = (toValue: number) => {
+    setTargetProgress(toValue);
+  };
+
   const fetchReport = async () => {
     if (!deviceValue) {
       alert("Please select a device.");
       return;
     }
     setLoading(true);
+    setGeneratingStatus('Initializing report generation...');
+    animateGeneratingProgress(20);
 
     try {
       // Convert local time to UTC with +5:30 offset
       const fromDateUTC = new Date(fromDate);
-      fromDateUTC.setHours(fromDateUTC.getHours() - 5, fromDateUTC.getMinutes() - 30);
+      fromDateUTC.setHours(fromDateUTC.getHours() , fromDateUTC.getMinutes());
       
+      await new Promise(resolve => setTimeout(resolve, 1000)); // Wait for animation
+      setGeneratingStatus('Processing date range...');
+      animateGeneratingProgress(30);
+
       const toDateUTC = new Date(toDate);
-      toDateUTC.setHours(toDateUTC.getHours() - 5, toDateUTC.getMinutes() - 30);
+      toDateUTC.setHours(toDateUTC.getHours(), toDateUTC.getMinutes() );
+
+      await new Promise(resolve => setTimeout(resolve, 1000)); // Wait for animation
+      setGeneratingStatus('Fetching route data...');
+      animateGeneratingProgress(50);
+
       const response = await Api.call('/api/reports/route?from=' + fromDateUTC.toISOString().slice(0, 19) + 'Z&to=' + toDateUTC.toISOString().slice(0, 19) + 'Z&deviceId=' + deviceValue, 'GET', {}, false);
+      
+      setGeneratingStatus('Processing response...');
+      animateGeneratingProgress(70);
+
+      await new Promise(resolve => setTimeout(resolve, 1000)); // Wait for animation
       console.log(response.data);
       setReportData(response.data || []);
       setCurrentPage(1); // Reset to first page after fetching new data
+
+      setGeneratingStatus('Completing report generation...');
+      animateGeneratingProgress(100);
     } catch (error) {
       console.error('Error fetching report:', error);
+      setGeneratingStatus('Error generating report. Please try again.');
     } finally {
-      setLoading(false);
+      setTimeout(() => {
+        setLoading(false);
+        generatingProgress.setValue(0);
+        setTargetProgress(0);
+      }, 1000);
     }
   };
 
+  const DownloadOverlay = () => {
+    if (!isDownloading) return null;
+
+    return (
+      <View style={styles.downloadOverlay}>
+        <View style={styles.downloadCard}>
+          <MaterialIcons name="cloud-download" size={40} color="#FF7043" />
+          <Text style={styles.downloadStatusText}>{downloadStatus}</Text>
+          
+          {/* Slider Track */}
+          <View style={styles.sliderContainer}>
+            <View style={styles.sliderTrack} />
+            <Animated.View 
+              style={[
+                styles.sliderBall,
+                {
+                  left: downloadProgress.interpolate({
+                    inputRange: [0, 100],
+                    outputRange: ['0%', '92%']
+                  })
+                }
+              ]} 
+            >
+              <MaterialIcons name="fiber-manual-record" size={24} color="#FF7043" />
+            </Animated.View>
+          </View>
+
+          {/* Percentage Text */}
+          <Text>Downloading Report...</Text>
+        </View>
+      </View>
+    );
+  };
+
+  const animateProgress = (toValue: number, duration = 500) => {
+    Animated.timing(downloadProgress, {
+      toValue,
+      duration,
+      useNativeDriver: false
+    }).start();
+  };
+
   const exportToExcel = async () => {
-    try {
-      setIsDownloading(true);
-      const worksheet = XLSX.utils.json_to_sheet(
-        reportData.map((entry) => ({
+    // Start animation and show overlay immediately
+    setIsDownloading(true);
+    setDownloadStatus('Preparing report data...');
+    
+    // Start animation immediately
+    Animated.timing(downloadProgress, {
+      toValue: 30,
+      duration: 800,
+      useNativeDriver: false
+    }).start();
+
+    // Process data in the next tick to allow animation to start
+    setTimeout(async () => {
+      try {
+        // Prepare data in background
+        const excelData = reportData.map((entry) => ({
           "Vehicle Number": deviceItems.find(option => option.value === deviceValue)?.label || "N/A",
           "Date & Time": formatDate(entry.fixTime),
           "Distance (KM)": ((entry?.attributes?.distance) / 1000).toFixed(2),
@@ -177,23 +313,70 @@ export default function RouteReportScreen() {
           "Latitude": entry?.latitude?.toFixed(4),
           "Longitude": entry?.longitude?.toFixed(4),
           "Address": entry?.address || "N/A"
-        }))
-      );
-      const workbook = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(workbook, worksheet, "Route Report");
-      
-      const wbout = XLSX.write(workbook, { type: 'base64', bookType: 'xlsx' });
-      const uri = FileSystem.documentDirectory + "Route_Report.xlsx";
-      await FileSystem.writeAsStringAsync(uri, wbout, {
-        encoding: FileSystem.EncodingType.Base64,
-      });
-      
-      await Sharing.shareAsync(uri);
-    } catch (error) {
-      console.error('Error exporting to Excel:', error);
-    } finally {
-      setIsDownloading(false);
-    }
+        }));
+
+        setDownloadStatus('Generating Excel file...');
+        Animated.timing(downloadProgress, {
+          toValue: 60,
+          duration: 600,
+          useNativeDriver: false
+        }).start();
+
+        // Create Excel file in background
+        const worksheet = XLSX.utils.json_to_sheet(excelData);
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, "Route Report");
+        
+        setDownloadStatus('Saving file...');
+        Animated.timing(downloadProgress, {
+          toValue: 85,
+          duration: 500,
+          useNativeDriver: false
+        }).start();
+
+        const wbout = XLSX.write(workbook, { 
+          type: 'base64', 
+          bookType: 'xlsx',
+          compression: true 
+        });
+        
+        const timestamp = new Date().getTime();
+        const uri = `${FileSystem.cacheDirectory}Route_Report_${timestamp}.xlsx`;
+
+        await FileSystem.writeAsStringAsync(uri, wbout, {
+          encoding: FileSystem.EncodingType.Base64,
+        });
+
+        setDownloadStatus('Ready to share!');
+        Animated.timing(downloadProgress, {
+          toValue: 100,
+          duration: 400,
+          useNativeDriver: false
+        }).start();
+        
+        await Sharing.shareAsync(uri, {
+          mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+          dialogTitle: 'Download Report'
+        }).finally(() => {
+          // Clean up the temporary file
+          FileSystem.deleteAsync(uri, { idempotent: true });
+        });
+
+      } catch (error) {
+        console.error('Error exporting to Excel:', error);
+        setDownloadStatus('Download failed. Please try again.');
+      } finally {
+        setTimeout(() => {
+          Animated.timing(downloadProgress, {
+            toValue: 0,
+            duration: 300,
+            useNativeDriver: false
+          }).start(() => {
+            setIsDownloading(false);
+          });
+        }, 1000);
+      }
+    }, 0); // Start processing immediately in the next tick
   };
 
   // Calculate pagination
@@ -224,6 +407,37 @@ export default function RouteReportScreen() {
     if (value) {
       setDeviceValue(null);
     }
+  };
+
+  const LoadingOverlay = () => {
+    if (!loading) return null;
+
+    return (
+      <View style={styles.downloadOverlay}>
+        <View style={styles.downloadCard}>
+          <MaterialIcons name="sync" size={40} color="#FF7043" />
+          <Text style={styles.downloadStatusText}>{generatingStatus}</Text>
+          <View style={styles.progressBarContainer}>
+            <Animated.View 
+              style={[
+                styles.progressBar,
+                {
+                  width: generatingProgress.interpolate({
+                    inputRange: [0, 100],
+                    outputRange: ['0%', '100%']
+                  })
+                }
+              ]} 
+            />
+          </View>
+          {/* Percentage text for generating progress */}
+          <View style={styles.percentageContainer}>
+            <Text>Generating Report...</Text>
+            
+          </View>
+        </View>
+      </View>
+    );
   };
 
   return (
@@ -436,6 +650,8 @@ export default function RouteReportScreen() {
           </View>
         )}   
       </ScrollView>
+      <LoadingOverlay />
+      <DownloadOverlay />
     </SafeAreaView>
   );
 }
@@ -653,5 +869,81 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#666',
     fontWeight: '500',
+  },
+  downloadOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 9999,
+  },
+  downloadCard: {
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    padding: 24,
+    alignItems: 'center',
+    width: '80%',
+    maxWidth: 300,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
+  },
+  downloadStatusText: {
+    color: '#000',
+    fontSize: 16,
+    fontWeight: '600',
+    marginTop: 16,
+    marginBottom: 20,
+    textAlign: 'center',
+  },
+  progressBarContainer: {
+    width: '100%',
+    height: 6,
+    backgroundColor: '#f0f0f0',
+    borderRadius: 3,
+    overflow: 'hidden',
+  },
+  progressBar: {
+    height: '100%',
+    backgroundColor: '#FF7043',
+  },
+  sliderContainer: {
+    width: '100%',
+    height: 40,
+    justifyContent: 'center',
+    position: 'relative',
+    marginBottom: 10,
+  },
+  sliderTrack: {
+    width: '100%',
+    height: 4,
+    backgroundColor: '#f0f0f0',
+    borderRadius: 2,
+    position: 'absolute',
+  },
+  sliderBall: {
+    position: 'absolute',
+    width: 24,
+    height: 24,
+    justifyContent: 'center',
+    alignItems: 'center',
+    transform: [{ translateX: -12 }], // Center the ball on the track
+  },
+  percentageContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 10,
+  },
+  percentageText: {
+    color: '#FF7043',
+    fontSize: 18,
+    fontWeight: 'bold',
   },
 }); 

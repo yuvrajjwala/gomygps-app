@@ -16,7 +16,8 @@ import {
   StyleSheet,
   Text,
   TouchableOpacity,
-  View
+  View,
+  Alert,
 } from "react-native";
 import MapView, { Marker, Polyline } from "react-native-maps";
 import DateTimePickerModal from "react-native-modal-datetime-picker";
@@ -24,6 +25,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 const carIcon = require("@/assets/images/cars/green.png");
 const carStoppedIcon = require("@/assets/images/cars/red.png");
+const carIdleIcon = require("@/assets/images/cars/orange.png");
 const { width, height } = Dimensions.get("window");
 
 const speeds = [1, 2, 3, 4, 5, 6];
@@ -931,14 +933,15 @@ export default function HistoryPlaybackScreen() {
           }
 
           if (nextIndex <= stopIndex) {
-            // Update map position without affecting car rotation
+            // Update only the center position, preserving user's zoom level
             if (mapRef.current && routeData[nextIndex]) {
               mapRef.current.animateCamera({
                 center: {
                   latitude: routeData[nextIndex].latitude,
                   longitude: routeData[nextIndex].longitude,
-                },
-                zoom: mapRegion?.zoom || Math.log2(360 / userZoom),
+                }
+              }, {
+                duration: 500 // Smooth animation
               });
             }
             accumulatedTime = 0;
@@ -962,7 +965,7 @@ export default function HistoryPlaybackScreen() {
         clearInterval(intervalRef.current);
       }
     };
-  }, [isPlaying, routeData, speed, stopIndex, findNextMovingPoint, mapRegion, userZoom]);
+  }, [isPlaying, routeData, speed, stopIndex, findNextMovingPoint]);
 
   const currentPosition = routeData[playbackIndex];
 
@@ -981,6 +984,40 @@ export default function HistoryPlaybackScreen() {
     lastTransmission: moment(currentPosition?.deviceTime).fromNow(),
     battery: `${currentPosition?.attributes?.battery || 0} %`,
     speed: currentPosition?.speed || 0,
+  };
+
+  const handleStartDateChange = (event: any, selectedDate: Date | undefined) => {
+    setStartPickerVisible(false);
+    if (selectedDate) {
+      // Check if selected date is in the future
+      const now = new Date();
+      if (selectedDate > now) {
+        Alert.alert(
+          "Invalid Date Selection",
+          "Please select a date and time that is not in the future.",
+          [{ text: "OK" }]
+        );
+        return;
+      }
+      setStartDate(selectedDate);
+    }
+  };
+
+  const handleEndDateChange = (event: any, selectedDate: Date | undefined) => {
+    setEndPickerVisible(false);
+    if (selectedDate) {
+      // Check if selected date is in the future
+      const now = new Date();
+      if (selectedDate > now) {
+        Alert.alert(
+          "Invalid Date Selection",
+          "Please select a date and time that is not in the future.",
+          [{ text: "OK" }]
+        );
+        return;
+      }
+      setEndDate(selectedDate);
+    }
   };
 
   return (
@@ -1062,8 +1099,9 @@ export default function HistoryPlaybackScreen() {
                 tracksViewChanges={false}
                 zIndex={2}
               >
+
                 <Image
-                  source={currentPosition.speed === 0 ? carStoppedIcon : carIcon}
+                  source={currentPosition.speed === 0 ? currentPosition.attributes.ignition? carIdleIcon : carStoppedIcon : carIcon}
                   style={[
                     { width: 30, height: 30, resizeMode: "contain" },
                     {
@@ -1207,13 +1245,7 @@ export default function HistoryPlaybackScreen() {
         isVisible={isStartPickerVisible}
         mode="datetime"
         onConfirm={(date) => {
-          if (date > endDate) {
-            setStartDate(date);
-            setEndDate(date);
-          } else {
-            setStartDate(date);
-          }
-          setStartPickerVisible(false);
+          handleStartDateChange(null, date);
         }}
         onCancel={() => setStartPickerVisible(false)}
         date={startDate}
@@ -1224,13 +1256,7 @@ export default function HistoryPlaybackScreen() {
         isVisible={isEndPickerVisible}
         mode="datetime"
         onConfirm={(date) => {
-          if (date < startDate) {
-            setEndDate(date);
-            setStartDate(date);
-          } else {
-            setEndDate(date);
-          }
-          setEndPickerVisible(false);
+          handleEndDateChange(null, date);
         }}
         onCancel={() => setEndPickerVisible(false)}
         date={endDate}
@@ -1263,7 +1289,9 @@ export default function HistoryPlaybackScreen() {
               <Text style={styles.dateLabel}>From:</Text>
               <TouchableOpacity 
                 style={styles.dateButton}
-                onPress={() => setStartPickerVisible(true)}
+                onPress={(event) => {
+                  setStartPickerVisible(true);
+                }}
               >
                 <MaterialIcons name="calendar-today" size={20} color="#666" />
                 <Text style={styles.dateButtonText}>
@@ -1276,7 +1304,9 @@ export default function HistoryPlaybackScreen() {
               <Text style={styles.dateLabel}>To:</Text>
               <TouchableOpacity 
                 style={styles.dateButton}
-                onPress={() => setEndPickerVisible(true)}
+                onPress={(event) => {
+                  setEndPickerVisible(true);
+                }}
               >
                 <MaterialIcons name="calendar-today" size={20} color="#666" />
                 <Text style={styles.dateButtonText}>
@@ -1316,6 +1346,17 @@ export default function HistoryPlaybackScreen() {
             <TouchableOpacity 
               style={styles.submitButton}
               onPress={() => {
+                // Check if selected dates are in the future
+                const now = new Date();
+                if (startDate > now || endDate > now) {
+                  Alert.alert(
+                    "Invalid Date Selection",
+                    "Please select a date and time that is not in the future.",
+                    [{ text: "OK" }]
+                  );
+                  return;
+                }
+
                 setFilterVisible(false);
                 // Only reload data if dates have changed
                 if (initialStartDate?.getTime() !== startDate.getTime() || 

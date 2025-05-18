@@ -80,22 +80,42 @@ export default function MapScreen() {
   // Animation ref for details section
   const detailsAnimHeight = useRef(new Animated.Value(0)).current;
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
   // Add new state for 3D view
   const [is3DView, setIs3DView] = useState(false);
 
-  // Add new state for camera
-  const [camera, setCamera] = useState({
-    center: {
-      latitude: Number(params?.latitude) || 0,
-      longitude: Number(params?.longitude) || 0,
-    },
-    pitch: 0,
-    heading: 0,
-    altitude: 1000,
-    zoom: 15
-  });
-
   const [shareModalVisible, setShareModalVisible] = useState(false);
+
+  // Add state to track current map region
+  const [currentMapRegion, setCurrentMapRegion] = useState({
+    latitudeDelta: zoomLevel,
+    longitudeDelta: zoomLevel * 0.5
+  });
 
   const getVehicleIcon = (): ImageSourcePropType => {
     if (!device?.deviceTime) {
@@ -122,57 +142,44 @@ export default function MapScreen() {
       {},
       false
     );
-    console.log(response.data[0]);
 
     const newDevice = { ...device, ...response.data[0] };
     setDevice(newDevice);
+    
     if (newDevice.latitude && newDevice.longitude) {
-      markerPosition
-        .timing({
-          toValue: {
-            latitude: newDevice.latitude || 0,
-            longitude: newDevice.longitude || 0,
-          },
-          duration: 1000,
-          useNativeDriver: false,
-        } as any)
-        .start(() => {
-          setCarPath((prev) => [
-            ...prev,
-            {
-              latitude:Number(newDevice.latitude) || 0,
-              longitude:Number(newDevice.longitude) || 0,
-            },
-          ]);
-          setCurrentMarkerPosition({
-            latitude: Number(newDevice.latitude) || 0,
-            longitude: Number(newDevice.longitude) || 0,
-          });
-        });
-   
-        const newRegion: Region = {
-          latitude: Number(newDevice.latitude) || 0,
-          longitude: Number(newDevice.longitude) || 0,
-          latitudeDelta: zoomLevel,
-          longitudeDelta: zoomLevel * 0.5,
-        };
-        if (autoFollow) {
-          mapRef.current?.animateToRegion(newRegion, 500);
-        } else {
-          mapRef.current?.animateToRegion(newRegion, 1000);
-        }
+      const newPosition = {
+        latitude: Number(newDevice.latitude) || 0,
+        longitude: Number(newDevice.longitude) || 0,
+      };
+
+      // Update marker position and path
+      setCurrentMarkerPosition(newPosition);
+      setCarPath(prev => [...prev, newPosition]);
       
+      markerPosition.timing({
+        toValue: newPosition,
+        duration: 1000,
+        useNativeDriver: false,
+      } as any).start();
+
+      // If car mode is enabled, follow car but keep current zoom
+      if (carMode && mapRef.current) {
+        mapRef.current.animateToRegion({
+          latitude: newPosition.latitude,
+          longitude: newPosition.longitude,
+          latitudeDelta: currentMapRegion.latitudeDelta,
+          longitudeDelta: currentMapRegion.longitudeDelta,
+        }, 1000);
+      }
     }
   };
 
-  // Reset marker position if device changes (e.g. on first load)
+  // Remove the marker position reset effect
   useEffect(() => {
     if (device?.latitude && device?.longitude) {
-      markerPosition.setValue({
+      setCurrentMarkerPosition({
         latitude: Number(device?.latitude) || 0,
         longitude: Number(device?.longitude) || 0,
-        latitudeDelta: zoomLevel,
-        longitudeDelta: zoomLevel * 0.5,
       });
     }
   }, [device?.latitude, device?.longitude]);
@@ -187,34 +194,14 @@ export default function MapScreen() {
     }
   }, [isFocused]);
 
+  // Modify car mode effect to only update state
   useEffect(() => {
     if (carMode) {
       setZoomLevel(0.002);
-      if (device?.latitude && device?.longitude) {
-        const newRegion: Region = {
-          latitude: Number(device.latitude),
-          longitude: Number(device.longitude),
-          latitudeDelta: 0.002,
-          longitudeDelta: 0.001,
-        };
-        mapRef.current?.animateToRegion(newRegion, 500);
-      }
     } else {
       setZoomLevel(0.005);
     }
   }, [carMode]);
-
-  useEffect(() => {
-    if (autoFollow && device?.latitude && device?.longitude) {
-      const newRegion: Region = {
-        latitude: Number(device.latitude),
-        longitude: Number(device.longitude),
-        latitudeDelta: zoomLevel,
-        longitudeDelta: zoomLevel * 0.5,
-      };
-      mapRef.current?.animateToRegion(newRegion, 500);
-    }
-  }, [device?.latitude, device?.longitude, autoFollow, zoomLevel]);
 
   const createGeofence = async (device: any) => {
     try {
@@ -356,15 +343,77 @@ export default function MapScreen() {
       const startOfDay = new Date(today);
       startOfDay.setHours(0, 0, 0, 0);
 
-      const response = await Api.call(
+      // First get route data for positions
+      const routeResponse = await Api.call(
+        `/api/reports/route?deviceId=${deviceId}&from=${startOfDay.toISOString()}&to=${today.toISOString()}&daily=false`,
+        "GET",
+        {},
+        false
+      );
+
+      // Get summary report for distance and average speed
+      const summaryResponse = await Api.call(
         `/api/reports/summary?deviceId=${deviceId}&from=${startOfDay.toISOString()}&to=${today.toISOString()}&daily=false`,
         "GET",
         {},
         false
       );
 
-      if (response.data && response.data.length > 0) {
-        const summary = response.data[0];
+      if (routeResponse.data && routeResponse.data.length > 0) {
+        let totalIgnitionTime = 0;
+        let totalRunningTime = 0;
+        let lastIgnitionState = false;
+        let lastRunningState = false;
+        let lastTimestamp = new Date(routeResponse.data[0].deviceTime).getTime();
+        let idleStartTime = 0;
+        const TWO_MINUTES = 360000; // 6 minutes in milliseconds
+
+        // Get distance and average speed from summary report
+        const summaryData = summaryResponse.data[0] || {};
+        const distance = summaryData.distance || 0;
+        const averageSpeed = summaryData.averageSpeed || 0;
+
+        // Iterate through all positions to calculate times
+        routeResponse.data.forEach((position: any) => {
+          const currentTime = new Date(position.deviceTime).getTime();
+          const timeDiff = currentTime - lastTimestamp;
+          
+          // Check states
+          const isIgnitionOn = position.attributes?.ignition === true;
+          const isMoving = position.speed > 0;
+
+          // Add to total ignition time if ignition was on
+          if (isIgnitionOn) {
+            totalIgnitionTime += timeDiff;
+
+            // Track idle periods
+            if (!isMoving) {
+              if (lastRunningState) {
+                // Vehicle just stopped, start idle timer
+                idleStartTime = currentTime;
+              } else if (idleStartTime > 0) {
+                // Vehicle was already idle, check duration
+                const idleDuration = currentTime - idleStartTime;
+                if (idleDuration < TWO_MINUTES) {
+                  // If idle less than 6 minutes, count as running
+                  totalRunningTime += timeDiff;
+                }
+              }
+            } else {
+              // Vehicle is moving
+              totalRunningTime += timeDiff;
+              idleStartTime = 0;
+            }
+          } else {
+            // Ignition is off, reset idle tracking
+            idleStartTime = 0;
+          }
+
+          // Update states for next iteration
+          lastIgnitionState = isIgnitionOn;
+          lastRunningState = isMoving;
+          lastTimestamp = currentTime;
+        });
 
         // Format durations
         const formatDuration = (milliseconds: number | undefined) => {
@@ -372,30 +421,30 @@ export default function MapScreen() {
           const totalMinutes = Math.floor(milliseconds / (1000 * 60));
           const hours = Math.floor(totalMinutes / 60);
           const minutes = totalMinutes % 60;
-          return `${hours.toString().padStart(2, "0")}h:${minutes
-            .toString()
-            .padStart(2, "0")}m`;
+          return `${hours.toString().padStart(2, "0")}h:${minutes.toString().padStart(2, "0")}m`;
         };
 
         setTodaySummary({
-          distance: summary?.distance || 0,
-          maxSpeed: summary?.maxSpeed || 0,
-          averageSpeed: summary?.averageSpeed || 0,
-          engineHours: formatDuration(summary?.engineHours),
-          movingDuration: formatDuration(summary?.movingDuration),
-          stoppedDuration: formatDuration(summary?.stoppedDuration),
-          idleDuration: formatDuration(
-            summary?.deviceDuration -
-              summary?.movingDuration -
-              summary?.stoppedDuration
-          ),
-          ignitionOnDuration: formatDuration(summary?.engineHours),
-          ignitionOffDuration: formatDuration(
-            summary?.deviceDuration - summary?.engineHours
-          ),
+          distance: distance,
+          maxSpeed: Math.max(...routeResponse.data.map((pos: any) => pos.speed || 0)),
+          averageSpeed: averageSpeed,
+          engineHours: formatDuration(totalIgnitionTime),
+          movingDuration: formatDuration(totalRunningTime),
+          stoppedDuration: formatDuration(totalIgnitionTime - totalRunningTime),
+          idleDuration: formatDuration(totalIgnitionTime - totalRunningTime),
+          ignitionOnDuration: formatDuration(totalIgnitionTime),
+          ignitionOffDuration: formatDuration(24 * 60 * 60 * 1000 - totalIgnitionTime),
         });
 
-        setSummaryData(summary);
+        console.log('xxxxxxx',todaySummary);
+
+        setSummaryData({
+          ...routeResponse.data[0],
+          engineHours: totalIgnitionTime,
+          movingDuration: totalRunningTime,
+          distance: distance,
+          averageSpeed: averageSpeed
+        });
       }
     } catch (error) {
       console.error("Error fetching summary data:", error);
@@ -431,60 +480,24 @@ export default function MapScreen() {
   }, [showDetails]);
 
   const engineHoursCalculation = () => {
-    const startOdo = summaryData?.startOdometer || 0;
-    const endOdo = summaryData?.endOdometer || 0;
+    if (!summaryData) return "0 hrs 0 min";
 
-    if (startOdo && endOdo) {
-      const odometerDiffKm = (endOdo - startOdo) / 1000;
-      const estimatedAvgSpeed = 35;
-      const engineHours = odometerDiffKm / estimatedAvgSpeed;
+    // Get running hours (when ignition is on AND speed > 0)
+    const runningHours = summaryData.movingDuration || 0;
+    
+    // Get total ignition hours
+    const ignitionHours = summaryData.engineHours || 0;
+    
+    // Calculate idle hours (ignition on but not moving)
+    const idleHours = ignitionHours - runningHours;
 
-      // Convert to hours and minutes
-      const totalMinutes = Math.floor(engineHours * 60);
-      const hours = Math.floor(totalMinutes / 60);
-      const minutes = totalMinutes % 60;
+    // Convert to hours and minutes
+    const totalMinutes = Math.floor(runningHours / (1000 * 60));
+    const hours = Math.floor(totalMinutes / 60);
+    const minutes = totalMinutes % 60;
 
-      return `${hours} hrs ${minutes} min`;
-    } else if (summaryData?.startTime && summaryData?.endTime) {
-      // Fallback to time-based calculation if odometer data is missing
-      const startTime = new Date(summaryData.startTime);
-      const endTime = new Date(summaryData.endTime);
-      const totalMilliseconds = endTime.getTime() - startTime.getTime();
-
-      const totalMinutes = Math.floor(totalMilliseconds / (1000 * 60));
-      const hours = Math.floor(totalMinutes / 60);
-      const minutes = totalMinutes % 60;
-
-      return `${hours} hrs ${minutes} min`;
-    } else {
-      const totalMilliseconds = summaryData?.engineHours || 0;
-      const totalMinutes = Math.floor(totalMilliseconds / (1000 * 60));
-      const hours = Math.floor(totalMinutes / 60);
-      const minutes = totalMinutes % 60;
-
-      return `${hours} hrs ${minutes} min`;
-    }
+    return `${hours} hrs ${minutes} min`;
   };
-
-  // Update useEffect for 3D view
-  useEffect(() => {
-    if (device?.latitude && device?.longitude) {
-      const newCamera = {
-        center: {
-          latitude: Number(device.latitude) ||  0 ,
-          longitude: Number(device.longitude) ||  0 ,
-        },
-        pitch: is3DView ? 60 : 0,
-        heading: is3DView ? 0 : 0,
-        altitude: is3DView ? 500 : 1000,
-        zoom: is3DView ? 18 : 15
-      };
-      setCamera(newCamera);
-      
-      // Animate to the new camera position
-      mapRef.current?.animateCamera(newCamera, { duration: 1000 });
-    }
-  }, [is3DView, device?.latitude, device?.longitude]);
 
   // Helper to get current coordinates as string
   const getCurrentCoordsString = () => {
@@ -551,23 +564,27 @@ export default function MapScreen() {
           latitudeDelta: zoomLevel,
           longitudeDelta: zoomLevel * 0.5,
         }}
-        zoomEnabled={!carMode}
-        zoomControlEnabled={!carMode}
-        minZoomLevel={carMode ? 0.002 : 0.0001}
-        maxZoomLevel={carMode ? 0.005 : 50}
+        zoomEnabled={true}
+        zoomControlEnabled={true}
         showsUserLocation={true}
-        followsUserLocation={carMode}
-        rotateEnabled={is3DView && !carMode}
-        scrollEnabled={!carMode}
+        followsUserLocation={false}
+        rotateEnabled={is3DView}
+        scrollEnabled={true}
         showsTraffic={showTraffic}
         showsCompass={showCompass}
         mapType={mapType}
         pitchEnabled={true}
-        camera={camera}
         showsBuildings={is3DView}
         showsIndoors={is3DView}
+        onRegionChangeComplete={(region) => {
+          setZoomLevel(region.latitudeDelta);
+          setCurrentMapRegion({
+            latitudeDelta: region.latitudeDelta,
+            longitudeDelta: region.longitudeDelta
+          });
+        }}
       >
-        <Polyline coordinates={carPath} strokeColor="#FFD600" strokeWidth={4} />
+        <Polyline coordinates={carPath} strokeColor="#000000" strokeWidth={4} />
         <Marker.Animated coordinate={currentMarkerPosition} anchor={{ x: 0.5, y: 0.5 }}>
           <Image
             source={getVehicleIcon()}
@@ -657,7 +674,20 @@ export default function MapScreen() {
                   backgroundColor: carMode ? "#4285F4" : "#fff",
                 },
               ]}
-              onPress={() => setCarMode(!carMode)}
+              onPress={() => {
+              setCarMode(true);
+                const wasCarModeOff = carMode;
+                
+                // Only reset zoom when first enabling car mode
+                if ( mapRef.current && device?.latitude && device?.longitude) {
+                  mapRef.current.animateToRegion({
+                    latitude: Number(device.latitude),
+                    longitude: Number(device.longitude),
+                    latitudeDelta: 0.002, // Default zoom level only on initial enable
+                    longitudeDelta: 0.001,
+                  }, 1000);
+                }
+              }}
             >
               <MaterialIcons
                 name="directions-car"
@@ -687,42 +717,6 @@ export default function MapScreen() {
                 color={isLocked ? "#fff" : "#E53935"}
               />
             </TouchableOpacity>
-
-            {/* Auto Follow */}
-            {/* <TouchableOpacity
-              style={[
-                styles.iconCircle,
-                {
-                  borderColor: autoFollow ? "#43A047" : "#A5F3C7",
-                  backgroundColor: autoFollow ? "#43A047" : "#fff",
-                },
-              ]}
-              onPress={() => {
-                if (!carMode) {
-                  // Can't enable auto-follow without car mode
-                  return;
-                }
-
-                setAutoFollow(!autoFollow);
-
-                if (!autoFollow && device?.latitude && device?.longitude) {
-                  // When enabling auto-follow, immediately center on current position
-                  const newRegion: Region = {
-                    latitude: Number(device.latitude) || 0,
-                    longitude: Number(device.longitude) || 0,
-                    latitudeDelta: zoomLevel,
-                    longitudeDelta: zoomLevel * 0.5,
-                  };
-                  mapRef.current?.animateToRegion(newRegion, 500);
-                }
-              }}
-            >
-              <MaterialIcons
-                name="location-on"
-                size={24}
-                color={autoFollow ? "#fff" : "#43A047"}
-              />
-            </TouchableOpacity> */}
 
             {/* Share */}
             <TouchableOpacity

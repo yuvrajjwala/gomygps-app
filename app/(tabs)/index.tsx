@@ -189,7 +189,7 @@ export default function DashboardScreen() {
               />
               <PieChart
                 data={pieData}
-                width={screenWidth - 32}
+                width={screenWidth - 50}
                 height={180}
                 chartConfig={{
                   color: (opacity = 1) => `rgba(255,23,68,${opacity})`,
@@ -305,7 +305,7 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   statCard: {
-    flex: 1,
+    
     marginHorizontal: 4,
     borderRadius: 16,
     alignItems: "center",

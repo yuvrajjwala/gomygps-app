@@ -121,6 +121,7 @@ export default function TipsReportScreen() {
   const [generatingProgress] = useState(new Animated.Value(0));
   const [targetProgress, setTargetProgress] = useState(0);
   const [generatingStatus, setGeneratingStatus] = useState('');
+  const [reportFetched, setReportFetched] = useState(false);
 
   useEffect(() => {
     fetchDevices();
@@ -229,6 +230,7 @@ export default function TipsReportScreen() {
       console.error("Error generating report:", error);
       alert("Failed to generate report. Please try again.");
     } finally {
+      setReportFetched(true);
       setTimeout(() => {
         setLoading(false);
         generatingProgress.setValue(0);

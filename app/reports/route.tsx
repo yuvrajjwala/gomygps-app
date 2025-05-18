@@ -101,6 +101,7 @@ export default function RouteReportScreen() {
   const [toDate, setToDate] = useState(new Date());
   const [isFromDatePickerVisible, setFromDatePickerVisible] = useState(false);
   const [isToDatePickerVisible, setToDatePickerVisible] = useState(false);
+  const [reportFetched, setReportFetched] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const recordsPerPage = 50;
   const [downloadProgress] = useState(new Animated.Value(0));
@@ -234,9 +235,12 @@ export default function RouteReportScreen() {
       setGeneratingStatus('Completing report generation...');
       animateGeneratingProgress(100);
     } catch (error) {
+      setReportData([]);
       console.error('Error fetching report:', error);
       setGeneratingStatus('Error generating report. Please try again.');
+      setReportFetched(true);
     } finally {
+      setReportFetched(true);
       setTimeout(() => {
         setLoading(false);
         generatingProgress.setValue(0);
@@ -557,7 +561,6 @@ export default function RouteReportScreen() {
             
           </View>
         </View>
-
         {/* Report Data */}
         {reportData.length > 0 ? (
           <View style={styles.tableContainerDark}>
@@ -646,7 +649,7 @@ export default function RouteReportScreen() {
           </View>
         ) : (
           <View style={styles.noDataContainer}>
-            <Text style={styles.noDataText}>No data found</Text>
+            <Text style={styles.noDataText}>{reportFetched ? "No data found" : ""}</Text>
           </View>
         )}   
       </ScrollView>

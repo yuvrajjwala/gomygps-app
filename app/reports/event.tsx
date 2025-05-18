@@ -436,10 +436,10 @@ const styles = StyleSheet.create({
   },
 });
 
-const NoDataFound = () => (
+const NoDataFound = ({reportFetched}: {reportFetched: boolean}) => (
   <View style={styles.noDataContainer}>
     <MaterialIcons name="info-outline" size={48} color="#666" />
-    <Text style={styles.noDataText}>No data found</Text>
+    <Text style={styles.noDataText}>{reportFetched ? "No data found" : ""}</Text>
   </View>
 );
 
@@ -460,6 +460,7 @@ export default function EventReportScreen() {
   // Group dropdown states
   const [groupValue, setGroupValue] = useState<string | null>(null);
   const [groupItems, setGroupItems] = useState<DropdownItem[]>([]);
+  const [reportFetched, setReportFetched] = useState(false);
 
   // Event type dropdown states
   const [eventTypeValue, setEventTypeValue] = useState<string | null>('allEvents');
@@ -474,6 +475,7 @@ export default function EventReportScreen() {
   const [isFromDatePickerVisible, setFromDatePickerVisible] = useState(false);
   const [isToDatePickerVisible, setToDatePickerVisible] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
+  
   const recordsPerPage = 50;
 
   const [downloadProgress] = useState(new Animated.Value(0));
@@ -558,6 +560,7 @@ export default function EventReportScreen() {
     animateGeneratingProgress(20);
 
     try {
+     
       const fromDateUTC = new Date(fromDate);
       fromDateUTC.setHours(fromDateUTC.getHours() , fromDateUTC.getMinutes());
       
@@ -586,6 +589,7 @@ export default function EventReportScreen() {
     } catch (error) {
       console.error('Error fetching report:', error);
     } finally {
+      setReportFetched(true);
       setTimeout(() => {
         setLoading(false);
         generatingProgress.setValue(0);
@@ -961,7 +965,7 @@ export default function EventReportScreen() {
             </View>
           </View>
         ) : (
-          <NoDataFound />
+          <NoDataFound reportFetched={reportFetched} />
         )}
       </ScrollView>
       <LoadingOverlay />

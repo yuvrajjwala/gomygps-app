@@ -81,6 +81,8 @@ export default function StopReportScreen() {
   // Device dropdown states
   const [deviceValue, setDeviceValue] = useState<string | null>(null);
   const [deviceItems, setDeviceItems] = useState<DropdownItem[]>([]);
+
+  const [reportFetched, setReportFetched] = useState(false);
   
   // Group dropdown states
   const [groupValue, setGroupValue] = useState<string | null>(null);
@@ -166,6 +168,8 @@ export default function StopReportScreen() {
     animateGeneratingProgress(20);
 
     try {
+      
+
       const fromDateUTC = new Date(fromDate);
       fromDateUTC.setHours(fromDateUTC.getHours(), fromDateUTC.getMinutes() );
       
@@ -194,6 +198,7 @@ export default function StopReportScreen() {
     } catch (error) {
       console.error('Error fetching report:', error);
     } finally {
+      setReportFetched(true);
       setTimeout(() => {
         setLoading(false);
         generatingProgress.setValue(0);
@@ -551,7 +556,7 @@ export default function StopReportScreen() {
           </View>
         ) : (
           <View style={styles.noDataContainer}>
-            <Text style={styles.noDataText}>No data found</Text>
+            <Text style={styles.noDataText}>{reportFetched ? "No data found" : ""}</Text>
           </View>
         )}  
       </ScrollView>

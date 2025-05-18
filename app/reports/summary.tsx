@@ -113,6 +113,8 @@ export default function SummaryReportScreen() {
   const [groupValue, setGroupValue] = useState<string | null>(null);
   const [groupItems, setGroupItems] = useState<DropdownItem[]>([]);
 
+  const [reportFetched, setReportFetched] = useState(false);
+
   const [fromDate, setFromDate] = useState(() => {
     const date = new Date();
     date.setHours(date.getHours() - 24); // Set to 24 hours ago
@@ -185,6 +187,7 @@ export default function SummaryReportScreen() {
     animateGeneratingProgress(20);
 
     try {
+      setReportFetched(true);
       const fromDateUTC = new Date(fromDate);
       fromDateUTC.setHours(fromDateUTC.getHours(), fromDateUTC.getMinutes());
       
@@ -236,6 +239,7 @@ export default function SummaryReportScreen() {
     } catch (error) {
       console.error('Error fetching report:', error);
     } finally {
+      setReportFetched(true);
       setTimeout(() => {
         setLoading(false);
         generatingProgress.setValue(0);
@@ -664,7 +668,7 @@ export default function SummaryReportScreen() {
           </View>
         ) : (
           <View style={styles.noDataContainer}>
-            <Text style={styles.noDataText}>No data found</Text>
+            <Text style={styles.noDataText}>{reportFetched ? "No data found" : ""}</Text>
           </View>
         )}
       </ScrollView>

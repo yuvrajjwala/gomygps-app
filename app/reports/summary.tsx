@@ -8,8 +8,11 @@ import { ActivityIndicator, Animated, ScrollView, StatusBar, StyleSheet, Text, T
 import DateTimePickerModal from "react-native-modal-datetime-picker";
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Row, Rows, Table, TableWrapper } from 'react-native-table-component';
+import { useDispatch, useSelector } from 'react-redux';
 import * as XLSX from 'xlsx';
 import SearchableDropdown from '../components/SearchableDropdown';
+import { setLoading } from '../store/slices/deviceSlice';
+import { RootState } from '../store/store';
 
 interface Device {
   id: string;
@@ -71,36 +74,10 @@ const formatDate = (dateStr: string) => {
   });
 };
 
-const getColumnWidth = (key: string) => {
-  switch (key.toLowerCase()) {
-    case 'vehicle number':
-    case 'mileage fuel':
-      return 2;
-    case 'start date':
-    case 'end date':
-    case 'odometer start':
-    case 'odometer end':
-    case 'distance':
-    case 'average speed':
-    case 'maximum speed':
-    case 'engine hours':
-    case 'ac hours':
-    case 'running time':
-    case 'stopped time':
-    case 'idle time':
-    case 'spent fuel':
-      return 1.5;
-    default:
-      return 1;
-  }
-};
-
 export default function SummaryReportScreen() {
   const router = useRouter();
   const { id } = useLocalSearchParams();
-  const [loading, setLoading] = useState(false);
   const [reportData, setReportData] = useState<ReportData[]>([]);
-  const [devices, setDevices] = useState<Device[]>([]);
   const [groups, setGroups] = useState<Group[]>([]);
   const [isLoadingVehicles, setIsLoadingVehicles] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
@@ -131,20 +108,21 @@ export default function SummaryReportScreen() {
   const [generatingProgress] = useState(new Animated.Value(0));
   const [targetProgress, setTargetProgress] = useState(0);
   const [generatingStatus, setGeneratingStatus] = useState('');
+  const dispatch = useDispatch();
+  const { devices: devicesData, loading } = useSelector((state: RootState) => state.devices);
 
   useEffect(() => {
-    fetchDevices();
     fetchGroups();
   }, []);
 
   useEffect(() => {
     // Transform devices data for dropdown
-    const deviceDropdownItems = devices.map(device => ({
+    const deviceDropdownItems = devicesData.map((device: Device) => ({
       label: device.name,
       value: device.id
     }));
     setDeviceItems(deviceDropdownItems);
-  }, [devices]);
+  }, [devicesData]);
 
   useEffect(() => {
     // Transform groups data for dropdown
@@ -155,17 +133,6 @@ export default function SummaryReportScreen() {
     setGroupItems(groupDropdownItems);
   }, [groups]);
 
-  const fetchDevices = async () => {
-    try {
-      setIsLoadingVehicles(true);
-      const response = await Api.call('/api/devices', 'GET', {}, false);   
-      setDevices(response.data || []);
-    } catch (error) {
-      console.error('Error fetching devices:', error);
-    } finally {
-      setIsLoadingVehicles(false);
-    }
-  };
 
   const fetchGroups = async () => {
     try {
@@ -182,7 +149,7 @@ export default function SummaryReportScreen() {
       return;
     }
 
-    setLoading(true);
+    dispatch(setLoading(true));
     setGeneratingStatus('Initializing report generation...');
     animateGeneratingProgress(20);
 
@@ -241,7 +208,7 @@ export default function SummaryReportScreen() {
     } finally {
       setReportFetched(true);
       setTimeout(() => {
-        setLoading(false);
+        dispatch(setLoading(false));
         generatingProgress.setValue(0);
         setTargetProgress(0);
       }, 1000);

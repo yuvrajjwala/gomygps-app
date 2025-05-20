@@ -8,9 +8,11 @@ import { ActivityIndicator, Animated, ScrollView, StatusBar, StyleSheet, Text, T
 import DateTimePickerModal from "react-native-modal-datetime-picker";
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Row, Rows, Table, TableWrapper } from 'react-native-table-component';
+import { useDispatch, useSelector } from 'react-redux';
 import * as XLSX from 'xlsx';
 import SearchableDropdown from '../components/SearchableDropdown';
-
+import { setLoading } from '../store/slices/deviceSlice';
+import { RootState } from '../store/store';
 interface Device {
   id: string;
   name: string;
@@ -112,329 +114,8 @@ const formatType = (type: string) => {
     .trim();
 };
 
-const getColumnWidth = (key: string) => {
-  switch (key.toLowerCase()) {
-    case 'vehicle number':
-    case 'command operator':
-    case 'maintenance':
-      return 2;
-    case 'type':
-    case 'date & time':
-    case 'geofence':
-    case 'command type':
-      return 1.5;
-    default:
-      return 1;
-  }
-};
 
-const styles = StyleSheet.create({
-  containerDark: {
-    flex: 1,
-    backgroundColor: '#fff',
-  },
-  headerDark: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: '#fff',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
-  },
-  headerTitleDark: {
-    color: '#000',
-    fontSize: 20,
-    fontWeight: 'bold',
-  },
-  filterCardDark: {
-    backgroundColor: '#fff',
-    borderRadius: 18,
-    margin: 16,
-    padding: 18,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    borderWidth: 1,
-    borderColor: '#e0e0e0',
-    elevation: 4,
-    marginBottom: 18,
-  },
-  filterFieldBlock: {
-    marginBottom: 18,
-  },
-  filterLabelDark: {
-    color: '#000',
-    fontWeight: 'bold',
-    marginBottom: 6,
-    fontSize: 15,
-  },
-  dropdown: {
-    backgroundColor: '#fff',
-    borderColor: '#e0e0e0',
-    borderRadius: 10,
-    minHeight: 45,
-  },
-  dropdownText: {
-    color: '#000',
-    fontSize: 15,
-  },
-  dropdownPlaceholder: {
-    color: '#666',
-  },
-  dropdownContainer: {
-    backgroundColor: '#fff',
-    borderColor: '#e0e0e0',
-    borderRadius: 10,
-  },
-  dropdownItemText: {
-    color: '#000',
-    fontSize: 14,
-  },
-  dropdownSearchContainer: {
-    borderBottomColor: '#e0e0e0',
-  },
-  dropdownSearchInput: {
-    color: '#000',
-    borderColor: '#e0e0e0',
-    backgroundColor: '#fff',
-  },
-  dateInputDark: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#e0e0e0',
-    borderRadius: 10,
-    padding: 12,
-    backgroundColor: '#fff',
-    marginTop: 2,
-  },
-  dateInputTextDark: {
-    color: '#000',
-    fontSize: 15,
-  },
-  generateButtonDark: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#FF7043',
-    paddingVertical: 16,
-    paddingHorizontal: 18,
-    borderRadius: 10,
-    justifyContent: 'center',
-    elevation: 2,
-    flex: 1,
-  },
-  generateButtonDisabledDark: {
-    opacity: 0.5,
-  },
-  generateButtonTextDark: {
-    color: '#fff',
-    fontWeight: 'bold',
-    marginLeft: 8,
-    fontSize: 16,
-    letterSpacing: 0.5,
-  },
-  tableContainerDark: {
-    flex: 1,
-    padding: 16,
-    backgroundColor: '#fff',
-  },
-  tableWrapperDark: {
-    borderRadius: 8,
-    backgroundColor: '#fff',
-    borderWidth: 1,
-    borderColor: '#e0e0e0',
-    overflow: 'hidden',
-  },
-  tableRowDark: {
-    flexDirection: 'row',
-    borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
-  },
-  tableHeaderDark: {
-    backgroundColor: '#f5f5f5',
-    padding: 12,
-  },
-  tableHeaderTextDark: {
-    color: '#000',
-    fontWeight: 'bold',
-    fontSize: 14,
-    textTransform: 'capitalize',
-  },
-  tableCellDark: {
-    padding: 12,
-    justifyContent: 'center',
-    minWidth: 120,
-  },
-  tableCellTextDark: {
-    color: '#000',
-    fontSize: 14,
-    textAlign: 'center',
-    padding: 12,
-  },
-  paginationContainerDark: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 16,
-    backgroundColor: '#fff',
-  },
-  paginationButtonDark: {
-    backgroundColor: '#f5f5f5',
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    borderRadius: 8,
-    marginHorizontal: 8,
-  },
-  paginationButtonDisabledDark: {
-    opacity: 0.5,
-  },
-  paginationButtonTextDark: {
-    color: '#000',
-    fontSize: 14,
-    fontWeight: 'bold',
-  },
-  paginationTextDark: {
-    color: '#000',
-    fontSize: 14,
-    marginHorizontal: 16,
-  },
-  downloadButtonDark: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#43A047',
-    padding: 0,
-    borderRadius: 8,
-    height: 52,
-    width: 100,
-  },
-  downloadButtonDisabledDark: {
-    opacity: 0.5,
-    backgroundColor: '#a5d6a7',
-  },
-  downloadButtonTextDark: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: 'bold',
-    marginLeft: 8,
-  },
-  scrollContent: {
-    paddingBottom: 32,
-  },
-  buttonContainer: {
-    flexDirection: 'row',
-    gap: 10,
-    marginTop: 10,
-    alignItems: 'center',
-  },
-  filterDownloadButton: {
-    // Add any specific styles for the filter download button
-  },
-  noDataContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 20,
-    backgroundColor: '#fff',
-    borderRadius: 8,
-    margin: 16,
-    borderWidth: 1,
-    borderColor: '#e0e0e0',
-  },
-  noDataText: {
-    fontSize: 16,
-    color: '#666',
-    textAlign: 'center',
-    marginTop: 8,
-  },
-  downloadOverlay: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: 'rgba(0, 0, 0, 0.7)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    zIndex: 9999,
-  },
-  downloadCard: {
-    backgroundColor: '#fff',
-    borderRadius: 16,
-    padding: 24,
-    alignItems: 'center',
-    width: '80%',
-    maxWidth: 300,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-    elevation: 5,
-  },
-  downloadStatusText: {
-    color: '#000',
-    fontSize: 16,
-    fontWeight: '600',
-    marginTop: 16,
-    marginBottom: 20,
-    textAlign: 'center',
-  },
-  downloadStatusText1: {
-    color: '#000',
-    fontSize: 12,
-    fontWeight: '500',
-    marginTop: 16,
-    marginBottom: 20,
-    textAlign: 'center',
-  },
-  progressBarContainer: {
-    width: '100%',
-    height: 6,
-    backgroundColor: '#f0f0f0',
-    borderRadius: 3,
-    overflow: 'hidden',
-  },
-  progressBar: {
-    height: '100%',
-    backgroundColor: '#FF7043',
-  },
-  sliderContainer: {
-    width: '100%',
-    height: 40,
-    justifyContent: 'center',
-    position: 'relative',
-    marginBottom: 10,
-  },
-  sliderTrack: {
-    width: '100%',
-    height: 4,
-    backgroundColor: '#f0f0f0',
-    borderRadius: 2,
-    position: 'absolute',
-  },
-  sliderBall: {
-    position: 'absolute',
-    width: 24,
-    height: 24,
-    justifyContent: 'center',
-    alignItems: 'center',
-    transform: [{ translateX: -12 }],
-  },
-  percentageContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: 10,
-  },
-  percentageText: {
-    color: '#FF7043',
-    fontSize: 18,
-    fontWeight: 'bold',
-  },
-});
+
 
 const NoDataFound = ({reportFetched}: {reportFetched: boolean}) => (
   <View style={styles.noDataContainer}>
@@ -446,11 +127,8 @@ const NoDataFound = ({reportFetched}: {reportFetched: boolean}) => (
 export default function EventReportScreen() {
   const router = useRouter();
   const { id } = useLocalSearchParams();
-  const [loading, setLoading] = useState(false);
-  const [isLoadingVehicles, setIsLoadingVehicles] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
   const [reportData, setReportData] = useState<ReportData[]>([]);
-  const [devices, setDevices] = useState<Device[]>([]);
   const [groups, setGroups] = useState<Group[]>([]);
   
   // Device dropdown states
@@ -483,20 +161,20 @@ export default function EventReportScreen() {
   const [generatingProgress] = useState(new Animated.Value(0));
   const [targetProgress, setTargetProgress] = useState(0);
   const [generatingStatus, setGeneratingStatus] = useState('');
-
+  const dispatch = useDispatch();
+  const { devices: devicesData, loading } = useSelector((state: RootState) => state.devices);     
   useEffect(() => {
-    fetchDevices();
     fetchGroups();
   }, []);
 
   useEffect(() => {
     // Transform devices data for dropdown
-    const deviceDropdownItems = devices.map(device => ({
+    const deviceDropdownItems = devicesData.map((device: Device) => ({
       label: device.name,
       value: device.id
     }));
     setDeviceItems(deviceDropdownItems);
-  }, [devices]);
+  }, [devicesData]);
 
   useEffect(() => {
     // Transform groups data for dropdown
@@ -530,15 +208,6 @@ export default function EventReportScreen() {
     setTargetProgress(toValue);
   };
 
-  const fetchDevices = async () => {
-    try {
-      const response = await Api.call('/api/devices', 'GET', {}, false);
-      setDevices(response.data || []);
-    } catch (error) {
-      console.error('Error fetching devices:', error);
-    }
-  };
-
   const fetchGroups = async () => {
     try {
       const response = await Api.call('/api/groups', 'GET', {}, false);
@@ -555,7 +224,7 @@ export default function EventReportScreen() {
       return;
     }
 
-    setLoading(true);
+    dispatch(setLoading(true));
     setGeneratingStatus('Initializing report generation...');
     animateGeneratingProgress(20);
 
@@ -591,7 +260,7 @@ export default function EventReportScreen() {
     } finally {
       setReportFetched(true);
       setTimeout(() => {
-        setLoading(false);
+        dispatch(setLoading(false));
         generatingProgress.setValue(0);
         setTargetProgress(0);
       }, 1000);
@@ -612,7 +281,7 @@ export default function EventReportScreen() {
       try {
         const worksheet = XLSX.utils.json_to_sheet(
           reportData.map((entry) => ({
-            "Vehicle Number": devices.find((device) => device.id === entry?.deviceId)?.name || "",
+            "Vehicle Number": devicesData.find((device) => device.id === entry?.deviceId)?.name || "",
             "Type": formatType(entry?.type) || "",
             "Date & Time": formatDate(entry?.eventTime),
             "Geofence": entry?.geofenceId ? entry?.geofence?.name : "-",
@@ -922,7 +591,7 @@ export default function EventReportScreen() {
                   <TableWrapper style={styles.tableWrapperDark}>
                     <Rows
                       data={currentRecords.map(entry => [
-                        String(devices.find((device) => device.id === entry?.deviceId)?.name || ""),
+                        String(devicesData.find((device) => device.id === entry?.deviceId)?.name || ""),
                         String(formatType(entry?.type) || ""),
                         String(formatDate(entry?.eventTime)),
                         String(entry?.geofenceId ? entry?.geofence?.name : "-"),
@@ -973,3 +642,311 @@ export default function EventReportScreen() {
     </SafeAreaView>
   );
 } 
+
+const styles = StyleSheet.create({
+  containerDark: {
+    flex: 1,
+    backgroundColor: '#fff',
+  },
+  headerDark: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#fff',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e0e0e0',
+  },
+  headerTitleDark: {
+    color: '#000',
+    fontSize: 20,
+    fontWeight: 'bold',
+  },
+  filterCardDark: {
+    backgroundColor: '#fff',
+    borderRadius: 18,
+    margin: 16,
+    padding: 18,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
+    elevation: 4,
+    marginBottom: 18,
+  },
+  filterFieldBlock: {
+    marginBottom: 18,
+  },
+  filterLabelDark: {
+    color: '#000',
+    fontWeight: 'bold',
+    marginBottom: 6,
+    fontSize: 15,
+  },
+  dropdown: {
+    backgroundColor: '#fff',
+    borderColor: '#e0e0e0',
+    borderRadius: 10,
+    minHeight: 45,
+  },
+  dropdownText: {
+    color: '#000',
+    fontSize: 15,
+  },
+  dropdownPlaceholder: {
+    color: '#666',
+  },
+  dropdownContainer: {
+    backgroundColor: '#fff',
+    borderColor: '#e0e0e0',
+    borderRadius: 10,
+  },
+  dropdownItemText: {
+    color: '#000',
+    fontSize: 14,
+  },
+  dropdownSearchContainer: {
+    borderBottomColor: '#e0e0e0',
+  },
+  dropdownSearchInput: {
+    color: '#000',
+    borderColor: '#e0e0e0',
+    backgroundColor: '#fff',
+  },
+  dateInputDark: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
+    borderRadius: 10,
+    padding: 12,
+    backgroundColor: '#fff',
+    marginTop: 2,
+  },
+  dateInputTextDark: {
+    color: '#000',
+    fontSize: 15,
+  },
+  generateButtonDark: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FF7043',
+    paddingVertical: 16,
+    paddingHorizontal: 18,
+    borderRadius: 10,
+    justifyContent: 'center',
+    elevation: 2,
+    flex: 1,
+  },
+  generateButtonDisabledDark: {
+    opacity: 0.5,
+  },
+  generateButtonTextDark: {
+    color: '#fff',
+    fontWeight: 'bold',
+    marginLeft: 8,
+    fontSize: 16,
+    letterSpacing: 0.5,
+  },
+  tableContainerDark: {
+    flex: 1,
+    padding: 16,
+    backgroundColor: '#fff',
+  },
+  tableWrapperDark: {
+    borderRadius: 8,
+    backgroundColor: '#fff',
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
+    overflow: 'hidden',
+  },
+  tableRowDark: {
+    flexDirection: 'row',
+    borderBottomWidth: 1,
+    borderBottomColor: '#e0e0e0',
+  },
+  tableHeaderDark: {
+    backgroundColor: '#f5f5f5',
+    padding: 12,
+  },
+  tableHeaderTextDark: {
+    color: '#000',
+    fontWeight: 'bold',
+    fontSize: 14,
+    textTransform: 'capitalize',
+  },
+  tableCellDark: {
+    padding: 12,
+    justifyContent: 'center',
+    minWidth: 120,
+  },
+  tableCellTextDark: {
+    color: '#000',
+    fontSize: 14,
+    textAlign: 'center',
+    padding: 12,
+  },
+  paginationContainerDark: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 16,
+    backgroundColor: '#fff',
+  },
+  paginationButtonDark: {
+    backgroundColor: '#f5f5f5',
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    marginHorizontal: 8,
+  },
+  paginationButtonDisabledDark: {
+    opacity: 0.5,
+  },
+  paginationButtonTextDark: {
+    color: '#000',
+    fontSize: 14,
+    fontWeight: 'bold',
+  },
+  paginationTextDark: {
+    color: '#000',
+    fontSize: 14,
+    marginHorizontal: 16,
+  },
+  downloadButtonDark: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#43A047',
+    padding: 0,
+    borderRadius: 8,
+    height: 52,
+    width: 100,
+  },
+  downloadButtonDisabledDark: {
+    opacity: 0.5,
+    backgroundColor: '#a5d6a7',
+  },
+  downloadButtonTextDark: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginLeft: 8,
+  },
+  scrollContent: {
+    paddingBottom: 32,
+  },
+  buttonContainer: {
+    flexDirection: 'row',
+    gap: 10,
+    marginTop: 10,
+    alignItems: 'center',
+  },
+  filterDownloadButton: {
+    // Add any specific styles for the filter download button
+  },
+  noDataContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+    backgroundColor: '#fff',
+    borderRadius: 8,
+    margin: 16,
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
+  },
+  noDataText: {
+    fontSize: 16,
+    color: '#666',
+    textAlign: 'center',
+    marginTop: 8,
+  },
+  downloadOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 9999,
+  },
+  downloadCard: {
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    padding: 24,
+    alignItems: 'center',
+    width: '80%',
+    maxWidth: 300,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
+  },
+  downloadStatusText: {
+    color: '#000',
+    fontSize: 16,
+    fontWeight: '600',
+    marginTop: 16,
+    marginBottom: 20,
+    textAlign: 'center',
+  },
+  downloadStatusText1: {
+    color: '#000',
+    fontSize: 12,
+    fontWeight: '500',
+    marginTop: 16,
+    marginBottom: 20,
+    textAlign: 'center',
+  },
+  progressBarContainer: {
+    width: '100%',
+    height: 6,
+    backgroundColor: '#f0f0f0',
+    borderRadius: 3,
+    overflow: 'hidden',
+  },
+  progressBar: {
+    height: '100%',
+    backgroundColor: '#FF7043',
+  },
+  sliderContainer: {
+    width: '100%',
+    height: 40,
+    justifyContent: 'center',
+    position: 'relative',
+    marginBottom: 10,
+  },
+  sliderTrack: {
+    width: '100%',
+    height: 4,
+    backgroundColor: '#f0f0f0',
+    borderRadius: 2,
+    position: 'absolute',
+  },
+  sliderBall: {
+    position: 'absolute',
+    width: 24,
+    height: 24,
+    justifyContent: 'center',
+    alignItems: 'center',
+    transform: [{ translateX: -12 }],
+  },
+  percentageContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 10,
+  },
+  percentageText: {
+    color: '#FF7043',
+    fontSize: 18,
+    fontWeight: 'bold',
+  },
+});

@@ -21,8 +21,7 @@ import {
 import MapView, {
   AnimatedRegion,
   Marker,
-  Polyline,
-  Region,
+  Polyline
 } from "react-native-maps";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -79,29 +78,6 @@ export default function MapScreen() {
 
   // Animation ref for details section
   const detailsAnimHeight = useRef(new Animated.Value(0)).current;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
   

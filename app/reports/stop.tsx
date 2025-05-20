@@ -8,8 +8,11 @@ import { ActivityIndicator, Animated, ScrollView, StatusBar, StyleSheet, Text, T
 import DateTimePickerModal from "react-native-modal-datetime-picker";
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Row, Rows, Table, TableWrapper } from 'react-native-table-component';
+import { useDispatch, useSelector } from 'react-redux';
 import * as XLSX from 'xlsx';
 import SearchableDropdown from '../components/SearchableDropdown';
+import { setLoading } from '../store/slices/deviceSlice';
+import { RootState } from '../store/store';
 
 interface Device {
   id: string;
@@ -50,30 +53,12 @@ const formatDate = (dateStr: string) => {
   });
 };
 
-const getColumnWidth = (key: string) => {
-  switch (key.toLowerCase()) {
-    case 'vehicle number':
-    case 'address':
-      return 2;
-    case 'arrival time':
-    case 'departure time':
-    case 'odometer':
-    case 'duration':
-    case 'engine hours':
-    case 'spent fuel':
-    case 'ac hours':
-      return 1.5;
-    default:
-      return 1;
-  }
-};
+
 
 export default function StopReportScreen() {
   const router = useRouter();
   const { id } = useLocalSearchParams();
-  const [loading, setLoading] = useState(false);
   const [reportData, setReportData] = useState<ReportData[]>([]);
-  const [devices, setDevices] = useState<Device[]>([]);
   const [groups, setGroups] = useState<Group[]>([]);
   const [isLoadingVehicles, setIsLoadingVehicles] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
@@ -104,20 +89,20 @@ export default function StopReportScreen() {
   const [generatingProgress] = useState(new Animated.Value(0));
   const [targetProgress, setTargetProgress] = useState(0);
   const [generatingStatus, setGeneratingStatus] = useState('');
+  const dispatch = useDispatch();
+  const { devices: devicesData, loading } = useSelector((state: RootState) => state.devices);
 
   useEffect(() => {
-    fetchDevices();
     fetchGroups();
   }, []);
 
   useEffect(() => {
-    // Transform devices data for dropdown
-    const deviceDropdownItems = devices.map(device => ({
+    const deviceDropdownItems = devicesData.map((device: Device) => ({
       label: device.name,
       value: device.id
     }));
     setDeviceItems(deviceDropdownItems);
-  }, [devices]);
+  }, [devicesData]);
 
   useEffect(() => {
     // Transform groups data for dropdown
@@ -128,17 +113,6 @@ export default function StopReportScreen() {
     setGroupItems(groupDropdownItems);
   }, [groups]);
 
-  const fetchDevices = async () => {
-    try {
-      setIsLoadingVehicles(true);
-      const response = await Api.call('/api/devices', 'GET', {}, false);   
-      setDevices(response.data || []);
-    } catch (error) {
-      console.error('Error fetching devices:', error);
-    } finally {
-      setIsLoadingVehicles(false);
-    }
-  };
 
   const fetchGroups = async () => {
     try {
@@ -163,7 +137,7 @@ export default function StopReportScreen() {
       return;
     }
 
-    setLoading(true);
+    dispatch(setLoading(true));
     setGeneratingStatus('Initializing report generation...');
     animateGeneratingProgress(20);
 
@@ -200,7 +174,7 @@ export default function StopReportScreen() {
     } finally {
       setReportFetched(true);
       setTimeout(() => {
-        setLoading(false);
+        dispatch(setLoading(false));
         generatingProgress.setValue(0);
         setTargetProgress(0);
       }, 1000);
@@ -221,7 +195,7 @@ export default function StopReportScreen() {
       try {
         const worksheet = XLSX.utils.json_to_sheet(
           reportData.map((entry) => ({
-            "Vehicle Number": devices.find((device) => device.id === entry?.deviceId)?.name || "",
+            "Vehicle Number": devicesData.find((device) => device.id === entry?.deviceId)?.name || "",
             "Arrival Time": formatDate(entry.startTime),
             "Departure Time": formatDate(entry.endTime),
             "Odometer (KM)": (Number(entry.endOdometer) / 1000).toFixed(2),
@@ -512,7 +486,7 @@ export default function StopReportScreen() {
                   <TableWrapper style={styles.tableWrapperDark}>
                     <Rows
                       data={currentRecords.map(entry => [
-                        String(devices.find((device) => device.id === entry?.deviceId)?.name || ""),
+                        String(devicesData.find((device) => device.id === entry?.deviceId)?.name || ""),
                         String(formatDate(entry?.startTime)),
                         String(formatDate(entry?.endTime)),
                         String((Number(entry?.endOdometer) / 1000).toFixed(2) + " KM"),

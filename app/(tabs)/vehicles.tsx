@@ -1,9 +1,7 @@
-import Api from "@/config/Api";
 import { Ionicons, MaterialIcons } from "@expo/vector-icons";
-import { useIsFocused } from "@react-navigation/native";
 import { useRouter } from "expo-router";
 import moment from "moment";
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useMemo, useState } from "react";
 import {
   FlatList,
   Image,
@@ -15,6 +13,8 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useSelector } from "react-redux";
+import { RootState } from "../store/store";
 
 const statusFilters = [
   { label: "All", color: "black", icon: "apps" },
@@ -37,50 +37,12 @@ const carImages = {
 
 export default function VehiclesScreen() {
   const router = useRouter();
-  const [devicesData, setDevicesData] = useState([]);
+  const { devices: devicesData, loading } = useSelector((state: RootState) => state.devices);
+
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedFilter, setSelectedFilter] = useState("All");
-  const [loading, setLoading] = useState(true);
-  const isFocused = useIsFocused();
 
-  useEffect(() => {
-    let interval: ReturnType<typeof setInterval>;
 
-    if (isFocused) {
-      getDevices();
-      interval = setInterval(() => {
-        getDevices();
-      }, 10000);
-    }
-
-    return () => {
-      if (interval) {
-        clearInterval(interval);
-      }
-    };
-  }, [isFocused]);
-
-  const getDevices = async () => {
-    if (!isFocused) return;
-    setLoading(true);
-    try {
-      const [responseDevices, responsePositions] = await Promise.all([
-        Api.call("/api/devices", "GET", {}, false),
-        Api.call("/api/positions", "GET", {}, false),
-      ]);
-      setDevicesData(
-        responseDevices.data.map((device: any) => ({
-          ...device,
-          ...responsePositions.data.find(
-            (position: any) => position.deviceId === device.id
-          ),
-        }))
-      );
-    } catch (error) {
-      console.error("Error fetching data:", error);
-    }
-    setLoading(false);
-  };
 
   const getDeviceStatus = (device: any) => {
     if (!device?.lastUpdate) {

@@ -3,23 +3,25 @@ import { MaterialIcons } from '@expo/vector-icons';
 import * as FileSystem from 'expo-file-system';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import * as Sharing from 'expo-sharing';
-import React, { useEffect, useState, useRef } from 'react';
-import { 
-  ActivityIndicator, 
-  Animated, 
-  Alert, 
-  ScrollView, 
-  StatusBar, 
-  StyleSheet, 
-  Text, 
-  TouchableOpacity, 
-  View 
+import React, { useEffect, useRef, useState } from 'react';
+import {
+  ActivityIndicator,
+  Animated,
+  ScrollView,
+  StatusBar,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View
 } from 'react-native';
 import DateTimePickerModal from "react-native-modal-datetime-picker";
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Row, Rows, Table, TableWrapper } from 'react-native-table-component';
+import { useDispatch, useSelector } from 'react-redux';
 import * as XLSX from 'xlsx';
 import SearchableDropdown from '../components/SearchableDropdown';
+import { setLoading } from '../store/slices/deviceSlice';
+import { RootState } from '../store/store';
 
 interface Device {
   id: string;
@@ -49,20 +51,6 @@ interface DropdownItem {
   value: string;
 }
 
-const getColumnWidth = (key: string) => {
-  switch (key.toLowerCase()) {
-    case 'vehicle number':
-    case 'address':
-      return 2;
-    case 'date & time':
-    case 'distance':
-    case 'speed':
-    case 'odometer':
-      return 1.5;
-    default:
-      return 1;
-  }
-};
 
 const formatDate = (dateStr: string) => {
   const date = new Date(dateStr);
@@ -78,13 +66,12 @@ const formatDate = (dateStr: string) => {
 export default function RouteReportScreen() {
   const router = useRouter();
   const { id } = useLocalSearchParams();
-  const [loading, setLoading] = useState(false);
   const [reportData, setReportData] = useState<ReportData[]>([]);
-  const [devices, setDevices] = useState<Device[]>([]);
   const [groups, setGroups] = useState<Group[]>([]);
   const [isLoadingVehicles, setIsLoadingVehicles] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
-  
+  const dispatch = useDispatch();
+  const { devices: devicesData, loading } = useSelector((state: RootState) => state.devices);
   // Device dropdown states
   const [deviceValue, setDeviceValue] = useState<string | null>(null);
   const [deviceItems, setDeviceItems] = useState<DropdownItem[]>([]);
@@ -112,18 +99,17 @@ export default function RouteReportScreen() {
   const loadingAnimation = useRef(new Animated.Value(45)).current;
 
   useEffect(() => {
-    fetchDevices();
     fetchGroups();
   }, []);
 
   useEffect(() => {
     // Transform devices data for dropdown
-    const deviceDropdownItems = devices.map(device => ({
+    const deviceDropdownItems = devicesData.map((device: Device) => ({
       label: device.name,
       value: device.id
     }));
     setDeviceItems(deviceDropdownItems);
-  }, [devices]);
+  }, [devicesData]);
 
   useEffect(() => {
     // Transform groups data for dropdown
@@ -153,17 +139,7 @@ export default function RouteReportScreen() {
     }
   }, [targetProgress, generatingProgress]);
 
-  const fetchDevices = async () => {
-    try {
-      setIsLoadingVehicles(true);
-      const response = await Api.call('/api/devices', 'GET', {}, false);   
-      setDevices(response.data || []);
-    } catch (error) {
-      console.error('Error fetching devices:', error);
-    } finally {
-      setIsLoadingVehicles(false);
-    }
-  };
+
 
   const fetchGroups = async () => {
     try {
@@ -202,7 +178,7 @@ export default function RouteReportScreen() {
       alert("Please select a device.");
       return;
     }
-    setLoading(true);
+    dispatch(setLoading(true));
     setGeneratingStatus('Initializing report generation...');
     animateGeneratingProgress(20);
 
@@ -242,7 +218,7 @@ export default function RouteReportScreen() {
     } finally {
       setReportFetched(true);
       setTimeout(() => {
-        setLoading(false);
+        dispatch(setLoading(false));
         generatingProgress.setValue(0);
         setTargetProgress(0);
       }, 1000);
@@ -281,14 +257,6 @@ export default function RouteReportScreen() {
         </View>
       </View>
     );
-  };
-
-  const animateProgress = (toValue: number, duration = 500) => {
-    Animated.timing(downloadProgress, {
-      toValue,
-      duration,
-      useNativeDriver: false
-    }).start();
   };
 
   const exportToExcel = async () => {

@@ -1,6 +1,6 @@
 import Api from "@/config/Api";
 import { MaterialIcons } from "@expo/vector-icons";
-import React, { useEffect, useState } from "react";
+import React, { useEffect } from "react";
 import {
   Dimensions,
   ScrollView,
@@ -10,15 +10,16 @@ import {
   View
 } from "react-native";
 import { PieChart } from "react-native-chart-kit";
-import { Card, useTheme } from "react-native-paper";
+import { Card } from "react-native-paper";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useSelector } from "react-redux";
+import { RootState } from "../store/store";
 const screenWidth = Dimensions.get("window").width;
 
 export default function DashboardScreen() {
-  const theme = useTheme();
-  const [devicesData, setDevicesData] = useState<any[]>([]);
-  const [groupsData, setGroupsData] = useState([]);
-  const [vehicleStats, setVehicleStats] = useState([
+  const { devices: devicesData, loading } = useSelector((state: RootState) => state.devices);
+  const [groupsData, setGroupsData] = React.useState([]);
+  const [vehicleStats, setVehicleStats] = React.useState([
     { label: "All", count: 0, color: "black" },
     { label: "Running", count: 0, color: "#43A047" },
     { label: "Idle", count: 0, color: "orange" },
@@ -26,10 +27,8 @@ export default function DashboardScreen() {
     { label: "Inactive", count: 0, color: "#00a8d5" },
     { label: "No Data", count: 0, color: "gray" },
   ]);
-  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    getDevicesCount();
     getGroupsCount();
   }, []);
 
@@ -76,22 +75,6 @@ export default function DashboardScreen() {
     setVehicleStats(stats);
   };
 
-  const getDevicesCount = async () => {
-    setLoading(true);
-    const [responseDevices, responsePositions] = await Promise.all([
-      Api.call("/api/devices", "GET", {}, false),
-      Api.call("/api/positions", "GET", {}, false),
-    ]);
-    setDevicesData(
-      responseDevices.data.map((device: any) => ({
-        ...device,
-        ...responsePositions.data.find(
-          (position: any) => position.deviceId === device.id
-        ),
-      }))
-    );
-    setLoading(false);
-  };
 
   const getGroupsCount = async () => {
     const response = await Api.call("/api/groups", "GET", {}, false);

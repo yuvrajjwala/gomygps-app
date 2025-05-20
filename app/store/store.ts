@@ -3,15 +3,16 @@ import { combineReducers, configureStore } from '@reduxjs/toolkit';
 import { persistReducer, persistStore } from 'redux-persist';
 
 import authReducer from './slices/authSlice';
+import deviceReducer from './slices/deviceSlice';
 
 const persistConfig = {
   key: 'root',
   storage: AsyncStorage,
-  whitelist: ['auth'],
 };
 
 const rootReducer = combineReducers({
   auth: authReducer,
+  devices: deviceReducer,
 });
 
 const persistedReducer = persistReducer(persistConfig, rootReducer);
@@ -20,9 +21,7 @@ export const store = configureStore({
   reducer: persistedReducer,
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
-      serializableCheck: {
-        ignoredActions: ['persist/PERSIST', 'persist/REHYDRATE'],
-      },
+      serializableCheck: false,
     }),
 });
 

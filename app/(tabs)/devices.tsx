@@ -1,7 +1,6 @@
 import UsersModal from "@/app/components/UsersModal";
 import Api from "@/config/Api";
 import { MaterialIcons } from "@expo/vector-icons";
-import { useIsFocused } from "@react-navigation/native";
 import { useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
@@ -20,7 +19,10 @@ import {
 import DropDownPicker from "react-native-dropdown-picker";
 import DateTimePickerModal from "react-native-modal-datetime-picker";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useDispatch, useSelector } from "react-redux";
 import { z } from "zod";
+import { setDevices, setLoading } from "../store/slices/deviceSlice";
+import { RootState } from "../store/store";
 
 const CATEGORY_OPTIONS = [
   "Default",
@@ -65,28 +67,7 @@ const schema = z.object({
     .optional(),
 });
 
-interface Device {
-  id: number;
-  name: string;
-  uniqueId: string;
-  status: string;
-  disabled: boolean;
-  lastUpdate: string | null;
-  positionId: number | null;
-  deviceId: number | null;
-  groupId: number | null;
-  phone: string | null;
-  model: string | null;
-  contact: string | null;
-  category: string | null;
-  attributes: any;
-  latitude?: number;
-  longitude?: number;
-  speed?: number;
-  address?: string;
-  expirationTime?: string;
-  imei?: string;
-}
+
 
 interface DropdownItem {
   label: string;
@@ -101,7 +82,8 @@ interface Group {
 }
 
 export default function DevicesScreen() {
-  const [devices, setDevices] = useState<Device[]>([]);
+  const dispatch = useDispatch();
+  const { devices: devicesData, loading } = useSelector((state: RootState) => state.devices);
   const [modalVisible, setModalVisible] = useState(false);
   const [editMode, setEditMode] = useState(false);
   const [editId, setEditId] = useState<number | null>(null);
@@ -125,7 +107,6 @@ export default function DevicesScreen() {
   });
   const [search, setSearch] = useState("");
   const router = useRouter();
-  const isFocused = useIsFocused();
 
   // Add new state for dropdowns with proper typing
   const [modelOpen, setModelOpen] = useState(false);
@@ -157,25 +138,20 @@ export default function DevicesScreen() {
   const [groupItems, setGroupItems] = useState<DropdownItem[]>([]);
   const [groupSearch, setGroupSearch] = useState("");
 
-  const [loading, setLoading] = useState(true);
 
-  const filteredDevices = devices.filter(
+  const filteredDevices = devicesData.filter(
     (d) =>
       d.name.toLowerCase().includes(search.toLowerCase()) ||
       d.uniqueId.toLowerCase().includes(search.toLowerCase()) ||
       (d.phone && d.phone.toLowerCase().includes(search.toLowerCase()))
   );
 
-  useEffect(() => {
-    getDevices();
-  }, []);
 
   useEffect(() => {
     fetchGroups();
   }, []);
 
   useEffect(() => {
-    // Transform groups data for dropdown
     const groupDropdownItems = groups.map((group) => ({
       label: group.name,
       value: group.id.toString(),
@@ -187,25 +163,27 @@ export default function DevicesScreen() {
   }, [groups]);
 
   const getDevices = async () => {
-    if (!isFocused) return;
-    setLoading(true);
     try {
       const [responseDevices, responsePositions] = await Promise.all([
         Api.call("/api/devices", "GET", {}, false),
         Api.call("/api/positions", "GET", {}, false),
       ]);
-      setDevices(
-        responseDevices.data.map((device: Device) => ({
+      
+      if (responseDevices.status === 200 && responsePositions.status === 200) {
+        const devicesWithPositions = responseDevices.data.map((device: any) => ({
           ...device,
           ...responsePositions.data.find(
             (position: any) => position.deviceId === device.id
           ),
-        }))
-      );
+        }));
+        
+        dispatch(setDevices(devicesWithPositions));
+      } 
     } catch (error) {
-      console.error("Error fetching data:", error);
+      console.error("Error fetching devices:", error);
+    } finally {
+      dispatch(setLoading(false));
     }
-    setLoading(false);
   };
 
   const fetchGroups = async () => {
@@ -307,7 +285,7 @@ export default function DevicesScreen() {
     setModalVisible(true);
   };
 
-  const openEditModal = (device: Device) => {
+  const openEditModal = (device: any) => {
     setEditMode(true);
     setEditId(device.id);
     console.log("device", device);
@@ -456,7 +434,7 @@ export default function DevicesScreen() {
           onChangeText={setSearch}
         />
       </View>
-      {loading && devices.length === 0 ? (
+      {loading && devicesData.length === 0 ? (
         <View style={{ paddingTop: 12, paddingBottom: 80 }}>
           {[...Array(6)].map((_, i) => (
             <SkeletonDeviceCard key={i} />

@@ -11,13 +11,13 @@ import React, {
 } from "react";
 import {
   ActivityIndicator,
+  Alert,
   Dimensions,
   Image,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
-  Alert,
 } from "react-native";
 import MapView, { Marker, Polyline } from "react-native-maps";
 import DateTimePickerModal from "react-native-modal-datetime-picker";

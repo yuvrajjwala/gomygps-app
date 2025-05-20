@@ -17,8 +17,11 @@ import {
 import DateTimePickerModal from "react-native-modal-datetime-picker";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Row, Rows, Table, TableWrapper } from 'react-native-table-component';
+import { useDispatch, useSelector } from 'react-redux';
 import * as XLSX from "xlsx";
 import SearchableDropdown from "../components/SearchableDropdown";
+import { setLoading } from '../store/slices/deviceSlice';
+import { RootState } from '../store/store';
 
 interface Device {
   id: string;
@@ -64,39 +67,16 @@ const formatDate = (dateStr: string) => {
   });
 };
 
-const getColumnWidth = (key: string) => {
-  switch (key.toLowerCase()) {
-    case "vehicle number":
-    case "start address":
-    case "end address":
-    case "mileage fuel":
-      return 2;
-    case "start time":
-    case "end time":
-    case "odometer start":
-    case "odometer end":
-    case "distance":
-    case "duration":
-    case "average speed":
-    case "maximum speed":
-    case "ac hours":
-    case "spent fuel":
-      return 1.5;
-    default:
-      return 1;
-  }
-};
 
 export default function TipsReportScreen() {
   const router = useRouter();
   const { id } = useLocalSearchParams();
-  const [loading, setLoading] = useState(false);
   const [reportData, setReportData] = useState<ReportData[]>([]);
-  const [devices, setDevices] = useState<Device[]>([]);
   const [groups, setGroups] = useState<Group[]>([]);
   const [isLoadingVehicles, setIsLoadingVehicles] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
-
+  const dispatch = useDispatch();
+  const { devices: devicesData, loading } = useSelector((state: RootState) => state.devices);
   // Device dropdown states
   const [deviceValue, setDeviceValue] = useState<string | null>(null);
   const [deviceItems, setDeviceItems] = useState<DropdownItem[]>([]);
@@ -124,18 +104,17 @@ export default function TipsReportScreen() {
   const [reportFetched, setReportFetched] = useState(false);
 
   useEffect(() => {
-    fetchDevices();
     fetchGroups();
   }, []);
 
   useEffect(() => {
     // Transform devices data for dropdown
-    const deviceDropdownItems = devices.map((device) => ({
+    const deviceDropdownItems = devicesData.map((device: Device) => ({
       label: device.name,
       value: device.id,
     }));
     setDeviceItems(deviceDropdownItems);
-  }, [devices]);
+  }, [devicesData]);
 
   useEffect(() => {
     // Transform groups data for dropdown
@@ -146,17 +125,7 @@ export default function TipsReportScreen() {
     setGroupItems(groupDropdownItems);
   }, [groups]);
 
-  const fetchDevices = async () => {
-    try {
-      setIsLoadingVehicles(true);
-      const response = await Api.call('/api/devices', 'GET', {}, false);   
-      setDevices(response.data || []);
-    } catch (error) {
-      console.error('Error fetching devices:', error);
-    } finally {
-      setIsLoadingVehicles(false);
-    }
-  };
+  
 
   const fetchGroups = async () => {
     try {
@@ -181,7 +150,7 @@ export default function TipsReportScreen() {
       return;
     }
 
-    setLoading(true);
+    dispatch(setLoading(true));
     setGeneratingStatus('Initializing report generation...');
     animateGeneratingProgress(20);
 
@@ -232,7 +201,7 @@ export default function TipsReportScreen() {
     } finally {
       setReportFetched(true);
       setTimeout(() => {
-        setLoading(false);
+        dispatch(setLoading(false));
         generatingProgress.setValue(0);
         setTargetProgress(0);
       }, 1000);
@@ -254,7 +223,7 @@ export default function TipsReportScreen() {
         const worksheet = XLSX.utils.json_to_sheet(
           reportData.map((trip) => ({
             "Vehicle Number":
-              devices.find((device) => device.id === trip?.deviceId)?.name || "",
+              devicesData.find((device) => device.id === trip?.deviceId)?.name || "",
             "Start Time": formatDate(trip.startTime),
             "End Time": formatDate(trip.endTime),
             "Odometer Start": trip.startOdometer || "0",
@@ -572,7 +541,7 @@ export default function TipsReportScreen() {
                   <TableWrapper style={styles.tableWrapperDark}>
                     <Rows
                       data={currentRecords.map(trip => [
-                        String(devices.find(device => device.id === trip?.deviceId)?.name || ''),
+                        String(devicesData.find(device => device.id === trip?.deviceId)?.name || ''),
                         formatDate(trip.startTime),
                         formatDate(trip.endTime),
                         String(trip.startOdometer || '0'),

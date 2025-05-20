@@ -13,7 +13,6 @@ export default function TabLayout() {
     (state: any) => state.auth.isAuthenticated
   );
   const devices = useSelector((state: any) => state.devices.devices);
-  console.log("isAuthenticated", isAuthenticated);
 
   if (!isAuthenticated) {
     return router.replace("/login");
@@ -21,14 +20,13 @@ export default function TabLayout() {
 
   useEffect(() => {
     if (isAuthenticated) {
-      startPositionUpdates(devices);
+      if(devices.length === 0){
+        startPositionUpdates(true);
+      }
     } else {
       stopPositionUpdates();
     }
-    return () => {
-      stopPositionUpdates();
-    };
-  }, [isAuthenticated, devices]);
+  }, [isAuthenticated]);
   return (
     <Tabs
       screenOptions={{

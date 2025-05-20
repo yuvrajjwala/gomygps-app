@@ -3,15 +3,17 @@ import { setDevices, setLoading } from '../store/slices/deviceSlice';
 import { store } from '../store/store';
 
 let positionUpdateInterval: ReturnType<typeof setInterval> | null = null;
+let isAuthenticated = false;
 
-export const startPositionUpdates = (devices: any[]) => {
+export const startPositionUpdates = (isAuthenticated: boolean) => {
   if (positionUpdateInterval) {
     clearInterval(positionUpdateInterval);
   }
+  isAuthenticated = isAuthenticated;
 
   const updatePositions = async () => {
     try {
-        if(devices.length === 0){
+        if(isAuthenticated){
             store.dispatch(setLoading(true));
         }
       const [responseDevices, responsePositions] = await Promise.all([
@@ -32,13 +34,14 @@ export const startPositionUpdates = (devices: any[]) => {
       console.error("Error updating positions:", error);
     }
     finally{
+      isAuthenticated = false;
         store.dispatch(setLoading(false));
     }
   };
 
   // Initial update
   updatePositions();
-    positionUpdateInterval = setInterval(updatePositions, 200000);
+    positionUpdateInterval = setInterval(updatePositions, 20000);
 };
 
 export const stopPositionUpdates = () => {

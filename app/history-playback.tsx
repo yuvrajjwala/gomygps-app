@@ -1228,14 +1228,13 @@ export default function HistoryPlaybackScreen() {
                   </Text>
                 </View>
                 
-                {stopLocations.length > 0 && (
-                  <View style={styles.timeInfoContainer}>
-                    <Text style={styles.timeInfoText}>
-                      <Text style={styles.timeInfoLabel}>Time: </Text>
-                  {moment(stopLocations[0].startTime).format('hh:mm A   ')} - {moment(stopLocations[stopLocations.length - 1].endTime).format('hh:mm A')}
-                    </Text>
-                  </View>
-                )}
+                <View style={styles.timeInfoContainer}>
+                  <Text style={styles.timeInfoText}>
+                    <Text style={styles.timeInfoLabel}>Time: </Text>
+                    {moment(startDate).format("hh:mm A")} -{" "}
+                    {moment(endDate).format("hh:mm A")}
+                  </Text>
+                </View>
               </>
             )}
           </View>

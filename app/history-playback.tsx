@@ -277,15 +277,16 @@ const styles = StyleSheet.create({
     right: -8,
     backgroundColor: "#000",
     borderRadius: width * 0.04,
-    minWidth: width * 0.06,
-    height: width * 0.06,
+    minWidth: width * 0.08,
+    height: width * 0.08,
     alignItems: "center",
     justifyContent: "center",
-    paddingHorizontal: width * 0.01,
+    paddingHorizontal: width * 0.02,
+    paddingVertical: width * 0.01,
   },
   stopCountText: {
     color: "#fff",
-    fontSize: width * 0.03,
+    fontSize: width * 0.035,
     fontWeight: "bold",
   },
   stopTimeBadge: {
@@ -583,6 +584,29 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#ffffff',
   },
+  stopCountBadgeSelected: {
+    backgroundColor: '#43A047',
+  },
+  stopCountTextSelected: {
+    color: '#fff',
+  },
+  floatingToggleButton: {
+    position: 'absolute',
+   top: height * 0.06,
+    right: width * 0.05,
+    backgroundColor: '#FF7043',
+    width: width * 0.12,
+    height: width * 0.12,
+    borderRadius: width * 0.06,
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
+    zIndex: 1000,
+  },
 });
 
 // Add this function to find start and stop indices
@@ -643,6 +667,8 @@ export default function HistoryPlaybackScreen() {
   const [initialStartDate, setInitialStartDate] = useState<Date | null>(null);
   const [initialEndDate, setInitialEndDate] = useState<Date | null>(null);
   const [mapRegion, setMapRegion] = useState<any>(null);
+  const [showStops, setShowStops] = useState(false);
+  const [currentZoom, setCurrentZoom] = useState(0);
 
   // Fetch device details
   useEffect(() => {
@@ -792,40 +818,43 @@ export default function HistoryPlaybackScreen() {
       }));
   }, [routeData]);
 
-  // Modify markers with lower z-index and prevent updates
-  const markers = useMemo(
-    () =>
-      routeData
-        .filter((_, idx) => idx % MARKER_RENDER_INTERVAL === 0)
-        .map((point, idx) => (
-          <Marker
-            key={idx}
-            coordinate={{
-              latitude: point.latitude,
-              longitude: point.longitude,
-            }}
-            anchor={{ x: 0.23, y: 0.5 }}
-            style={{ zIndex: 1 }}
-            tracksViewChanges={false}
-            zIndex={1}
-          >
-            <MaterialIcons
-              name="keyboard-arrow-up"
-              size={22}
-              color="orange"
-              style={{ transform: [{ rotate: `${point.course || 0}deg` }] }}
-            />
-          </Marker>
-        )),
-    [routeData]
-  );
+  // Modify markers with zoom level check
+  // const markers = useMemo(
+  //   () =>
+  //     routeData
+  //       .filter((_, idx) => idx % MARKER_RENDER_INTERVAL === 0)
+  //       .map((point, idx) => (
+  //         currentZoom > 0.005 ? [] : (
+  //           <Marker
+  //             key={idx}
+  //             coordinate={{
+  //               latitude: point.latitude,
+  //               longitude: point.longitude,
+  //             }}
+  //             anchor={{ x: 0, y: 0 }}
+  //             zIndex={1}
+  //           >
+  //             <View style={{ backgroundColor: 'transparent' }}>
+  //               {currentZoom < 0.005 && (
+  //                 <MaterialIcons
+  //                   name="keyboard-arrow-up"
+  //                   size={22}
+  //                   color="orange"
+  //                   style={{ transform: [{ rotate: `${point.course || 0}deg` }] }}
+  //                 />
+  //               )}
+  //             </View>
+  //           </Marker>
+  //         )
+  //       )),
+  //   [routeData, currentZoom]
+  // );
 
   // Modify stop markers to maintain highest z-index
   const stopMarkers = useMemo(
     () =>
       stopLocations.map((stop, idx) => {
         const isFirstOrLast = idx === 0 || idx === stopLocations.length - 1;
-        const isSelected = selectedStop === idx;
 
         return (
           <Marker
@@ -834,34 +863,30 @@ export default function HistoryPlaybackScreen() {
               latitude: stop.latitude,
               longitude: stop.longitude,
             }}
-            onPress={() => setSelectedStop(isSelected ? null : idx)}
-            anchor={{ x: 2.8, y: 1.5 }}
-            style={{ zIndex: 3 }}
-            tracksViewChanges={false}
+            anchor={{ x: 0.5, y: 0.5 }}
             zIndex={3}
+            onPress={() => setSelectedStop(idx)}
           >
-            <View style={[
-              styles.stopMarkerContainer,
-              { zIndex: 3 }
-            ]}>
-              {isFirstOrLast ? (
-                <MaterialIcons
-                  name="flag"
-                  size={30}
-                  color={idx === 0 ? "green" : "red"}
-                />
-              ) : (
-                <View style={[
-                  styles.stopMarker,
-                  isSelected && styles.stopMarkerSelected,
-                  { zIndex: 3 }
-                ]}>
-                  <Text style={[
-                    styles.stopMarkerText,
-                    isSelected && styles.stopMarkerTextSelected
-                  ]}>{idx}</Text>
-                </View>
-              )}
+            <View style={{ backgroundColor: 'transparent' }}>
+              <MaterialIcons
+                name="flag"
+                size={24}
+                color={idx === 0 ? "green" : "red"}
+                style={{ opacity: isFirstOrLast ? 1 : 0 }}
+              />
+              <TouchableOpacity
+                style={[
+                  styles.stopCountBadge,
+                  { opacity: !isFirstOrLast ? 1 : 0 },
+                  selectedStop === idx && styles.stopCountBadgeSelected
+                ]}
+                onPress={() => setSelectedStop(idx)}
+              >
+                <Text style={[
+                  styles.stopCountText,
+                  selectedStop === idx && styles.stopCountTextSelected
+                ]}>{idx}</Text>
+              </TouchableOpacity>
             </View>
           </Marker>
         );
@@ -1057,102 +1082,79 @@ export default function HistoryPlaybackScreen() {
             <ActivityIndicator size="large" color="#FF7043" />
           </View>
         ) : (
-          <MapView
-            ref={mapRef}
-            style={StyleSheet.absoluteFillObject}
-            initialRegion={{
-              latitude: routeData[0]?.latitude || 0,
-              longitude: routeData[0]?.longitude || 0,
-              latitudeDelta: userZoom,
-              longitudeDelta: userZoom,
-            }}
-            zoomEnabled={true}
-            zoomControlEnabled={true}
-            onRegionChangeComplete={(region) => {
-              // Only update if user has manually changed the region
-              if (!isPlaying) {
-                setUserZoom(region.latitudeDelta);
-                setMapRegion(region);
-              }
-            }}
-            moveOnMarkerPress={false}
-            followsUserLocation={false}
-            showsUserLocation={false}
-            rotateEnabled={true}
-            pitchEnabled={true}
-          >
-            <Polyline
-              coordinates={routeCoordinates}
-              strokeColor="#2979FF"
-              strokeWidth={2}
-              zIndex={1}
-            />
-            {markers}
-            {currentPosition && (
-              <Marker
-                coordinate={{
-                  latitude: currentPosition.latitude,
-                  longitude: currentPosition.longitude,
-                }}
-                anchor={{ x: 0.5, y: 0.5 }}
-                style={{ zIndex: 2 }}
-                tracksViewChanges={false}
-                zIndex={2}
-              >
-
-                <Image
-                  source={currentPosition.speed === 0 ? currentPosition.attributes.ignition? carIdleIcon : carStoppedIcon : carIcon}
-                  style={[
-                    { width: 30, height: 30, resizeMode: "contain" },
-                    {
-                      transform: [
-                        { rotate: `${currentPosition.course || 0}deg` },
-                      ],
-                    },
-                  ]}
-                />
-              </Marker>
-            )}
-            {stopMarkers}
-          </MapView>
-        )}
-        {/* Overlay: Speed Selector Bar */}
-        {/* <View style={styles.overlaySpeedSelectorBar}>
-          <View style={styles.speedSelectorBar}>
-            <TouchableOpacity
-              onPress={() => setIsPlaying((p) => !p)}
-              style={styles.speedSelectorPlayBtn}
+          <>
+            <MapView
+              ref={mapRef}
+              style={StyleSheet.absoluteFillObject}
+              initialRegion={{
+                latitude: routeData[0]?.latitude || 0,
+                longitude: routeData[0]?.longitude || 0,
+                latitudeDelta: userZoom,
+                longitudeDelta: userZoom,
+              }}
+              zoomEnabled={true}
+              zoomControlEnabled={true}
+              onRegionChangeComplete={(region) => {
+                // Only update if user has manually changed the region
+                if (!isPlaying) {
+                  setUserZoom(region.latitudeDelta);
+                  setMapRegion(region);
+                  setCurrentZoom(region.latitudeDelta);
+                }
+              }}
+              moveOnMarkerPress={false}
+              followsUserLocation={false}
+              showsUserLocation={false}
+              rotateEnabled={true}
+              pitchEnabled={true}
             >
-              <MaterialIcons
-                name={isPlaying ? "pause" : "play-arrow"}
-                size={26}
-                color="#FF7043"
+              <Polyline
+                coordinates={routeCoordinates}
+                strokeColor="#2979FF"
+                strokeWidth={2}
+                zIndex={1}
+              />
+              {/* {markers} */}
+              {currentPosition && (
+                <Marker
+                  coordinate={{
+                    latitude: currentPosition.latitude,
+                    longitude: currentPosition.longitude,
+                  }}
+                  anchor={{ x: 0.5, y: 0.5 }}
+                  zIndex={2}
+                >
+                  <View style={{ backgroundColor: 'transparent' }}>
+                    <Image
+                      source={currentPosition.speed === 0 ? currentPosition.attributes.ignition ? carIdleIcon : carStoppedIcon : carIcon}
+                      style={[
+                        { width: 30, height: 30, resizeMode: "contain" },
+                        {
+                          transform: [
+                            { rotate: `${currentPosition.course || 0}deg` },
+                          ],
+                        },
+                      ]}
+                    />
+                  </View>
+                </Marker>
+              )}
+              {showStops && stopMarkers}
+            </MapView>
+            
+            {/* Floating Toggle Button */}
+            <TouchableOpacity 
+              style={styles.floatingToggleButton}
+              onPress={() => setShowStops(prev => !prev)}
+            >
+              <MaterialIcons 
+                name={showStops ? "visibility-off" : "visibility"} 
+                size={24} 
+                color="#fff" 
               />
             </TouchableOpacity>
-            <Text style={styles.speedSelectorLabel}>Spdddeed:</Text>
-            <View style={styles.speedSelectorRow}>
-              {speeds.map((s) => (
-                <TouchableOpacity
-                  key={s}
-                  style={[
-                    styles.speedBtn,
-                    speed === s && styles.speedBtnActive,
-                  ]}
-                  onPress={() => setSpeed(s)}
-                >
-                  <Text
-                    style={[
-                      styles.speedText,
-                      speed === s && styles.speedTextActive,
-                    ]}
-                  >
-                    {s}x
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-          </View>
-        </View> */}
+          </>
+        )}
         {/* Overlay: Playback Controls */}
         <View style={styles.overlayPlaybackBar}>
           <View style={styles.playbackBar}>

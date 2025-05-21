@@ -42,7 +42,7 @@ export default function ReportsScreen() {
     },
     {
       id: 5,
-      title: 'Tips Report',
+      title: 'Trips Report',
       type: 'tips',
       icon: 'lightbulb',
     },

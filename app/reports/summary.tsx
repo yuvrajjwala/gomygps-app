@@ -175,10 +175,10 @@ export default function SummaryReportScreen() {
       animateGeneratingProgress(70);
 
       const tripsResponse = await Api.call('/api/reports/trips?from=' + fromDateUTC.toISOString().slice(0, 19) + 'Z&to=' + toDateUTC.toISOString().slice(0, 19) + 'Z' + (deviceValue ? '&deviceId=' + deviceValue : ''), 'GET', {}, false);
-
+      console.log('tripsResponse',tripsResponse);
       await new Promise(resolve => setTimeout(resolve, 1000));
       
-      const combinedData = summaryResponse.data.map((summary: any) => {
+      const combinedData = summaryResponse?.data?.map((summary: any) => {
         const trip = tripsResponse.data.find((t: any) => t.deviceId === summary.deviceId);
         return {
           ...summary,

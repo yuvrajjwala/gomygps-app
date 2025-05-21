@@ -2,7 +2,7 @@ import UsersModal from "@/app/components/UsersModal";
 import Api from "@/config/Api";
 import { MaterialIcons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback, useMemo, memo } from "react";
 import {
   FlatList,
   Modal,
@@ -15,6 +15,7 @@ import {
   TextInput,
   TouchableOpacity,
   View,
+  ListRenderItem,
 } from "react-native";
 import DropDownPicker from "react-native-dropdown-picker";
 import DateTimePickerModal from "react-native-modal-datetime-picker";
@@ -67,8 +68,6 @@ const schema = z.object({
     .optional(),
 });
 
-
-
 interface DropdownItem {
   label: string;
   value: string;
@@ -80,6 +79,246 @@ interface Group {
   groupId: number | null;
   children?: Group[];
 }
+
+// Add TypeScript interfaces for better type safety
+interface Device {
+  id: number;
+  name: string;
+  uniqueId: string;
+  status: string;
+  disabled: boolean;
+  phone: string;
+  model: string;
+  contact: string;
+  category: string;
+  lastUpdate: string;
+  expirationTime: string;
+  groupId: string;
+  attributes: {
+    is_mobilized: boolean;
+  };
+}
+
+interface DeviceFormData {
+  name: string;
+  uniqueId: string;
+  status: string;
+  disabled: boolean;
+  phone: string;
+  model: string;
+  contact: string;
+  category: string;
+  lastUpdate: string;
+  expirationTime: string;
+  groupId: string;
+  attributes: {
+    is_mobilized: boolean;
+  };
+}
+
+// Memoized Device Card Component
+const DeviceCard = memo(({ 
+  device, 
+  onPress, 
+  onEdit, 
+  onUsers 
+}: { 
+  device: any; 
+  onPress: () => void;
+  onEdit: () => void;
+  onUsers: () => void;
+}) => (
+  <TouchableOpacity
+    style={styles.deviceCard}
+    onPress={onPress}
+    activeOpacity={0.85}
+  >
+    <View style={styles.deviceRow}>
+      <View style={{ flex: 1 }}>
+        <Text style={styles.deviceNumber}>{device.name}</Text>
+      </View>
+      <Text
+        style={[
+          styles.deviceModel,
+          {
+            backgroundColor:
+              device.status === "online" ? "#43A047" : "#FF7043",
+          },
+        ]}
+      >
+        {device.status}
+      </Text>
+    </View>
+    <View style={styles.deviceDetailsRow}>
+      <Text style={styles.deviceDetail}>
+        Model: {device.model || "-"}
+      </Text>
+    </View>
+    <View style={styles.deviceDetailsRow}>
+      <Text style={styles.deviceDetail}>
+        Category: {device.category || "-"}
+      </Text>
+    </View>
+    <View style={styles.deviceDetailsRow}>
+      <Text style={styles.deviceDetail}>
+        Contact: {device.phone || "-"}
+      </Text>
+    </View>
+    <View style={styles.deviceDetailsRow}>
+      <Text style={styles.deviceDetail}>
+        IMEI: {device.uniqueId || "-"}
+      </Text>
+    </View>
+    <View style={styles.deviceDetailsRow}>
+      <Text style={styles.deviceDetail}>
+        Last Update:{" "}
+        {device.lastUpdate
+          ? new Date(device.lastUpdate).toLocaleString([], {
+              month: "short",
+              day: "numeric",
+              hour: "2-digit",
+              minute: "2-digit",
+            })
+          : "-"}
+      </Text>
+    </View>
+    <View style={styles.deviceDetailsRow}>
+      <Text style={styles.deviceDetail}>
+        Expiration Time:{" "}
+        {device.expirationTime
+          ? new Date(device.expirationTime).toLocaleString([], {
+              month: "short",
+              day: "numeric",
+              hour: "2-digit",
+              minute: "2-digit",
+            })
+          : "-"}
+      </Text>
+    </View>
+    <View style={styles.deviceActionsRow}>
+      <TouchableOpacity
+        style={[
+          styles.deviceActionBtn,
+          { backgroundColor: "#43A047", flex: 1, marginRight: 6 },
+        ]}
+        onPress={onEdit}
+      >
+        <Text style={styles.deviceActionBtnText}>EDIT</Text>
+      </TouchableOpacity>
+      <TouchableOpacity
+        style={[
+          styles.deviceActionBtn,
+          { backgroundColor: "#FF7043", flex: 1, marginLeft: 6 },
+        ]}
+        onPress={onUsers}
+      >
+        <Text style={[styles.deviceActionBtnText, { color: "white" }]}>
+          USERS
+        </Text>
+      </TouchableOpacity>
+    </View>
+  </TouchableOpacity>
+));
+
+// Memoized Skeleton Card Component
+const SkeletonDeviceCard = memo(() => (
+  <View style={[styles.deviceCard, { overflow: 'hidden' }]}> 
+    <View style={styles.deviceRow}>
+      <View style={{ flex: 1 }}>
+        <View style={{ width: '60%', height: 18, backgroundColor: '#e0e0e0', borderRadius: 8, marginBottom: 8 }} />
+      </View>
+      <View style={{ width: 60, height: 22, backgroundColor: '#e0e0e0', borderRadius: 8 }} />
+    </View>
+    <View style={styles.deviceDetailsRow}>
+      <View style={{ width: '40%', height: 14, backgroundColor: '#e0e0e0', borderRadius: 8, marginBottom: 6 }} />
+    </View>
+    <View style={styles.deviceDetailsRow}>
+      <View style={{ width: '40%', height: 14, backgroundColor: '#e0e0e0', borderRadius: 8, marginBottom: 6 }} />
+    </View>
+    <View style={styles.deviceDetailsRow}>
+      <View style={{ width: '40%', height: 14, backgroundColor: '#e0e0e0', borderRadius: 8, marginBottom: 6 }} />
+    </View>
+    <View style={styles.deviceDetailsRow}>
+      <View style={{ width: '40%', height: 14, backgroundColor: '#e0e0e0', borderRadius: 8, marginBottom: 6 }} />
+    </View>
+    <View style={styles.deviceDetailsRow}>
+      <View style={{ width: '60%', height: 14, backgroundColor: '#e0e0e0', borderRadius: 8, marginBottom: 6 }} />
+    </View>
+    <View style={styles.deviceDetailsRow}>
+      <View style={{ width: '60%', height: 14, backgroundColor: '#e0e0e0', borderRadius: 8, marginBottom: 6 }} />
+    </View>
+    <View style={styles.deviceActionsRow}>
+      <View style={{ flex: 1, height: 36, backgroundColor: '#e0e0e0', borderRadius: 8, marginRight: 6 }} />
+      <View style={{ flex: 1, height: 36, backgroundColor: '#e0e0e0', borderRadius: 8, marginLeft: 6 }} />
+    </View>
+  </View>
+));
+
+// Memoized Form Field Component
+const FormField = memo(({ 
+  label, 
+  required, 
+  children 
+}: { 
+  label: string; 
+  required?: boolean; 
+  children: React.ReactNode;
+}) => (
+  <View style={styles.formField}>
+    <Text style={styles.label}>
+      {label} {required && <Text style={styles.required}>*</Text>}
+    </Text>
+    {children}
+  </View>
+));
+
+// Memoized Date Input Component
+const DateInput = memo(({ 
+  value, 
+  onPress, 
+  placeholder 
+}: { 
+  value: string; 
+  onPress: () => void; 
+  placeholder: string;
+}) => (
+  <TouchableOpacity style={styles.dateInputDark} onPress={onPress}>
+    <Text style={styles.dateInputTextDark}>
+      {value || placeholder}
+    </Text>
+    <MaterialIcons
+      name="calendar-today"
+      size={18}
+      color="#666"
+      style={{ marginLeft: 6 }}
+    />
+  </TouchableOpacity>
+));
+
+// Memoized Switch Field Component
+const SwitchField = memo(({ 
+  label, 
+  value, 
+  onValueChange, 
+  subtext 
+}: { 
+  label: string; 
+  value: boolean; 
+  onValueChange: (value: boolean) => void; 
+  subtext?: string;
+}) => (
+  <View style={[styles.formField, styles.switchField]}>
+    <Text style={[styles.label, { marginBottom: 0 }]}>
+      {label} {subtext && <Text style={{ fontSize: 12, color: "#888" }}>({subtext})</Text>}
+    </Text>
+    <Switch
+      value={value}
+      onValueChange={onValueChange}
+      trackColor={{ false: "#767577", true: "#81b0ff" }}
+      thumbColor={value ? "#f5dd4b" : "#f4f3f4"}
+    />
+  </View>
+));
 
 export default function DevicesScreen() {
   const dispatch = useDispatch();
@@ -138,14 +377,56 @@ export default function DevicesScreen() {
   const [groupItems, setGroupItems] = useState<DropdownItem[]>([]);
   const [groupSearch, setGroupSearch] = useState("");
 
+  // Memoized filtered devices
+  const filteredDevices = useMemo(() => {
+    return devicesData.filter(
+      (d) =>
+        d.name.toLowerCase().includes(search.toLowerCase()) ||
+        d.uniqueId.toLowerCase().includes(search.toLowerCase()) ||
+        (d.phone && d.phone.toLowerCase().includes(search.toLowerCase()))
+    );
+  }, [devicesData, search]);
 
-  const filteredDevices = devicesData.filter(
-    (d) =>
-      d.name.toLowerCase().includes(search.toLowerCase()) ||
-      d.uniqueId.toLowerCase().includes(search.toLowerCase()) ||
-      (d.phone && d.phone.toLowerCase().includes(search.toLowerCase()))
-  );
+  // Memoized render item function
+  const renderItem: ListRenderItem<any> = useCallback(({ item }) => (
+    <DeviceCard
+      device={item}
+      onPress={() => router.push({
+        pathname: "/map",
+        params: {
+          ...item,
+          disabled: item.disabled.toString(),
+        },
+      })}
+      onEdit={() => openEditModal(item)}
+      onUsers={() => {
+        setSelectedDeviceId(item.deviceId);
+        setUsersModalVisible(true);
+      }}
+    />
+  ), [router]);
 
+  // Memoized key extractor
+  const keyExtractor = useCallback((item: any) => item.id.toString(), []);
+
+  // Memoized list header component
+  const ListHeaderComponent = useMemo(() => (
+    <View style={styles.searchBarWrap}>
+      <MaterialIcons
+        name="search"
+        size={20}
+        color="#bbb"
+        style={{ marginLeft: 8, marginRight: 4 }}
+      />
+      <TextInput
+        style={styles.searchInput}
+        placeholder="Search device..."
+        placeholderTextColor="#888"
+        value={search}
+        onChangeText={setSearch}
+      />
+    </View>
+  ), [search]);
 
   useEffect(() => {
     fetchGroups();
@@ -378,39 +659,168 @@ export default function DevicesScreen() {
     setExpirationPickerVisible(false);
   };
 
-  // SkeletonDeviceCard component
-  const SkeletonDeviceCard = () => (
-    <View style={[styles.deviceCard, { overflow: 'hidden' }]}> 
-      <View style={styles.deviceRow}>
-        <View style={{ flex: 1 }}>
-          <View style={{ width: '60%', height: 18, backgroundColor: '#e0e0e0', borderRadius: 8, marginBottom: 8 }} />
-        </View>
-        <View style={{ width: 60, height: 22, backgroundColor: '#e0e0e0', borderRadius: 8 }} />
-      </View>
-      <View style={styles.deviceDetailsRow}>
-        <View style={{ width: '40%', height: 14, backgroundColor: '#e0e0e0', borderRadius: 8, marginBottom: 6 }} />
-      </View>
-      <View style={styles.deviceDetailsRow}>
-        <View style={{ width: '40%', height: 14, backgroundColor: '#e0e0e0', borderRadius: 8, marginBottom: 6 }} />
-      </View>
-      <View style={styles.deviceDetailsRow}>
-        <View style={{ width: '40%', height: 14, backgroundColor: '#e0e0e0', borderRadius: 8, marginBottom: 6 }} />
-      </View>
-      <View style={styles.deviceDetailsRow}>
-        <View style={{ width: '40%', height: 14, backgroundColor: '#e0e0e0', borderRadius: 8, marginBottom: 6 }} />
-      </View>
-      <View style={styles.deviceDetailsRow}>
-        <View style={{ width: '60%', height: 14, backgroundColor: '#e0e0e0', borderRadius: 8, marginBottom: 6 }} />
-      </View>
-      <View style={styles.deviceDetailsRow}>
-        <View style={{ width: '60%', height: 14, backgroundColor: '#e0e0e0', borderRadius: 8, marginBottom: 6 }} />
-      </View>
-      <View style={styles.deviceActionsRow}>
-        <View style={{ flex: 1, height: 36, backgroundColor: '#e0e0e0', borderRadius: 8, marginRight: 6 }} />
-        <View style={{ flex: 1, height: 36, backgroundColor: '#e0e0e0', borderRadius: 8, marginLeft: 6 }} />
-      </View>
-    </View>
-  );
+  // Memoized form handlers
+  const handleFormChange = useCallback((field: keyof DeviceFormData, value: any) => {
+    setForm(prev => ({ ...prev, [field]: value }));
+  }, []);
+
+  const handleAttributesChange = useCallback((field: keyof DeviceFormData['attributes'], value: boolean) => {
+    setForm(prev => ({
+      ...prev,
+      attributes: { ...prev.attributes, [field]: value }
+    }));
+  }, []);
+
+  // Memoized modal content
+  const ModalContent = useMemo(() => (
+    <ScrollView showsVerticalScrollIndicator={false}>
+      <FormField label="Vehicle Number" required>
+        <TextInput
+          style={styles.input}
+          placeholder="Enter name"
+          placeholderTextColor="#888"
+          value={form.name}
+          onChangeText={(t) => handleFormChange('name', t.toUpperCase())}
+        />
+      </FormField>
+
+      <FormField label="IMEI / ID" required>
+        <TextInput
+          style={styles.input}
+          placeholder="Enter unique ID"
+          placeholderTextColor="#888"
+          value={form.uniqueId}
+          onChangeText={(t) => handleFormChange('uniqueId', t)}
+        />
+      </FormField>
+
+      <FormField label="Sim Number">
+        <TextInput
+          style={styles.input}
+          placeholder="Enter phone"
+          placeholderTextColor="#888"
+          value={form.phone}
+          onChangeText={(t) => handleFormChange('phone', t)}
+          keyboardType="numeric"
+        />
+      </FormField>
+
+      <FormField label="Model" required>
+        <DropDownPicker
+          open={modelOpen}
+          value={modelValue}
+          items={modelItems}
+          setOpen={setModelOpen}
+          setValue={setModelValue}
+          setItems={setModelItems}
+          style={styles.dropdown}
+          textStyle={styles.dropdownText}
+          placeholder="Select model"
+          placeholderStyle={styles.dropdownPlaceholder}
+          dropDownContainerStyle={styles.dropdownContainer}
+          listItemLabelStyle={styles.dropdownItemText}
+          zIndex={3000}
+          onChangeValue={(value) => value && handleFormChange('model', value)}
+        />
+      </FormField>
+
+      <FormField label="Driver Contact">
+        <TextInput
+          style={styles.input}
+          placeholder="Enter contact"
+          placeholderTextColor="#888"
+          value={form.contact}
+          onChangeText={(t) => handleFormChange('contact', t)}
+        />
+      </FormField>
+
+      <FormField label="Category">
+        <DropDownPicker
+          open={categoryOpen}
+          value={categoryValue}
+          items={categoryItems}
+          setOpen={setCategoryOpen}
+          setValue={setCategoryValue}
+          setItems={setCategoryItems}
+          style={styles.dropdown}
+          textStyle={styles.dropdownText}
+          placeholder="Select category"
+          placeholderStyle={styles.dropdownPlaceholder}
+          dropDownContainerStyle={styles.dropdownContainer}
+          listItemLabelStyle={styles.dropdownItemText}
+          searchPlaceholder="Search categories..."
+          searchContainerStyle={styles.dropdownSearchContainer}
+          searchTextInputStyle={styles.dropdownSearchInput}
+          zIndex={2000}
+          onChangeValue={(value) => value && handleFormChange('category', value)}
+        />
+      </FormField>
+
+      <FormField label="Group">
+        <DropDownPicker
+          open={groupOpen}
+          value={groupValue}
+          items={groupOptions}
+          setOpen={setGroupOpen}
+          setValue={setGroupValue}
+          setItems={setGroupItems}
+          style={styles.dropdown}
+          textStyle={styles.dropdownText}
+          placeholder="Select group"
+          placeholderStyle={styles.dropdownPlaceholder}
+          dropDownContainerStyle={styles.dropdownContainer}
+          listItemLabelStyle={styles.dropdownItemText}
+          zIndex={1000}
+          onChangeValue={(value) => value && handleFormChange('groupId', value)}
+        />
+      </FormField>
+
+      <FormField label="Next Renewal">
+        <DateInput
+          value={form.lastUpdate}
+          onPress={() => setLastUpdatePickerVisible(true)}
+          placeholder="Select date"
+        />
+      </FormField>
+
+      <FormField label="Expiration Date">
+        <DateInput
+          value={form.expirationTime}
+          onPress={() => setExpirationPickerVisible(true)}
+          placeholder="Select date"
+        />
+      </FormField>
+
+      <SwitchField
+        label="Disabled"
+        value={form.disabled}
+        onValueChange={(value) => handleFormChange('disabled', value)}
+      />
+
+      <SwitchField
+        label="Immobilizer"
+        value={form.attributes.is_mobilized}
+        onValueChange={(value) => handleAttributesChange('is_mobilized', value)}
+        subtext="on / off"
+      />
+
+      <TouchableOpacity
+        style={styles.addBtn}
+        onPress={handleAddOrEditDevice}
+      >
+        <Text style={styles.addBtnText}>
+          {editMode ? "Save Changes" : "Add Device"}
+        </Text>
+      </TouchableOpacity>
+
+      <TouchableOpacity
+        style={styles.cancelBtn}
+        onPress={() => setModalVisible(false)}
+      >
+        <Text style={styles.cancelBtnText}>Cancel</Text>
+      </TouchableOpacity>
+    </ScrollView>
+  ), [form, modelOpen, categoryOpen, groupOpen, editMode]);
 
   return (
     <SafeAreaView style={styles.container}>
@@ -419,21 +829,7 @@ export default function DevicesScreen() {
       <View style={styles.headerWrap}>
         <Text style={styles.header}>Devices</Text>
       </View>
-      <View style={styles.searchBarWrap}>
-        <MaterialIcons
-          name="search"
-          size={20}
-          color="#bbb"
-          style={{ marginLeft: 8, marginRight: 4 }}
-        />
-        <TextInput
-          style={styles.searchInput}
-          placeholder="Search device..."
-          placeholderTextColor="#888"
-          value={search}
-          onChangeText={setSearch}
-        />
-      </View>
+
       {loading && devicesData.length === 0 ? (
         <View style={{ paddingTop: 12, paddingBottom: 80 }}>
           {[...Array(6)].map((_, i) => (
@@ -443,129 +839,26 @@ export default function DevicesScreen() {
       ) : (
         <FlatList
           data={filteredDevices}
-          keyExtractor={(item) => item.id.toString()}
+          renderItem={renderItem}
+          keyExtractor={keyExtractor}
+          ListHeaderComponent={ListHeaderComponent}
           contentContainerStyle={{ paddingBottom: 80, paddingTop: 12 }}
-          renderItem={({ item }) => (
-            <TouchableOpacity
-              style={styles.deviceCard}
-              onPress={() =>
-                router.push({
-                  pathname: "/map",
-                  params: {
-                    ...item,
-                    disabled: item.disabled.toString(),
-                  },
-                })
-              }
-              activeOpacity={0.85}
-            >
-              <View style={styles.deviceRow}>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.deviceNumber}>{item.name}</Text>
-                </View>
-                <Text
-                  style={[
-                    styles.deviceModel,
-                    {
-                      backgroundColor:
-                        item.status === "online" ? "#43A047" : "#FF7043",
-                    },
-                  ]}
-                >
-                  {item.status}
-                </Text>
-              </View>
-              <View style={styles.deviceDetailsRow}>
-                <Text style={styles.deviceDetail}>
-                  Model: {item.model || "-"}
-                </Text>
-              </View>
-              <View style={styles.deviceDetailsRow}>
-                <Text style={styles.deviceDetail}>
-                  Category: {item.category || "-"}
-                </Text>
-              </View>
-              <View style={styles.deviceDetailsRow}>
-                <Text style={styles.deviceDetail}>
-                  Contact: {item.phone || "-"}
-                </Text>
-              </View>
-              <View style={styles.deviceDetailsRow}>
-                <Text style={styles.deviceDetail}>
-                  IMEI: {item.uniqueId || "-"}
-                </Text>
-              </View>
-              <View style={styles.deviceDetailsRow}>
-                <Text style={styles.deviceDetail}>
-                  Last Update:{" "}
-                  {item.lastUpdate
-                    ? new Date(item.lastUpdate).toLocaleString([], {
-                        month: "short",
-                        day: "numeric",
-                        hour: "2-digit",
-                        minute: "2-digit",
-                      })
-                    : "-"}
-                </Text>
-              </View>
-              <View style={styles.deviceDetailsRow}>
-                {/* <Text style={styles.deviceDetail}>
-                  Creation Time:{" "}
-                  {item.lastUpdate
-                    ? new Date(item.lastUpdate).toLocaleString([], {
-                        month: "short",
-                        day: "numeric",
-                        hour: "2-digit",
-                        minute: "2-digit",
-                      })
-                    : "-"}
-                </Text> */}
-              </View>
-              <View style={styles.deviceDetailsRow}>
-                <Text style={styles.deviceDetail}>
-                  Expiration Time:{" "}
-                  {item.expirationTime
-                    ? new Date(item.expirationTime).toLocaleString([], {
-                        month: "short",
-                        day: "numeric",
-                        hour: "2-digit",
-                        minute: "2-digit",
-                      })
-                    : "-"}
-                </Text>
-              </View>
-              <View style={styles.deviceActionsRow}>
-                <TouchableOpacity
-                  style={[
-                    styles.deviceActionBtn,
-                    { backgroundColor: "#43A047", flex: 1, marginRight: 6 },
-                  ]}
-                  onPress={() => openEditModal(item)}
-                >
-                  <Text style={styles.deviceActionBtnText}>EDIT</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[
-                    styles.deviceActionBtn,
-                    { backgroundColor: "#FF7043", flex: 1, marginLeft: 6 },
-                  ]}
-                  onPress={() => {
-                    setSelectedDeviceId(item.deviceId);
-                    setUsersModalVisible(true);
-                  }}
-                >
-                  <Text style={[styles.deviceActionBtnText, { color: "white" }]}>
-                    USERS
-                  </Text>
-                </TouchableOpacity>
-              </View>
-            </TouchableOpacity>
-          )}
+          initialNumToRender={10}
+          maxToRenderPerBatch={10}
+          windowSize={5}
+          removeClippedSubviews={true}
+          getItemLayout={(data, index) => ({
+            length: 300,
+            offset: 300 * index,
+            index,
+          })}
         />
       )}
+
       <TouchableOpacity style={styles.fab} onPress={openAddModal}>
         <MaterialIcons name="add" size={28} color="#fff" />
       </TouchableOpacity>
+
       <Modal visible={modalVisible} animationType="slide" transparent>
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
@@ -580,252 +873,11 @@ export default function DevicesScreen() {
                 <MaterialIcons name="close" size={24} color="#000" />
               </Pressable>
             </View>
-            <ScrollView showsVerticalScrollIndicator={false}>
-              <View style={styles.formField}>
-                <Text style={styles.label}>
-                  Vehicle Number <Text style={styles.required}>*</Text>
-                </Text>
-                <TextInput
-                  style={styles.input}
-                  placeholder="Enter name"
-                  placeholderTextColor="#888"
-                  value={form.name}
-                  onChangeText={(t) =>
-                    setForm((f) => ({ ...f, name: t.toUpperCase() }))
-                  }
-                />
-              </View>
-              <View style={styles.formField}>
-                <Text style={styles.label}>
-                  IMEI / ID <Text style={styles.required}>*</Text>
-                </Text>
-                <TextInput
-                  style={styles.input}
-                  placeholder="Enter unique ID"
-                  placeholderTextColor="#888"
-                  value={form.uniqueId}
-                  onChangeText={(t) => setForm((f) => ({ ...f, uniqueId: t }))}
-                />
-              </View>
-              <View style={styles.formField}>
-                <Text style={styles.label}>Sim Number</Text>
-                <TextInput
-                  style={styles.input}
-                  placeholder="Enter phone"
-                  placeholderTextColor="#888"
-                  value={form.phone}
-                  onChangeText={(t) => setForm((f) => ({ ...f, phone: t }))}
-                  keyboardType="numeric"
-                />
-              </View>
-              <View style={styles.formField}>
-                <Text style={styles.label}>
-                  Model <Text style={styles.required}>*</Text>
-                </Text>
-                <DropDownPicker
-                  open={modelOpen}
-                  value={modelValue}
-                  items={modelItems}
-                  setOpen={setModelOpen}
-                  setValue={setModelValue}
-                  setItems={setModelItems}
-                  style={styles.dropdown}
-                  textStyle={styles.dropdownText}
-                  placeholder="Select model"
-                  placeholderStyle={styles.dropdownPlaceholder}
-                  dropDownContainerStyle={styles.dropdownContainer}
-                  listItemLabelStyle={styles.dropdownItemText}
-                  zIndex={3000}
-                  onChangeValue={(value) => {
-                    if (value) {
-                      setForm((f) => ({ ...f, model: value }));
-                    }
-                  }}
-                />
-              </View>
-              <View style={styles.formField}>
-                <Text style={styles.label}>Driver Contact</Text>
-                <TextInput
-                  style={styles.input}
-                  placeholder="Enter contact"
-                  placeholderTextColor="#888"
-                  value={form.contact}
-                  onChangeText={(t) => setForm((f) => ({ ...f, contact: t }))}
-                />
-              </View>
-              <View style={styles.formField}>
-                <Text style={styles.label}>Category</Text>
-                <DropDownPicker
-                  open={categoryOpen}
-                  value={categoryValue}
-                  items={categoryItems}
-                  setOpen={setCategoryOpen}
-                  setValue={setCategoryValue}
-                  setItems={setCategoryItems}
-                  style={styles.dropdown}
-                  textStyle={styles.dropdownText}
-                  placeholder="Select category"
-                  placeholderStyle={styles.dropdownPlaceholder}
-                  dropDownContainerStyle={styles.dropdownContainer}
-                  listItemLabelStyle={styles.dropdownItemText}
-                  searchPlaceholder="Search categories..."
-                  searchContainerStyle={styles.dropdownSearchContainer}
-                  searchTextInputStyle={styles.dropdownSearchInput}
-                  zIndex={2000}
-                  onChangeValue={(value) => {
-                    if (value) {
-                      setForm((f) => ({ ...f, category: value }));
-                    }
-                  }}
-                />
-              </View>
-              <View style={styles.formField}>
-                <Text style={styles.label}>Group</Text>
-                <DropDownPicker
-                  open={groupOpen}
-                  value={groupValue}
-                  items={groupOptions}
-                  setOpen={setGroupOpen}
-                  setValue={setGroupValue}
-                  setItems={setGroupItems}
-                  style={styles.dropdown}
-                  textStyle={styles.dropdownText}
-                  placeholder="Select group"
-                  placeholderStyle={styles.dropdownPlaceholder}
-                  dropDownContainerStyle={styles.dropdownContainer}
-                  listItemLabelStyle={styles.dropdownItemText}
-                  zIndex={1000}
-                  onChangeValue={(value) => {
-                    if (value) {
-                      setForm((f) => ({ ...f, groupId: value }));
-                    }
-                  }}
-                />
-              </View>
-              <View style={styles.formField}>
-                <Text style={styles.label}>Next Renewal</Text>
-                <TouchableOpacity
-                  style={styles.dateInputDark}
-                  onPress={() => setLastUpdatePickerVisible(true)}
-                >
-                  <Text style={styles.dateInputTextDark}>
-                    {form.lastUpdate || "Select date"}
-                  </Text>
-                  <MaterialIcons
-                    name="calendar-today"
-                    size={18}
-                    color="#666"
-                    style={{ marginLeft: 6 }}
-                  />
-                </TouchableOpacity>
-                <DateTimePickerModal
-                  isVisible={isLastUpdatePickerVisible}
-                  mode="date"
-                  onConfirm={handleLastUpdateConfirm}
-                  onCancel={() => setLastUpdatePickerVisible(false)}
-                  date={
-                    form.lastUpdate ? new Date(form.lastUpdate) : new Date()
-                  }
-                />
-              </View>
-              <View style={styles.formField}>
-                <Text style={styles.label}>Expiration Date</Text>
-                <TouchableOpacity
-                  style={styles.dateInputDark}
-                  onPress={() => setExpirationPickerVisible(true)}
-                >
-                  <Text style={styles.dateInputTextDark}>
-                    {form.expirationTime || "Select date"}
-                  </Text>
-                  <MaterialIcons
-                    name="calendar-today"
-                    size={18}
-                    color="#666"
-                    style={{ marginLeft: 6 }}
-                  />
-                </TouchableOpacity>
-                <DateTimePickerModal
-                  isVisible={isExpirationPickerVisible}
-                  mode="date"
-                  onConfirm={handleExpirationConfirm}
-                  onCancel={() => setExpirationPickerVisible(false)}
-                  date={
-                    form.expirationTime
-                      ? new Date(form.expirationTime)
-                      : new Date()
-                  }
-                />
-              </View>
-              <View
-                style={[
-                  styles.formField,
-                  {
-                    justifyContent: "space-between",
-                    flexDirection: "row",
-                    alignItems: "center",
-                  },
-                ]}
-              >
-                <Text style={[styles.label, { marginBottom: 0 }]}>
-                  Disabled
-                </Text>
-                <Switch
-                  value={form.disabled}
-                  onValueChange={(value) =>
-                    setForm((f) => ({ ...f, disabled: value }))
-                  }
-                  trackColor={{ false: "#767577", true: "#81b0ff" }}
-                  thumbColor={form.disabled ? "#f5dd4b" : "#f4f3f4"}
-                />
-              </View>
-              <View
-                style={[
-                  styles.formField,
-                  {
-                    justifyContent: "space-between",
-                    flexDirection: "row",
-                    alignItems: "center",
-                  },
-                ]}
-              >
-                <Text style={[styles.label, { marginBottom: 0 }]}>
-                  Immobilizer{" "}
-                  <Text style={{ fontSize: 12, color: "#888" }}>
-                    (on / off)
-                  </Text>
-                </Text>
-                <Switch
-                  value={form.attributes.is_mobilized}
-                  onValueChange={(value) =>
-                    setForm((f) => ({
-                      ...f,
-                      attributes: { ...f.attributes, is_mobilized: value },
-                    }))
-                  }
-                  trackColor={{ false: "#767577", true: "#81b0ff" }}
-                  thumbColor={
-                    form.attributes.is_mobilized ? "#f5dd4b" : "#f4f3f4"
-                  }
-                />
-              </View>
-              <TouchableOpacity
-                style={styles.addBtn}
-                onPress={handleAddOrEditDevice}
-              >
-                <Text style={styles.addBtnText}>
-                  {editMode ? "Save Changes" : "Add Device"}
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.cancelBtn}
-                onPress={() => setModalVisible(false)}
-              >
-                <Text style={styles.cancelBtnText}>Cancel</Text>
-              </TouchableOpacity>
-            </ScrollView>
+            {ModalContent}
           </View>
         </View>
       </Modal>
+
       {usersModalVisible && (
         <UsersModal
           deviceId={selectedDeviceId}
@@ -1067,5 +1119,10 @@ const styles = StyleSheet.create({
   dateInputTextDark: {
     color: "#000",
     fontSize: 15,
+  },
+  switchField: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
   },
 });

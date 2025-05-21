@@ -1,6 +1,6 @@
 import Api from "@/config/Api";
 import { MaterialIcons } from "@expo/vector-icons";
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import {
   Dimensions,
   ScrollView,
@@ -14,6 +14,7 @@ import { Card } from "react-native-paper";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useSelector } from "react-redux";
 import { RootState } from "../store/store";
+import { startPositionUpdates, stopPositionUpdates } from "@/app/services/backgroundService";
 const screenWidth = Dimensions.get("window").width;
 
 export default function DashboardScreen() {
@@ -27,6 +28,17 @@ export default function DashboardScreen() {
     { label: "Inactive", count: 0, color: "#00a8d5" },
     { label: "No Data", count: 0, color: "gray" },
   ]);
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
+
+  // Start background service when entering dashboard
+  useEffect(() => {
+    startPositionUpdates(true);
+    
+    // Stop background service when leaving dashboard
+    return () => {
+      stopPositionUpdates();
+    };
+  }, []);
 
   useEffect(() => {
     getGroupsCount();
@@ -35,6 +47,7 @@ export default function DashboardScreen() {
   useEffect(() => {
     if (devicesData?.length > 0) {
       updateVehicleStats();
+      setIsInitialLoad(false);
     }
   }, [devicesData]);
 
@@ -54,16 +67,20 @@ export default function DashboardScreen() {
         return;
       }
       const lastUpdate = new Date(device.lastUpdate);
-      const twelveHoursAgo = new Date(Date.now() - 1000 * 60 * 60 * 12);
-      if (lastUpdate < twelveHoursAgo) {
+      // TODO: Need inactive time to be dynamic user wise
+      const fourHoursAgo = new Date(Date.now() - 1000 * 60 * 60 * 4);
+      if (lastUpdate < fourHoursAgo) {
         stats[4].count++; // Inactive
         return;
       }
-      if (device.status === "online" && Number(device.speed) === 0) {
+      if (device.attributes.ignition===true && Number(device.speed) === 0) {
         stats[2].count++; // Idle
         return;
       }
-      if (device.status === "online") {
+      // if(device.attributes.ignition===false && device.speed > 0){ //HR38AE4284
+      //   console.log(device.name, "ignition", device.attributes.ignition)
+      // }
+      if (device.status === "online" &&  device.attributes.motion===true && Number(device.speed) > 0) {
         stats[1].count++; // Running
         return;
       }
@@ -110,7 +127,7 @@ export default function DashboardScreen() {
         <Text style={styles.blackHeaderText}>Dashboard</Text>
       </View>
       <ScrollView style={{ marginTop: 20 }}>
-        {loading ? (
+        {loading && isInitialLoad ? (
           <>
             {/* Skeleton Status Cards */}
             <View style={styles.statusRow}>
@@ -172,7 +189,7 @@ export default function DashboardScreen() {
               />
               <PieChart
                 data={pieData}
-                width={screenWidth - 50}
+                width={screenWidth - 30}
                 height={180}
                 chartConfig={{
                   color: (opacity = 1) => `rgba(255,23,68,${opacity})`,

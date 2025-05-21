@@ -1,9 +1,119 @@
 import Api from '@/config/Api';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import React, { useState } from 'react';
+import React, { useState, useCallback, useMemo, memo } from 'react';
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+
+// Types
+interface Vehicle {
+  deviceId: string;
+  name: string;
+  address: string;
+  lastUpdate: string;
+  speed: number;
+  status: string;
+  model: string;
+  protocol: string;
+  category: string;
+  latitude: number;
+  longitude: number;
+  attributes?: {
+    fence_id?: string;
+    parked_time?: string;
+    is_parked?: boolean;
+    is_mobilized?: boolean;
+  };
+}
+
+interface StatItem {
+  icon: string;
+  label: string;
+  value: string;
+}
+
+// Memoized Status Icon Component
+const StatusIcon = memo(({ 
+  icon, 
+  isActive, 
+  activeColor, 
+  inactiveColor, 
+  onPress 
+}: { 
+  icon: string; 
+  isActive: boolean; 
+  activeColor: string; 
+  inactiveColor: string; 
+  onPress: () => void;
+}) => (
+  <TouchableOpacity 
+    style={[
+      styles.iconCircle, 
+      { borderColor: isActive ? activeColor : inactiveColor }
+    ]}
+    onPress={onPress}
+  > 
+    <MaterialIcons 
+      name={icon as any} 
+      size={24} 
+      color={isActive ? activeColor : inactiveColor} 
+    />
+  </TouchableOpacity>
+));
+
+// Memoized Stat Card Component
+const StatCard = memo(({ 
+  stat, 
+  backgroundColor 
+}: { 
+  stat: StatItem; 
+  backgroundColor: string;
+}) => (
+  <View
+    style={[
+      styles.statsCardColorful,
+      { 
+        backgroundColor,
+        shadowColor: backgroundColor
+      }
+    ]}
+  >
+    {stat.icon ? (
+      <MaterialIcons 
+        name={stat.icon as any} 
+        size={22} 
+        color="#fff" 
+        style={{ marginBottom: 6 }} 
+      />
+    ) : null}
+    <Text style={styles.statsValueColorful}>{stat.value}</Text>
+    <Text style={styles.statsLabelColorful}>{stat.label}</Text>
+  </View>
+));
+
+// Memoized Action Button Component
+const ActionButton = memo(({ 
+  icon, 
+  text, 
+  backgroundColor, 
+  onPress 
+}: { 
+  icon: string; 
+  text: string; 
+  backgroundColor: string; 
+  onPress: () => void;
+}) => (
+  <TouchableOpacity 
+    style={[
+      styles.backBtnColorful,
+      { backgroundColor, shadowColor: backgroundColor }
+    ]} 
+    onPress={onPress}
+  >
+    <MaterialIcons name={icon as any} size={20} color="#fff" />
+    <Text style={styles.backBtnTextColorful}>{text}</Text>
+  </TouchableOpacity>
+));
 
 export default function VehicleDetailsScreen() {
   const router = useRouter();
@@ -13,11 +123,10 @@ export default function VehicleDetailsScreen() {
   const [carMode, setCarMode] = useState(false);
   const [autoFollow, setAutoFollow] = useState(false);
 
-  const vehicle = JSON.parse(params.device as string);
-  console.log("vehicle", vehicle);
+  const vehicle = useMemo(() => JSON.parse(params.device as string) as Vehicle, [params.device]);
 
-  // Format date to readable format
-  const formatDate = (dateString: string) => {
+  // Memoized utility functions
+  const formatDate = useCallback((dateString: string) => {
     const date = new Date(dateString);
     return date.toLocaleString('en-US', {
       day: 'numeric',
@@ -27,19 +136,30 @@ export default function VehicleDetailsScreen() {
       minute: '2-digit',
       hour12: true
     });
-  };
+  }, []);
 
-  // Calculate time difference
-  const getTimeDifference = (dateString: string) => {
+  const getTimeDifference = useCallback((dateString: string) => {
     const date = new Date(dateString);
     const now = new Date();
     const diffMs = now.getTime() - date.getTime();
     const diffHrs = Math.floor(diffMs / (1000 * 60 * 60));
     const diffMins = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
     return `${diffHrs}h ${diffMins}m`;
-  };
+  }, []);
 
-  const createGeofence = async (device: any) => {
+  // Memoized API functions
+  const fetchDeviceDetails = useCallback(async (deviceId: string) => {
+    try {
+      const response = await Api.call(`/api/devices?id=${deviceId}`, 'GET', {}, false);
+      if (response.data) {
+        return response.data.find((d: any) => d.id === deviceId);
+      }
+    } catch (error) {
+      console.error("Error fetching device details:", error);
+    }
+  }, []);
+
+  const createGeofence = useCallback(async (device: Vehicle) => {
     try {
       const geofenceData = {
         name: `High Alert ${device.name}`,
@@ -64,9 +184,9 @@ export default function VehicleDetailsScreen() {
     } catch (error) {
       console.error("Error creating geofence:", error);
     }
-  };
+  }, [fetchDeviceDetails]);
 
-  const removeGeofence = async (device: any) => {
+  const removeGeofence = useCallback(async (device: Vehicle) => {
     try {
       let deviceData = await fetchDeviceDetails(device.deviceId);
       await Api.call(`/api/geofences/${deviceData.attributes.fence_id}`, 'DELETE', {}, false);
@@ -82,21 +202,9 @@ export default function VehicleDetailsScreen() {
     } catch (error) {
       console.error("Error removing geofence:", error);
     }
-  };
+  }, [fetchDeviceDetails]);
 
-  const fetchDeviceDetails = async (deviceId: string) => {
-    try {
-      const response = await Api.call(`/api/devices?id=${deviceId}`, 'GET', {}, false);
-      if (response.data) {
-        const device = response.data.find((d: any) => d.id === deviceId);
-        return device;
-      }
-    } catch (error) {
-      console.error("Error fetching device details:", error);
-    }
-  };
-
-  const mobilize = async (protocol: string) => {
+  const mobilize = useCallback(async (protocol: string) => {
     try {
       let lockStatus = isLocked ? "RELAY,1#" : "RELAY,0#";
       await Api.call('/api/commands/send', 'POST', {
@@ -119,9 +227,10 @@ export default function VehicleDetailsScreen() {
     } catch (error) {
       console.error("Error mobilizing device:", error);
     }
-  };
+  }, [vehicle?.deviceId, isLocked, fetchDeviceDetails]);
 
-  const data = {
+  // Memoized data
+  const data = useMemo(() => ({
     number: vehicle?.name || 'N/A',
     address: vehicle?.address || 'N/A',
     pingTime: formatDate(vehicle?.lastUpdate || new Date().toISOString()),
@@ -131,9 +240,10 @@ export default function VehicleDetailsScreen() {
     model: vehicle?.model || 'N/A',
     protocol: vehicle?.protocol || 'N/A',
     category: vehicle?.category || 'N/A',
-  };
+  }), [vehicle, formatDate, getTimeDifference]);
 
-  const stats = [
+  // Memoized stats grid
+  const stats = useMemo(() => [
     [
       { icon: 'access-time', label: 'Ping Time', value: data.pingTime },
       { icon: 'timer', label: 'Stopped Since', value: data.stoppedSince },
@@ -150,11 +260,10 @@ export default function VehicleDetailsScreen() {
       { icon: 'category', label: 'Category', value: data.category },
       { icon: '', label: '', value: '' },
     ],
-  ];
+  ], [data]);
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()}>
           <MaterialIcons name="arrow-back" size={26} color="#2979FF" />
@@ -162,109 +271,91 @@ export default function VehicleDetailsScreen() {
         <Text style={styles.headerTitle}>Vehicle Details</Text>
         <View style={{ width: 26 }} />
       </View>
+
       <ScrollView contentContainerStyle={styles.scrollContent}>
-        {/* Vehicle Number and Address */}
         <Text style={styles.vehicleNumber}>{data.number}</Text>
         <Text style={styles.vehicleAddress}>{data.address}</Text>
         
-        {/* Status Icons Row */}
         <View style={styles.statusIconsRow}>
-          {/* Parking */}
-          <TouchableOpacity 
-            style={[styles.iconCircle, { borderColor: isParked ? '#43A047' : '#A5F3C7' }]}
-            onPress={() => {
-              if (vehicle) {
-                isParked ? removeGeofence(vehicle) : createGeofence(vehicle);
-              }
-            }}
-          > 
-            <MaterialIcons name="local-parking" size={24} color={isParked ? '#43A047' : '#A5F3C7'} />
-          </TouchableOpacity>
+          <StatusIcon
+            icon="local-parking"
+            isActive={isParked}
+            activeColor="#43A047"
+            inactiveColor="#A5F3C7"
+            onPress={() => vehicle && (isParked ? removeGeofence(vehicle) : createGeofence(vehicle))}
+          />
           
-          {/* Play (active) */}
-          <TouchableOpacity 
-            style={[styles.iconCircle, styles.iconCircleActive, { backgroundColor: '#4285F4', borderColor: '#4285F4', shadowColor: '#4285F4' }]}
+          <StatusIcon
+            icon="play-arrow"
+            isActive={true}
+            activeColor="#4285F4"
+            inactiveColor="#4285F4"
             onPress={() => {
               const data = btoa(JSON.stringify({
                 deviceId: vehicle?.deviceId,
                 id: vehicle?.deviceId,
               }));
             }}
-          > 
-            <MaterialIcons name="play-arrow" size={24} color="#fff" />
-          </TouchableOpacity>
+          />
           
-          {/* Car Mode */}
-          <TouchableOpacity 
-            style={[styles.iconCircle, { borderColor: carMode ? '#4285F4' : '#90CAF9' }]}
+          <StatusIcon
+            icon="directions-car"
+            isActive={carMode}
+            activeColor="#4285F4"
+            inactiveColor="#90CAF9"
             onPress={() => setCarMode(!carMode)}
-          > 
-            <MaterialIcons name="directions-car" size={24} color={carMode ? '#4285F4' : '#90CAF9'} />
-          </TouchableOpacity>
+          />
           
-          {/* Lock */}
-          <TouchableOpacity 
-            style={[styles.iconCircle, { borderColor: isLocked ? '#E53935' : '#FFCDD2' }]}
-            onPress={() => {
-              if (vehicle) {
-                mobilize(vehicle.protocol);
-              }
-            }}
-          > 
-            <MaterialIcons name="lock" size={24} color={isLocked ? '#E53935' : '#FFCDD2'} />
-          </TouchableOpacity>
+          <StatusIcon
+            icon="lock"
+            isActive={isLocked}
+            activeColor="#E53935"
+            inactiveColor="#FFCDD2"
+            onPress={() => vehicle && mobilize(vehicle.protocol)}
+          />
           
-          {/* Auto Follow */}
-          <TouchableOpacity 
-            style={[styles.iconCircle, { borderColor: autoFollow ? '#43A047' : '#A5F3C7' }]}
+          <StatusIcon
+            icon="location-on"
+            isActive={autoFollow}
+            activeColor="#43A047"
+            inactiveColor="#A5F3C7"
             onPress={() => {
-              if (!carMode) {
-                // Show error toast
-                return;
-              }
+              if (!carMode) return;
               setAutoFollow(!autoFollow);
             }}
-          > 
-            <MaterialIcons name="location-on" size={24} color={autoFollow ? '#43A047' : '#A5F3C7'} />
-          </TouchableOpacity>
+          />
         </View>
 
-    
-        {/* Stats Grid */}
         <View style={styles.statsGridColorful}>
           {stats.map((row, i) => (
             <View style={styles.statsRowColorful} key={i}>
               {row.map((stat, j) => (
-                <View
-                  style={[
-                    styles.statsCardColorful,
-                    { backgroundColor: colorfulCardColors[(i * 2 + j) % colorfulCardColors.length], shadowColor: colorfulCardColors[(i * 2 + j) % colorfulCardColors.length] }
-                  ]}
+                <StatCard
                   key={j}
-                >
-                  {stat.icon ? (
-                    <MaterialIcons name={stat.icon as any} size={22} color="#fff" style={{ marginBottom: 6 }} />
-                  ) : null}
-                  <Text style={styles.statsValueColorful}>{stat.value}</Text>
-                  <Text style={styles.statsLabelColorful}>{stat.label}</Text>
-                </View>
+                  stat={stat}
+                  backgroundColor={colorfulCardColors[(i * 2 + j) % colorfulCardColors.length]}
+                />
               ))}
             </View>
           ))}
         </View>
-        {/* Back to Map Button */}
 
-        <TouchableOpacity style={styles.backBtnColorful1} onPress={() => router.push({ pathname: '/history-playback', params: vehicle })}>
-          <MaterialIcons name="map" size={20} color="#fff" />
-          <Text style={styles.backBtnTextColorful}>History Playback</Text>
-        </TouchableOpacity>
+        <ActionButton
+          icon="map"
+          text="History Playback"
+          backgroundColor="#008fff"
+          onPress={() => router.push({ 
+            pathname: '/history-playback', 
+            params: { device: JSON.stringify(vehicle) }
+          })}
+        />
 
-        <TouchableOpacity style={styles.backBtnColorful} onPress={() => router.back()}>
-          <MaterialIcons name="map" size={20} color="#fff" />
-          <Text style={styles.backBtnTextColorful}>Back to Map</Text>
-        </TouchableOpacity>
-
-        
+        <ActionButton
+          icon="map"
+          text="Back to Map"
+          backgroundColor="#FF7043"
+          onPress={() => router.back()}
+        />
       </ScrollView>
     </SafeAreaView>
   );

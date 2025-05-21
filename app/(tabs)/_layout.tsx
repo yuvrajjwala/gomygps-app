@@ -3,30 +3,16 @@ import { MaterialIcons } from "@expo/vector-icons";
 import { router, Tabs } from "expo-router";
 import React, { useEffect } from "react";
 import { useSelector } from "react-redux";
-import {
-  startPositionUpdates,
-  stopPositionUpdates,
-} from "../services/backgroundService";
 
 export default function TabLayout() {
   const isAuthenticated = useSelector(
     (state: any) => state.auth.isAuthenticated
   );
-  const devices = useSelector((state: any) => state.devices.devices);
 
   if (!isAuthenticated) {
     return router.replace("/login");
   }
 
-  useEffect(() => {
-    if (isAuthenticated) {
-      if(devices.length === 0){
-        startPositionUpdates(true);
-      }
-    } else {
-      stopPositionUpdates();
-    }
-  }, [isAuthenticated]);
   return (
     <Tabs
       screenOptions={{
@@ -97,6 +83,7 @@ export default function TabLayout() {
           ),
         }}
       />
+
       <Tabs.Screen
         name="profile"
         options={{

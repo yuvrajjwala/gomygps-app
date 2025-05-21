@@ -41,7 +41,7 @@ export const startPositionUpdates = (isAuthenticated: boolean) => {
 
   // Initial update
   updatePositions();
-    positionUpdateInterval = setInterval(updatePositions, 20000);
+    positionUpdateInterval = setInterval(updatePositions, 25000);
 };
 
 export const stopPositionUpdates = () => {

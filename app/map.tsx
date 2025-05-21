@@ -44,7 +44,7 @@ export default function MapScreen() {
     },
   ]);
   const mapRef = useRef<MapView>(null);
-  const [zoomLevel, setZoomLevel] = useState(0.005);
+  const [zoomLevel, setZoomLevel] = useState(1.0);
   const [isParked, setIsParked] = useState(false);
   const [isLocked, setIsLocked] = useState(false);
   const [carMode, setCarMode] = useState(false);
@@ -89,8 +89,8 @@ export default function MapScreen() {
 
   // Add state to track current map region
   const [currentMapRegion, setCurrentMapRegion] = useState({
-    latitudeDelta: zoomLevel,
-    longitudeDelta: zoomLevel * 0.5
+    latitudeDelta: zoomLevel * 10,
+    longitudeDelta: zoomLevel * 10
   });
 
   const getVehicleIcon = (): ImageSourcePropType => {
@@ -412,8 +412,6 @@ export default function MapScreen() {
           ignitionOffDuration: formatDuration(24 * 60 * 60 * 1000 - totalIgnitionTime),
         });
 
-        console.log('xxxxxxx',todaySummary);
-
         setSummaryData({
           ...routeResponse.data[0],
           engineHours: totalIgnitionTime,
@@ -537,8 +535,8 @@ export default function MapScreen() {
         initialRegion={{
           latitude: Number(device?.latitude) || 0,
           longitude: Number(device?.longitude) || 0,
-          latitudeDelta: zoomLevel,
-          longitudeDelta: zoomLevel * 0.5,
+          latitudeDelta: 1.0,
+          longitudeDelta: 1.0,
         }}
         zoomEnabled={true}
         zoomControlEnabled={true}
@@ -892,7 +890,10 @@ export default function MapScreen() {
         </TouchableOpacity>
         <TouchableOpacity
           style={styles.fab}
-          onPress={() => setMapType("standard")}
+          onPress={() => {
+            setMapType("standard");
+            setIs3DView(true); // Automatically enable 3D view when standard is selected
+          }}
         >
           <MaterialIcons
             name="map"

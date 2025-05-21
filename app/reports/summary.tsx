@@ -4,7 +4,7 @@ import * as FileSystem from 'expo-file-system';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import * as Sharing from 'expo-sharing';
 import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, Animated, ScrollView, StatusBar, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Animated, ScrollView, StatusBar, StyleSheet, Text, TouchableOpacity, View, Alert } from 'react-native';
 import DateTimePickerModal from "react-native-modal-datetime-picker";
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Row, Rows, Table, TableWrapper } from 'react-native-table-component';
@@ -168,9 +168,9 @@ export default function SummaryReportScreen() {
       await new Promise(resolve => setTimeout(resolve, 1000));
       setGeneratingStatus('Fetching summary data...');
       animateGeneratingProgress(50);
-
-      const summaryResponse = await Api.call('/api/reports/summary?from=' + fromDateUTC.toISOString().slice(0, 19) + 'Z&to=' + toDateUTC.toISOString().slice(0, 19) + 'Z' + (deviceValue ? '&deviceId=' + deviceValue : '') + (groupValue ? '&groupId=' + groupValue : ''), 'GET', {}, false);
-      
+//   TODO: Remove the hardcoded deviceId
+      const summaryResponse = await Api.call('/api/reports/summary?from=' + fromDateUTC.toISOString().slice(0, 19) + 'Z&to=' + toDateUTC.toISOString().slice(0, 19) + 'Z' + (deviceValue ? '&deviceId=' + '12' : '') + (groupValue ? '&groupId=' + groupValue : ''), 'GET', {}, false);
+      console.log('summaryResponse',deviceValue);
       setGeneratingStatus('Processing response...');
       animateGeneratingProgress(70);
 
@@ -280,22 +280,33 @@ export default function SummaryReportScreen() {
         }).start();
 
         const wbout = XLSX.write(workbook, { type: 'base64', bookType: 'xlsx' });
-        const uri = FileSystem.documentDirectory + "Summary_Report.xlsx";
-        await FileSystem.writeAsStringAsync(uri, wbout, {
+        const formattedDate = new Date().toISOString().split('T')[0];
+        const filename = FileSystem.documentDirectory + `summary/Summary-${formattedDate}.xlsx`;
+        
+        await FileSystem.writeAsStringAsync(filename, wbout, {
           encoding: FileSystem.EncodingType.Base64,
         });
 
-        setDownloadStatus('Ready to share!');
+        setDownloadStatus('Download complete!');
         Animated.timing(downloadProgress, {
           toValue: 100,
           duration: 400,
           useNativeDriver: false
         }).start();
-        
-        await Sharing.shareAsync(uri);
+
+        Alert.alert(
+          'Success',
+          'Report has been downloaded successfully.',
+          [{ text: 'OK' }]
+        );
       } catch (error) {
         console.error('Error exporting to Excel:', error);
         setDownloadStatus('Download failed. Please try again.');
+        Alert.alert(
+          'Error',
+          'Failed to download report. Please try again.',
+          [{ text: 'OK' }]
+        );
       } finally {
         setTimeout(() => {
           Animated.timing(downloadProgress, {
@@ -327,6 +338,7 @@ export default function SummaryReportScreen() {
   };
 
   const handleDeviceChange = (value: string | null) => {
+    console.log('handleDeviceChange',value);
     setDeviceValue(value);
     if (value) {
       setGroupValue(null);

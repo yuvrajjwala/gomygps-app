@@ -44,7 +44,7 @@ export default function MapScreen() {
     },
   ]);
   const mapRef = useRef<MapView>(null);
-  const [zoomLevel, setZoomLevel] = useState(1.0);
+  const [zoomLevel, setZoomLevel] = useState(0.0002);
   const [isParked, setIsParked] = useState(false);
   const [isLocked, setIsLocked] = useState(false);
   const [carMode, setCarMode] = useState(false);
@@ -173,9 +173,9 @@ export default function MapScreen() {
   // Modify car mode effect to only update state
   useEffect(() => {
     if (carMode) {
-      setZoomLevel(0.002);
+      setZoomLevel(0.0002);
     } else {
-      setZoomLevel(0.005);
+      setZoomLevel(0.0002);
     }
   }, [carMode]);
 
@@ -535,8 +535,8 @@ export default function MapScreen() {
         initialRegion={{
           latitude: Number(device?.latitude) || 0,
           longitude: Number(device?.longitude) || 0,
-          latitudeDelta: 1.0,
-          longitudeDelta: 1.0,
+          latitudeDelta: 0.0002,
+          longitudeDelta: 0.0002,
         }}
         zoomEnabled={true}
         zoomControlEnabled={true}
@@ -657,8 +657,8 @@ export default function MapScreen() {
                   mapRef.current.animateToRegion({
                     latitude: Number(device.latitude),
                     longitude: Number(device.longitude),
-                    latitudeDelta: 0.002, // Default zoom level only on initial enable
-                    longitudeDelta: 0.001,
+                    latitudeDelta: 0.0002, // Default zoom level only on initial enable
+                    longitudeDelta: 0.0002,
                   }, 1000);
                 }
               }}

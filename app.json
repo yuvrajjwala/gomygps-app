@@ -16,7 +16,9 @@
       "bundleIdentifier": "com.gomygps.app",
       "buildNumber": "1.0.0",
       "infoPlist": {
-        "UIBackgroundModes": ["remote-notification"],
+        "UIBackgroundModes": [
+          "remote-notification"
+        ],
         "NSLocationWhenInUseUsageDescription": "This app uses location to show your position on the map",
         "NSLocationAlwaysUsageDescription": "This app uses location to track your position in the background",
         "NSLocationAlwaysAndWhenInUseUsageDescription": "This app uses location to track your position in the background and foreground",
@@ -70,7 +72,9 @@
         "expo-notifications",
         {
           "icon": "./assets/images/notificationIcon.png",
-          "sounds": ["./assets/sounds/notification.mp3"]
+          "sounds": [
+            "./assets/sounds/notification.mp3"
+          ]
         }
       ]
     ],
@@ -80,7 +84,7 @@
     "extra": {
       "router": {},
       "eas": {
-        "projectId": "265145b4-90a9-4eaf-a87d-3a2f5614baae"
+        "projectId": "9be3a1f9-e751-4b85-abb8-ce51b808f29d"
       }
     }
   }

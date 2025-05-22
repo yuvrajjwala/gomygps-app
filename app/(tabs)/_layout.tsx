@@ -1,106 +1,9 @@
-// import { IconSymbol } from "@/components/ui/IconSymbol";
-// import { MaterialIcons } from "@expo/vector-icons";
-// import { router, Tabs } from "expo-router";
-// import React, { useEffect } from "react";
-// import { useSelector } from "react-redux";
-
-// export default function TabLayout() {
-//   const isAuthenticated = useSelector(
-//     (state: any) => state.auth.isAuthenticated
-//   );
-
-//   if (!isAuthenticated) {
-//     return router.replace("/login");
-//   }
-
-//   return (
-//     <Tabs
-//       screenOptions={{
-//         tabBarActiveTintColor: "white",
-//         headerShown: false,
-//         tabBarStyle: [
-//           {
-//             backgroundColor: "black",
-//             alignItems: "center",
-//             justifyContent: "center",
-//             height: 70,
-//           },
-//         ],
-//         tabBarLabelStyle: {
-//           fontSize: 12,
-//           fontWeight: "bold",
-//           textAlign: "center",
-//         },
-//         tabBarIconStyle: {
-//           alignItems: "center",
-//           justifyContent: "center",
-//         },
-//         tabBarItemStyle: {
-//           alignItems: "center",
-//           justifyContent: "center",
-//         },
-//       }}
-//     >
-//       <Tabs.Screen
-//         name="index"
-//         options={{
-//           title: "Home",
-//           tabBarIcon: ({ color }) => (
-//             <IconSymbol size={28} name="house.fill" color={color} />
-//           ),
-//         }}
-//       />
-//       <Tabs.Screen
-//         name="vehicles"
-//         options={{
-//           title: "Tracking",
-//           tabBarIcon: ({ color }) => (
-//             <MaterialIcons name="gps-fixed" size={24} color={color} />
-//           ),
-//         }}
-//       />
-
-//       <Tabs.Screen
-//         name="devices"
-//         options={{
-//           title: "Devices",
-//           tabBarIcon: ({ color }) => (
-//             <MaterialIcons name="devices" size={24} color={color} />
-//           ),
-//         }}
-//       />
-
-//       <Tabs.Screen
-//         name="reports"
-//         options={{
-//           title: "Reports",
-//           tabBarIcon: ({ color }) => (
-//             <MaterialIcons
-//               name="content-paste-search"
-//               size={24}
-//               color={color}
-//             />
-//           ),
-//         }}
-//       />
-
-//       <Tabs.Screen
-//         name="profile"
-//         options={{
-//           title: "Profile",
-//           tabBarIcon: ({ color }) => (
-//             <IconSymbol size={28} name="person" color={color} />
-//           ),
-//         }}
-//       />
-//     </Tabs>
-//   );
-// }
 import React from "react";
 import { useSelector } from "react-redux";
 import { router, Tabs } from "expo-router";
 import { IconSymbol } from "@/components/ui/IconSymbol";
 import { MaterialIcons } from "@expo/vector-icons";
+import { View } from "react-native";
 
 export default function TabLayout() {
   const isAuthenticated = useSelector(
@@ -114,30 +17,29 @@ export default function TabLayout() {
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: "#00e676", 
-        tabBarInactiveTintColor: "#a5d6a7", 
+        tabBarActiveTintColor: "#FFFFFF",
+        tabBarInactiveTintColor: "#FFFFFF80",
         headerShown: false,
-        tabBarStyle: [
-          {
-            backgroundColor: "#004d40", 
-            alignItems: "center",
-            justifyContent: "center",
-            height: 70,
-          },
-        ],
+        tabBarStyle: {
+          backgroundColor: "#4A5D23",
+          borderTopWidth: 0,
+          height: 65,
+          paddingBottom: 8,
+          paddingTop: 4,
+          elevation: 0,
+          shadowOpacity: 0,
+        },
         tabBarLabelStyle: {
           fontSize: 12,
-          fontWeight: "semibold",
-          textAlign: "center",
-          color: "#a5d6a7", // fallback text color for labels (inactive)
+          fontFamily: "Poppins",
+          marginTop: 2,
+          color: "#FFFFFF",
         },
         tabBarIconStyle: {
-          alignItems: "center",
-          justifyContent: "center",
+          marginTop: 0,
         },
         tabBarItemStyle: {
-          alignItems: "center",
-          justifyContent: "center",
+          paddingVertical: 4,
         },
       }}
     >
@@ -145,8 +47,14 @@ export default function TabLayout() {
         name="index"
         options={{
           title: "Home",
-          tabBarIcon: ({ color }) => (
-            <IconSymbol size={28} name="house.fill" color={color} />
+          tabBarIcon: ({ color, focused }) => (
+            <View style={{
+              backgroundColor: focused ? "#FFFFFF20" : "transparent",
+              padding: 1,
+              borderRadius: 4,
+            }}>
+              <IconSymbol size={24} name="house.fill" color={color} />
+            </View>
           ),
         }}
       />
@@ -154,8 +62,14 @@ export default function TabLayout() {
         name="vehicles"
         options={{
           title: "Tracking",
-          tabBarIcon: ({ color }) => (
-            <MaterialIcons name="gps-fixed" size={24} color={color} />
+          tabBarIcon: ({ color, focused }) => (
+            <View style={{
+              backgroundColor: focused ? "#FFFFFF20" : "transparent",
+              padding: 1,
+              borderRadius: 4,
+            }}>
+              <MaterialIcons name="gps-fixed" size={24} color={color} />
+            </View>
           ),
         }}
       />
@@ -164,8 +78,14 @@ export default function TabLayout() {
         name="devices"
         options={{
           title: "Devices",
-          tabBarIcon: ({ color }) => (
-            <MaterialIcons name="devices" size={24} color={color} />
+          tabBarIcon: ({ color, focused }) => (
+            <View style={{
+              backgroundColor: focused ? "#FFFFFF20" : "transparent",
+              padding: 1,
+              borderRadius: 4,
+            }}>
+              <MaterialIcons name="devices" size={24} color={color} />
+            </View>
           ),
         }}
       />
@@ -174,8 +94,14 @@ export default function TabLayout() {
         name="reports"
         options={{
           title: "Reports",
-          tabBarIcon: ({ color }) => (
-            <MaterialIcons name="content-paste-search" size={24} color={color} />
+          tabBarIcon: ({ color, focused }) => (
+            <View style={{
+              backgroundColor: focused ? "#FFFFFF20" : "transparent",
+              padding: 1,
+              borderRadius: 4,
+            }}>
+              <MaterialIcons name="content-paste-search" size={24} color={color} />
+            </View>
           ),
         }}
       />
@@ -184,8 +110,14 @@ export default function TabLayout() {
         name="profile"
         options={{
           title: "Profile",
-          tabBarIcon: ({ color }) => (
-            <IconSymbol size={28} name="person" color={color} />
+          tabBarIcon: ({ color, focused }) => (
+            <View style={{
+              backgroundColor: focused ? "#FFFFFF20" : "transparent",
+              padding: 1,
+              borderRadius: 4,
+            }}>
+              <IconSymbol size={24} name="person" color={color} />
+            </View>
           ),
         }}
       />

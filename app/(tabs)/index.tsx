@@ -18,16 +18,67 @@ import tw from 'twrnc';
 import { startPositionUpdates, stopPositionUpdates } from "@/app/services/backgroundService";
 const screenWidth = Dimensions.get("window").width;
 
+interface VehicleStat {
+  label: string;
+  color: string;
+  count: number;
+  icon: keyof typeof MaterialIcons.glyphMap;
+  bgColor: string;
+  textColor: string;
+}
+
 export default function DashboardScreen() {
   const { devices: devicesData, loading } = useSelector((state: RootState) => state.devices);
   const [groupsData, setGroupsData] = React.useState([]);
-  const [vehicleStats, setVehicleStats] = React.useState([
-    { label: "All", count: 0, color: "black" },
-    { label: "Running", count: 0, color: "#43A047" },
-    { label: "Idle", count: 0, color: "orange" },
-    { label: "Stop", count: 0, color: "red" },
-    { label: "Inactive", count: 0, color: "#00a8d5" },
-    { label: "No Data", count: 0, color: "gray" },
+  const [vehicleStats, setVehicleStats] = React.useState<VehicleStat[]>([
+    {
+      label: "All",
+      color: "#4A5D23",
+      count: 0,
+      icon: "local-shipping",
+      bgColor: "#4A5D23",
+      textColor: "#FFFFFF"
+    },
+    {
+      label: "Running",
+      color: "#6B8E23",
+      count: 0,
+      icon: "speed",
+      bgColor: "#6B8E23",
+      textColor: "#FFFFFF"
+    },
+    {
+      label: "Idle",
+      color: "#808000",
+      count: 0,
+      icon: "schedule",
+      bgColor: "#808000",
+      textColor: "#FFFFFF"
+    },
+    {
+      label: "Stop",
+      color: "#556B2F",
+      count: 0,
+      icon: "block",
+      bgColor: "#556B2F",
+      textColor: "#FFFFFF"
+    },
+    {
+      label: "Inactive",
+      color: "#8B8B00",
+      count: 0,
+      icon: "power-settings-new",
+      bgColor: "#8B8B00",
+      textColor: "#FFFFFF"
+    },
+    {
+      label: "No Data",
+      color: "#9CA3AF",
+      count: 0,
+      icon: "help",
+      bgColor: "#9CA3AF",
+      textColor: "#FFFFFF"
+    },
   ]);
   const [isInitialLoad, setIsInitialLoad] = useState(true);
 
@@ -52,25 +103,65 @@ export default function DashboardScreen() {
     }
   }, [devicesData]);
   const premiumColors = {
-    primary: "#1B5E20",
-    secondary: "#2E7D32",
-    accent: "#4CAF50",
+    primary: "#4A5D23", // Olive green
+    secondary: "#6B8E23", // Olive drab
+    accent: "#808000", // Olive
     background: "#FFFFFF",
     textPrimary: "#2D3748",
     textSecondary: "#718096",
-    chartColors: ["#1B5E20", "#4CAF50", "#FFB74D", "#EF5350", "#29B6F6"],
+    chartColors: ["#4A5D23", "#6B8E23", "#808000", "#556B2F", "#8B8B00"],
   };
   const updateVehicleStats = () => {
-  const stats = [
-  { label: "All", color: "#6366F1", count: 0 },         // Indigo 500 — Primary
-  { label: "Running", color: "#22C55E", count: 0 },     // Green 500 — Positive
-  { label: "Idle", color: "#FACC15", count: 0 },        // Yellow 400 — Attention
-  { label: "Stop", color: "#EF4444", count: 0 },        // Red 500 — Error
-  { label: "Inactive", color: "#3B82F6", count: 0 },    // Blue 500 — Neutral/Offline
-  { label: "No Data", color: "#9CA3AF", count: 0 },     // Gray 400 — Unknown
-];
-
-
+    const stats: VehicleStat[] = [
+      {
+        label: "All",
+        color: "#4A5D23",
+        count: 0,
+        icon: "local-shipping",
+        bgColor: "#4A5D23",
+        textColor: "#FFFFFF"
+      },
+      {
+        label: "Running",
+        color: "#6B8E23",
+        count: 0,
+        icon: "speed",
+        bgColor: "#6B8E23",
+        textColor: "#FFFFFF"
+      },
+      {
+        label: "Idle",
+        color: "#808000",
+        count: 0,
+        icon: "schedule",
+        bgColor: "#808000",
+        textColor: "#FFFFFF"
+      },
+      {
+        label: "Stop",
+        color: "#556B2F",
+        count: 0,
+        icon: "block",
+        bgColor: "#556B2F",
+        textColor: "#FFFFFF"
+      },
+      {
+        label: "Inactive",
+        color: "#8B8B00",
+        count: 0,
+        icon: "power-settings-new",
+        bgColor: "#8B8B00",
+        textColor: "#FFFFFF"
+      },
+      {
+        label: "No Data",
+        color: "#9CA3AF",
+        count: 0,
+        icon: "help",
+        bgColor: "#9CA3AF",
+        textColor: "#FFFFFF"
+      },
+    ];
 
     devicesData.forEach((device) => {
       if (!device?.lastUpdate) {
@@ -122,7 +213,7 @@ export default function DashboardScreen() {
     <View style={{ width: '31%', borderRadius: 10, alignItems: 'center', paddingVertical: 18, backgroundColor: '#e0e0e0', marginBottom: 8 }} />
   );
   const SkeletonChart = () => (
-    <View style={{ margin: 8, borderRadius: 16, height: 200, backgroundColor: '#e0e0e0',paddingVertical: 18 }} />
+    <View style={{ margin: 8, borderRadius: 16, height: 200, backgroundColor: '#e0e0e0', paddingVertical: 18 }} />
   );
   const SkeletonListRow = () => (
     <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 14, backgroundColor: '#e0e0e0', borderRadius: 10, marginBottom: 8 }}>
@@ -134,10 +225,10 @@ export default function DashboardScreen() {
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: "#ffffff" }}>
       <StatusBar barStyle="dark-content" backgroundColor="#fff" />
-      <View style={styles.blackHeader}>
-        <Text style={styles.blackHeaderText}>Dashboard</Text>
+      <View style={tw`bg-white border-b border-gray-100 py-4 px-4`}>
+        <Text style={tw`font-[GeistBold] text-2xl text-[#4A5D23] text-center`}>Dashboard</Text>
       </View>
-      <ScrollView style={{ marginTop: 20 }}>
+      <ScrollView style={tw`bg-white`}>
         {loading && isInitialLoad ? (
           <>
             {/* Skeleton Status Cards */}
@@ -191,39 +282,55 @@ export default function DashboardScreen() {
           </>
         ) : (
           <>
-            <View style={styles.statusRow}>
-              {vehicleStats.map((filter) => (
-                <View
-                  key={filter.label}
-                  style={[
-                    styles.statusCard,
-                    filter.label === "Idle"
-                      ? { backgroundColor: "#FF6F00" }
-                      : {
-                        backgroundColor: filter.color,
-                        shadowColor: filter.color,
-                      },
-                    filter.label === "Idle" && {
-                      borderWidth: 2,
-                      borderColor: "#fff",
-                    },
-                  ]}
-                >
-                  <Text style={styles.statusLabel}>{filter.label}</Text>
-                  <Text style={styles.statusCount}>{filter.count}</Text>
-                </View>
-              ))}
+            <View style={tw`px-4 py-2`}>
+
+              <View style={tw`flex-row flex-wrap justify-between gap-3`}>
+                {vehicleStats.map((stat, index) => (
+                  <View
+                    key={stat.label}
+                    style={tw`w-[48%] bg-white rounded-2xl p-4 shadow-sm border border-gray-100 mb-3`}
+                  >
+                    <View style={tw`flex-row items-center justify-between mb-2`}>
+                      <View style={tw`flex-row items-center`}>
+                        <View style={[tw`w-8 h-8 rounded-lg items-center justify-center mr-2`, { backgroundColor: stat.bgColor }]}>
+                          <MaterialIcons name={stat.icon} size={18} color={stat.textColor} />
+                        </View>
+                        <Text style={tw`font-[Poppins] text-sm text-gray-600`}>
+                          {stat.label}
+                        </Text>
+                      </View>
+                      <View style={[tw`px-2 py-1 rounded-full`, { backgroundColor: `${stat.bgColor}15` }]}>
+                        <Text style={[tw`font-[GeistBold] text-sm`, { color: stat.bgColor }]}>
+                          {stat.count}
+                        </Text>
+                      </View>
+                    </View>
+                    <View style={tw`h-1 w-full bg-gray-100 rounded-full overflow-hidden`}>
+                      <View
+                        style={[
+                          tw`h-full rounded-full`,
+                          {
+                            width: `${(stat.count / vehicleStats[0].count) * 100}%`,
+                            backgroundColor: stat.bgColor
+                          }
+                        ]}
+                      />
+                    </View>
+                  </View>
+                ))}
+              </View>
             </View>
-            <View style={tw`bg-gray-50 rounded-2xl p-5 mb-6 shadow-sm`}>
-              <Text style={tw`font-geist-bold text-lg text-emerald-900 mb-4`}>
+
+            <View style={tw`bg-black rounded-2xl p-5 mx-4 mb-6 shadow-sm`}>
+              <Text style={tw`font-[Poppins] text-lg text-[#fff] border-b border-gray-200 pb-2 mb-4`}>
                 Vehicle Status Distribution
               </Text>
               <PieChart
                 data={pieData}
-                width={screenWidth - 40}
+                width={screenWidth - 48}
                 height={200}
                 chartConfig={{
-                  color: (opacity = 1) => `rgba(27, 94, 32, ${opacity})`,
+                  color: (opacity = 1) => `rgba(74, 93, 35, ${opacity})`,
                 }}
                 accessor="population"
                 backgroundColor="transparent"
@@ -231,17 +338,17 @@ export default function DashboardScreen() {
                 absolute
               />
             </View>
-            {/* Recent Devices */}
-            <View style={tw`bg-gray-50 rounded-2xl p-5 mb-6 shadow-sm`}>
-              <Text style={tw`font-geist-bold text-lg text-emerald-900 mb-4`}>
+
+            <View style={tw`bg-gray-50 rounded-2xl p-5 mx-4 mb-6 shadow-sm`}>
+              <Text style={tw`font-[GeistBold] text-lg text-[#4A5D23] border-b border-gray-200 pb-2 mb-4`}>
                 Recent Devices
               </Text>
 
               <View style={tw`flex-row justify-between mb-3 px-2`}>
-                <Text style={tw`font-poppins text-xs text-emerald-800/60 uppercase tracking-wide`}>
+                <Text style={tw`font-[Poppins] text-xs text-[#4A5D23]/60 uppercase tracking-wide`}>
                   Device
                 </Text>
-                <Text style={tw`font-poppins text-xs text-emerald-800/60 uppercase tracking-wide`}>
+                <Text style={tw`font-[Poppins] text-xs text-[#4A5D23]/60 uppercase tracking-wide`}>
                   Status
                 </Text>
               </View>
@@ -252,30 +359,31 @@ export default function DashboardScreen() {
                   style={tw`flex-row justify-between items-center py-3 border-b border-gray-200/80`}
                 >
                   <View style={tw`flex-row items-center`}>
-                    <View style={tw`bg-emerald-700 w-10 h-10 rounded-full items-center justify-center mr-3`}>
+                    <View style={tw`bg-[#4A5D23] w-10 h-10 rounded-full items-center justify-center mr-3`}>
                       <MaterialIcons name="local-shipping" size={24} color="white" />
                     </View>
-                    <Text style={tw`font-geist text-gray-900`}>
+                    <Text style={tw`font-[Geist] text-gray-900`}>
                       {device.name}
                     </Text>
                   </View>
 
                   <View style={[
                     tw`px-3 py-1 rounded-full flex-row items-center`,
+                    { fontFamily: 'Poppins' },
                     device.status === 'online'
-                      ? tw`bg-emerald-100`
+                      ? tw`bg-[#4A5D23]/10`
                       : tw`bg-gray-200`
                   ]}>
                     <View style={[
                       tw`w-2 h-2 rounded-full mr-2`,
                       device.status === 'online'
-                        ? tw`bg-emerald-600`
+                        ? tw`bg-[#4A5D23]`
                         : tw`bg-gray-500`
                     ]} />
                     <Text style={[
-                      tw`font-PoppinsRegular text-xs`,
+                      { fontFamily: 'Poppins', fontSize: 10 },
                       device.status === 'online'
-                        ? tw`text-emerald-700`
+                        ? tw`text-[#4A5D23]`
                         : tw`text-gray-600`
                     ]}>
                       {device.status.toUpperCase()}
@@ -284,10 +392,9 @@ export default function DashboardScreen() {
                 </View>
               ))}
             </View>
-            {/* Groups */}
 
-            <View style={tw`bg-gray-50 rounded-2xl p-5 shadow-sm`}>
-              <Text style={tw`font-geist-bold  text-lg text-emerald-900 mb-4`}>
+            <View style={tw`bg-gray-50 rounded-2xl p-5 mx-4 mb-6 shadow-sm`}>
+              <Text style={tw`font-[GeistBold] text-lg border-b border-gray-200 pb-2 text-[#4A5D23] mb-4`}>
                 Groups
               </Text>
 
@@ -297,10 +404,10 @@ export default function DashboardScreen() {
                     key={idx}
                     style={tw`flex-row items-center py-3 border-b border-gray-200/80`}
                   >
-                    <View style={tw`bg-emerald-600 w-9 h-9 rounded-lg items-center justify-center mr-3`}>
+                    <View style={tw`bg-[#4A5D23] w-9 h-9 rounded-lg items-center justify-center mr-3`}>
                       <MaterialIcons name="layers" size={20} color="white" />
                     </View>
-                    <Text style={tw`font-geist text-gray-900`}>
+                    <Text style={tw`font-[Geist] text-gray-900`}>
                       {group.name}
                     </Text>
                   </View>

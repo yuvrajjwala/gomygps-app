@@ -23,9 +23,15 @@ export default function UsersModal({ deviceId, visible, onClose }: UsersModalPro
     try {
       setLoading(true);
       const response = await Api.call(`/api/users?deviceId=${deviceId}`, 'GET', {}, false);
-      setUsers(response.data);
+      if (response && response.status === 200 && Array.isArray(response.data)) {
+        setUsers(response.data);
+      } else {
+        setUsers([]);
+        console.error('Invalid response format:', response);
+      }
     } catch (error) {
       console.error('Error fetching users:', error);
+      setUsers([]);
     } finally {
       setLoading(false);
     }
@@ -47,7 +53,7 @@ export default function UsersModal({ deviceId, visible, onClose }: UsersModalPro
               <MaterialIcons name="close" size={24} color="#00B8D4" />
             </Pressable>
           </View>
-          
+
           {loading ? (
             <View style={styles.loadingContainer}>
               <ActivityIndicator size="large" color="#00B8D4" />

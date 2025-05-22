@@ -53,7 +53,7 @@ export default function ReportsScreen() {
       <StatusBar barStyle="dark-content" backgroundColor="#fff" />
       {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Reports</Text>
+        <Text style={[styles.headerTitle, { fontFamily: 'GeistBold' }]}>Reports</Text>
       </View>
 
       {/* Reports List */}
@@ -70,7 +70,7 @@ export default function ReportsScreen() {
             <View style={styles.reportInfo}>
               <View style={styles.reportHeader}>
                 <MaterialIcons name={report.icon} size={24} color="#000" style={styles.reportIcon} />
-                <Text style={styles.reportTitle}>{report.title}</Text>
+                <Text style={[styles.reportTitle, { fontFamily: 'Geist' }]}>{report.title}</Text>
               </View>
             </View>
             <MaterialIcons name="chevron-right" size={24} color="#666" />
@@ -98,8 +98,8 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     color: '#000',
-    fontSize: 20,
-    fontWeight: 'bold',
+    fontSize: 24,
+    letterSpacing: -0.5,
   },
   reportsList: {
     flex: 1,
@@ -133,8 +133,8 @@ const styles = StyleSheet.create({
   },
   reportTitle: {
     fontSize: 16,
-    fontWeight: 'bold',
     color: '#000',
     marginBottom: 4,
+    letterSpacing: -0.3,
   },
 }); 

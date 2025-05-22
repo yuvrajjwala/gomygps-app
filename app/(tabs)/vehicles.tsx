@@ -12,6 +12,7 @@ import {
   TouchableOpacity,
   View,
   ListRenderItem,
+  ScrollView,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useSelector } from "react-redux";
@@ -41,17 +42,24 @@ const carImages = {
 };
 
 // Memoized Vehicle Card Component
-const VehicleCard = memo(({ 
-  device, 
+const VehicleCard = memo(({
+  device,
   onPress,
-  getDeviceStatus 
-}: { 
-  device: any; 
+  getDeviceStatus
+}: {
+  device: any;
   onPress: () => void;
   getDeviceStatus: (device: any) => string;
 }) => {
-  const vehicleNumberColor = "#2EAD4B";
-  
+  const status = getDeviceStatus(device);
+  const statusColors = {
+    Running: '#4A5D23',
+    Idle: '#6B8E23',
+    Stop: '#556B2F',
+    'In Active': '#808000',
+    'No Data': '#9CA3AF'
+  };
+
   const iconColors = [
     device.attributes.ignition ? "#66BB6A" : "#EF5350",
     device.attributes.is_mobilized ? "red" : "green",
@@ -68,102 +76,116 @@ const VehicleCard = memo(({
     { "battery-full": device?.attributes?.batteryLevel },
   ];
 
+  const speed = (Number(device?.speed) * 1.852 || 0).toFixed(0);
+  const lastUpdate = moment(device?.lastUpdate).format("D MMM YY, hh:mm A");
+
   return (
-    <TouchableOpacity onPress={onPress} activeOpacity={0.9}>
-      <View
-        style={tw`bg-white rounded-xl border border-[#ddd] p-3 mb-3 shadow`}
-      >
-        {/* Row: Vehicle Image + Info + Speed */}
-        <View style={tw`flex-row items-start`}>
-          {/* Vehicle Image */}
-          <View style={tw`mr-4`}>
-            <Image
-              source={
-                carImages[getDeviceStatus(device) as keyof typeof carImages] ||
-                carImages.Default
-              }
-              style={{ width: 64, height: 64, resizeMode: "contain" }}
-            />
-          </View>
+    <TouchableOpacity
+      onPress={onPress}
+      activeOpacity={0.9}
+      style={tw`mx-4 mb-3`}
+    >
+      <View style={tw`bg-white rounded-2xl overflow-hidden border border-gray-100`}>
+        {/* Card Header with Status Bar */}
+        <View
+          style={[
+            tw`h-1.5 w-full`,
+            { backgroundColor: statusColors[status as keyof typeof statusColors] }
+          ]}
+        />
 
-          {/* Vehicle Info */}
-          <View style={tw`flex-1`}>
-            <Text
-              style={[
-                tw`text-base font-semibold`,
-                { color: vehicleNumberColor, fontFamily: "Geist-SemiBold" },
-              ]}
-            >
-              {device?.name}
-            </Text>
-            <Text
-              style={[
-                tw`text-xs text-neutral-700 mt-1`,
-                { fontFamily: "Poppins" },
-              ]}
-            >
-              {device?.address}
-            </Text>
-            <Text
-              style={[
-                tw`text-[11px] text-gray-500 mt-1`,
-                { fontFamily: "Geist" },
-              ]}
-            >
-              {moment(device?.lastUpdate).format("D MMM YY, hh:mm A")}
-            </Text>
-          </View>
-
-          {/* Speed Stat */}
-          <View style={tw`items-end`}>
-            <View style={tw`flex-row items-end`}>
+        <View style={tw`p-4`}>
+          {/* Top Row: Vehicle Info and Speed */}
+          <View style={tw`flex-row justify-between items-start mb-3`}>
+            {/* Left: Vehicle Info */}
+            <View style={tw`flex-1 mr-3`}>
+              <View style={tw`flex-row items-center mb-1`}>
+                <Image
+                  source={carImages[status as keyof typeof carImages] || carImages.Default}
+                  style={{ width: 32, height: 32, resizeMode: "contain" }}
+                />
+                <View style={tw`ml-2 flex-1`}>
+                  <Text
+                    style={[tw`text-base`, { fontFamily: 'GeistBold', color: '#1F2937' }]}
+                    numberOfLines={1}
+                  >
+                    {device?.name}
+                  </Text>
+                  <Text
+                    style={[tw`text-xs`, { fontFamily: 'Geist', color: '#6B7280' }]}
+                    numberOfLines={1}
+                  >
+                    {lastUpdate}
+                  </Text>
+                </View>
+              </View>
               <Text
-                style={[
-                  tw`text-xl font-semibold text-gray-900`,
-                  { fontFamily: "GeistBold" },
-                ]}
+                style={[tw`text-xs mt-1`, { fontFamily: 'Poppins', color: '#4B5563' }]}
+                numberOfLines={2}
               >
-                {(Number(device?.speed) * 1.852 || 0).toFixed(0)}
-              </Text>
-              <Text
-                style={[
-                  tw`text-sm text-gray-500 ml-1`,
-                  { fontFamily: "Geist" },
-                ]}
-              >
-                km/h
+                {device?.address}
               </Text>
             </View>
-            <Text style={[tw`text-xs text-gray-500`, { fontFamily: "Geist" }]}>
-              Speed
-            </Text>
+
+            {/* Right: Speed Display */}
+            <View style={[
+              tw`items-center justify-center px-3 py-2 rounded-xl`,
+              { backgroundColor: `${statusColors[status as keyof typeof statusColors]}10` }
+            ]}>
+              <Text style={[tw`text-2xl`, { fontFamily: 'GeistBold', color: statusColors[status as keyof typeof statusColors] }]}>
+                {speed}
+              </Text>
+              <Text style={[tw`text-xs mt-0.5`, { fontFamily: 'Geist', color: '#6B7280' }]}>
+                KM/H
+              </Text>
+            </View>
           </View>
-        </View>
 
-        {/* Row: Status Icons */}
-        <View style={tw`flex-row justify-center mt-4 border-t border-[#ddd] py-1`}>
-          {iconNames.map((icon, i) => {
-            const key = Object.keys(icon)[0];
-            const isActive =
-              key === "vpn-key"
-                ? device.attributes.ignition
-                : Object.values(icon)[0];
+          {/* Bottom Row: Status Icons */}
+          <View style={tw`flex-row justify-between items-center border-t border-gray-100 pt-3`}>
+            {/* Status Badge */}
+            <View style={[
+              tw`px-3 py-1 rounded-full`,
+              { backgroundColor: `${statusColors[status as keyof typeof statusColors]}15` }
+            ]}>
+              <Text style={[
+                tw`text-xs`,
+                {
+                  fontFamily: 'Poppins',
+                  color: statusColors[status as keyof typeof statusColors]
+                }
+              ]}>
+                {status.toUpperCase()}
+              </Text>
+            </View>
 
-            return (
-              <MaterialIcons
-                key={key + i}
-                name={key as any}
-                size={20}
-                color={iconColors[i]}
-                style={[
-                  tw`mx-2`,
-                  {
-                    opacity: isActive ? 1 : 0.4,
-                  },
-                ]}
-              />
-            );
-          })}
+            {/* Status Icons */}
+            <View style={tw`flex-row`}>
+              {iconNames.map((icon, i) => {
+                const key = Object.keys(icon)[0];
+                const isActive = key === "vpn-key" ? device.attributes.ignition : Object.values(icon)[0];
+                return (
+                  <View
+                    key={key + i}
+                    style={[
+                      tw`w-7 h-7 rounded-full items-center justify-center mx-1`,
+                      {
+                        backgroundColor: isActive ? `${iconColors[i]}15` : '#F3F4F6',
+                        borderWidth: 1,
+                        borderColor: isActive ? `${iconColors[i]}30` : '#E5E7EB'
+                      }
+                    ]}
+                  >
+                    <MaterialIcons
+                      name={key as any}
+                      size={14}
+                      color={isActive ? iconColors[i] : '#9CA3AF'}
+                    />
+                  </View>
+                );
+              })}
+            </View>
+          </View>
         </View>
       </View>
     </TouchableOpacity>
@@ -250,56 +272,72 @@ const SkeletonCard = memo(() => (
 ));
 
 // Memoized Status Filter Component
-const StatusFilter = memo(({ 
-  filter, 
-  isSelected, 
-  count, 
-  onPress 
-}: { 
-  filter: typeof statusFilters[0]; 
-  isSelected: boolean; 
-  count: number; 
+const StatusFilter = memo(({
+  filter,
+  isSelected,
+  count,
+  onPress
+}: {
+  filter: typeof statusFilters[0];
+  isSelected: boolean;
+  count: number;
   onPress: () => void;
 }) => {
-  const backgroundColor = isSelected ? filter.color : `${filter.color}20`; // 20 = ~12% opacity
-  const textColor = isSelected ? '#fff' : filter.color;
+  const backgroundColor = isSelected ? '#4A5D23' : '#F5F5F5';
+  const textColor = isSelected ? '#FFFFFF' : '#4A5D23';
 
   return (
     <TouchableOpacity
       onPress={onPress}
       style={[
-        tw`px-4 py-2 rounded-xl flex-1 items-center justify-center min-w-[25%] mx-1 my-1 `,
+        tw`px-4 py-2 rounded-xl items-center justify-center mx-1.5`,
         {
           backgroundColor,
-          borderWidth: isSelected ? 2 : 0,
-          borderColor: filter.color,
+          borderWidth: 1,
+          borderColor: isSelected ? '#4A5D23' : '#E5E7EB',
+          minWidth: 110,
+          elevation: 2,
+          shadowColor: '#000',
+          shadowOffset: { width: 0, height: 1 },
+          shadowOpacity: 0.1,
+          shadowRadius: 2,
         }
       ]}
     >
-      <Text
-        style={[
-          tw`text-sm font-semibold`,
-          {
-            color: textColor,
-            fontFamily: 'GeistBold',
-          }
-        ]}
-      >
-        {filter.label}
-      </Text>
-      {typeof count === 'number' && (
-        <Text
-          style={[
-            tw`text-xs mt-1`,
-            {
-              color: textColor,
-              fontFamily: 'Geist',
-            }
-          ]}
-        >
-          {count} vehicles
-        </Text>
-      )}
+      <View style={tw`flex-row items-center`}>
+        <MaterialIcons
+          name={filter.icon as any}
+          size={18}
+          color={textColor}
+          style={tw`mr-2`}
+        />
+        <View>
+          <Text
+            style={[
+              tw`text-sm`,
+              {
+                color: textColor,
+                fontFamily: 'GeistBold',
+              }
+            ]}
+          >
+            {filter.label}
+          </Text>
+          {typeof count === 'number' && (
+            <Text
+              style={[
+                tw`text-xs mt-0.5`,
+                {
+                  color: isSelected ? '#FFFFFF' : '#6B7280',
+                  fontFamily: 'Geist',
+                }
+              ]}
+            >
+              {count} vehicles
+            </Text>
+          )}
+        </View>
+      </View>
     </TouchableOpacity>
   );
 });
@@ -316,7 +354,7 @@ export default function VehiclesScreen() {
   // Start background service when entering vehicles page
   useEffect(() => {
     startPositionUpdates(true);
-    
+
     // Stop background service when leaving vehicles page
     return () => {
       stopPositionUpdates();
@@ -329,8 +367,8 @@ export default function VehiclesScreen() {
     const lastUpdate = new Date(device.lastUpdate);
     const fourHoursAgo = new Date(Date.now() - 1000 * 60 * 60 * 4);
     if (lastUpdate < fourHoursAgo) return "In Active";
-    if (device.attributes.ignition===true && Number(device.speed) === 0) return "Idle";
-    return (device.status === "online" &&  device.attributes.motion===true && Number(device.speed) > 0) ? "Running" : "Stop";
+    if (device.attributes.ignition === true && Number(device.speed) === 0) return "Idle";
+    return (device.status === "online" && device.attributes.motion === true && Number(device.speed) > 0) ? "Running" : "Stop";
   }, []);
 
   // Memoized filtered devices
@@ -345,13 +383,13 @@ export default function VehiclesScreen() {
     if (searchQuery.trim() !== "") {
       return searchResults;
     }
-    
+
     // If no search query, apply the status filter
     if (selectedFilter === "All") {
       return searchResults;
     }
-    
-    return searchResults.filter((device: any) => 
+
+    return searchResults.filter((device: any) =>
       getDeviceStatus(device) === selectedFilter
     );
   }, [devicesData, searchQuery, selectedFilter, getDeviceStatus]);
@@ -387,105 +425,68 @@ export default function VehiclesScreen() {
   // Memoized key extractor
   const keyExtractor = useCallback((item: any) => item.id.toString(), []);
 
-  // Memoized list header component
-  const ListHeaderComponent = useMemo(() => (
-    <>
-      <View style={styles.statusRow}>
-        {statusFilters.map((filter) => (
-          <StatusFilter
-            key={filter.label}
-            filter={filter}
-            isSelected={selectedFilter === filter.label}
-            count={filterCounts[filter.label]}
-            onPress={() => setSelectedFilter(filter.label)}
-          />
-        ))}
-      </View>
-      <View style={styles.searchRow}>
-        <Ionicons
-          name="search"
-          size={22}
-          color="#888"
-          style={{ marginLeft: 8 }}
-        />
-        <TextInput
-          placeholder="Search"
-          placeholderTextColor="#888"
-          style={styles.searchInput}
-          value={searchQuery}
-          onChangeText={setSearchQuery}
-        />
-        <TouchableOpacity onPress={() => setSearchQuery("")}>
-          <Ionicons
-            name="close-circle"
-            size={22}
-            color="#888"
-            style={{ marginRight: 8 }}
-          />
+  return (
+    <SafeAreaView style={tw`flex-1 bg-white`}>
+      <StatusBar barStyle="dark-content" backgroundColor="#fff" />
+
+      {/* Header */}
+      <View style={tw`bg-white border-b border-gray-100 py-3 px-4 flex-row items-center justify-between`}>
+        <Text style={[tw`text-xl`, { fontFamily: 'GeistBold', color: '#4A5D23' }]}>
+          Vehicle Tracking
+        </Text>
+        <TouchableOpacity
+          style={tw`bg-[#4A5D23]/10 p-2 rounded-full`}
+          onPress={() => {/* Add refresh handler */ }}
+        >
+          <MaterialIcons name="refresh" size={22} color="#4A5D23" />
         </TouchableOpacity>
       </View>
-    </>
-  ), [selectedFilter, filterCounts, searchQuery]);
 
-  // Modify stop markers to maintain highest z-index
-  const stopMarkers = useMemo(
-    () =>
-      stopLocations.map((stop, idx) => {
-        const isFirstOrLast = idx === 0 || idx === stopLocations.length - 1;
-        const startTime = moment(stop.startTime).format('HH:mm');
-        const endTime = moment(stop.endTime).format('HH:mm');
-        const duration = moment.duration(moment(stop.endTime).diff(moment(stop.startTime)));
-        const hours = Math.floor(duration.asHours());
-        const minutes = duration.minutes();
-        const durationText = hours > 0 ? `${hours}h ${minutes}m` : `${minutes}m`;
-
-        return (
-          <Marker
-            key={`stop-${idx}`}
-            coordinate={{
-              latitude: stop.latitude,
-              longitude: stop.longitude,
-            }}
-            anchor={{ x: 0.5, y: 0.5 }}
-            zIndex={3}
-            onPress={() => setSelectedStop(idx)}
-          >
-            <View style={{ backgroundColor: 'transparent' }}>
-              <MaterialIcons
-                name="flag"
-                size={24}
-                color={idx === 0 ? "green" : "red"}
-                style={{ opacity: isFirstOrLast ? 1 : 0 }}
-              />
+      {/* Fixed Search and Filters Section */}
+      <View style={tw`bg-white border-b border-gray-100 pb-3 shadow-sm`}>
+        {/* Search Bar */}
+        <View style={tw`px-4 pt-3 mb-3`}>
+          <View style={tw`flex-row items-center bg-gray-50 rounded-xl px-3 py-2 border border-gray-200`}>
+            <Ionicons name="search" size={20} color="#6B7280" />
+            <TextInput
+              placeholder="Search vehicles by name or location..."
+              placeholderTextColor="#9CA3AF"
+              style={[tw`flex-1 ml-2 text-sm`, { fontFamily: 'Geist' }]}
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+            />
+            {searchQuery ? (
               <TouchableOpacity
-                style={[
-                  styles.stopCountBadge,
-                  { opacity: !isFirstOrLast ? 1 : 0 },
-                  selectedStop === idx && styles.stopCountBadgeSelected
-                ]}
-                onPress={() => setSelectedStop(idx)}
+                onPress={() => setSearchQuery("")}
+                style={tw`bg-gray-200 rounded-full p-1`}
               >
-                <Text style={[
-                  styles.stopCountText,
-                  selectedStop === idx && styles.stopCountTextSelected
-                ]}>{idx}</Text>
+                <Ionicons name="close" size={16} color="#6B7280" />
               </TouchableOpacity>
-            </View>
-          </Marker>
-        );
-      }),
-    [stopLocations, selectedStop]
-  );
+            ) : null}
+          </View>
+        </View>
 
-  return (
-    <SafeAreaView style={styles.safeArea}>
-      <StatusBar barStyle="dark-content" backgroundColor="#fff" />
-      <View style={styles.blackHeader}>
-        <Text style={styles.blackHeaderText}>Tracking</Text>
+        {/* Status Filters */}
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={tw`px-3`}
+        >
+          {statusFilters.map((filter) => (
+            <StatusFilter
+              key={filter.label}
+              filter={filter}
+              isSelected={selectedFilter === filter.label}
+              count={filterCounts[filter.label]}
+              onPress={() => setSelectedFilter(filter.label)}
+            />
+          ))}
+        </ScrollView>
       </View>
-      
+
+      {/* Vehicle List */}
       {loading && devicesData.length === 0 ? (
-        <View style={{ paddingHorizontal: 6, paddingTop: 8 }}>
+        <View style={tw`px-4 pt-4`}>
           {[...Array(6)].map((_, i) => (
             <SkeletonCard key={i} />
           ))}
@@ -495,18 +496,23 @@ export default function VehiclesScreen() {
           data={filteredDevices}
           renderItem={renderItem}
           keyExtractor={keyExtractor}
-          ListHeaderComponent={ListHeaderComponent}
-          contentContainerStyle={{ paddingBottom: 24 }}
+          contentContainerStyle={tw`pt-3 pb-6`}
           showsVerticalScrollIndicator={false}
           initialNumToRender={10}
           maxToRenderPerBatch={10}
           windowSize={5}
           removeClippedSubviews={true}
-          getItemLayout={(data, index) => ({
-            length: 150, // Approximate height of each item
-            offset: 150 * index,
-            index,
-          })}
+          ListEmptyComponent={
+            <View style={tw`items-center justify-center py-12 px-4`}>
+              <MaterialIcons name="search-off" size={48} color="#9CA3AF" />
+              <Text style={[tw`text-lg mt-3 text-center`, { fontFamily: 'GeistBold', color: '#4A5D23' }]}>
+                No vehicles found
+              </Text>
+              <Text style={[tw`text-sm mt-1 text-center text-gray-500`, { fontFamily: 'Geist' }]}>
+                Try adjusting your search or filter criteria
+              </Text>
+            </View>
+          }
         />
       )}
     </SafeAreaView>
@@ -516,48 +522,50 @@ export default function VehiclesScreen() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: "#F7F8FA",
+    backgroundColor: "#FFFFFF",
   },
   statusRow: {
     flexDirection: "row",
     flexWrap: "wrap",
-    marginHorizontal: 8,
-    marginBottom: 90,
+    marginHorizontal: 4,
+    marginBottom: 8,
     gap: 8,
-    marginTop: 20,
-  },
-  statusCard: {
-    width: "31%",
-    borderRadius: 16,
-    alignItems: "center",
-    paddingVertical: 5,
-  },
-  statusLabel: {
-    color: "#fff",
-    fontWeight: "600",
-    fontSize: 13,
-    marginBottom: 2,
-  },
-  statusCount: {
-    color: "#fff",
-    fontWeight: "bold",
-    fontSize: 16,
+    backgroundColor: '#FFFFFF',
+    zIndex: 1,
   },
   searchRow: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#fff",
+    backgroundColor: "#F9FAFB",
     borderRadius: 12,
     marginHorizontal: 12,
-    marginBottom: 16,
-    elevation: 1,
-    height: 44,
+    marginBottom: 12,
+    height: 48,
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
+    zIndex: 1,
   },
   searchInput: {
     flex: 1,
     fontSize: 16,
-    color: "#222",
+    color: "#1F2937",
     marginLeft: 8,
+    fontFamily: "Geist",
+  },
+  blackHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#FFFFFF",
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: "#F3F4F6",
+  },
+  blackHeaderText: {
+    color: "#4A5D23",
+    fontSize: 20,
+    fontFamily: "GeistBold",
   },
   vehicleCardNew: {
     backgroundColor: "#fff",
@@ -635,21 +643,6 @@ const styles = StyleSheet.create({
     alignSelf: "stretch",
     marginRight: 10,
     marginTop: 30,
-  },
-  blackHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "#fff",
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: "#e0e0e0",
-  },
-  blackHeaderText: {
-    color: "#000",
-    fontSize: 20,
-    fontWeight: "bold",
   },
   stopCountBadgeSelected: {
     backgroundColor: '#43A047',

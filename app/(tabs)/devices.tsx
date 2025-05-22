@@ -24,6 +24,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { z } from "zod";
 import { setDevices, setLoading } from "../store/slices/deviceSlice";
 import { RootState } from "../store/store";
+import tw from "twrnc";
 
 const CATEGORY_OPTIONS = [
   "Default",
@@ -127,98 +128,190 @@ const DeviceCard = memo(({
   onPress: () => void;
   onEdit: () => void;
   onUsers: () => void;
-}) => (
-  <TouchableOpacity
-    style={styles.deviceCard}
-    onPress={onPress}
-    activeOpacity={0.85}
-  >
-    <View style={styles.deviceRow}>
-      <View style={{ flex: 1 }}>
-        <Text style={styles.deviceNumber}>{device.name}</Text>
-      </View>
-      <Text
-        style={[
-          styles.deviceModel,
+}) => {
+  // Update status colors with a new harmonious palette
+  const getStatusColor = (status: string) => {
+    switch (status.toLowerCase()) {
+      case 'online':
+        return '#4A5D23'; // Olive green (primary)
+      case 'offline':
+        return '#102820'; // Deep blue
+      case 'unknown':
+        return '#4d2d18'; // Deep amber
+      default:
+        return '#4B5563'; // Cool gray
+    }
+  };
+
+  const statusColor = getStatusColor(device.status);
+  const lastUpdate = device.lastUpdate
+    ? new Date(device.lastUpdate).toLocaleString([], {
+      month: "short",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    })
+    : "-";
+
+  // Get status icon based on status
+  const getStatusIcon = (status: string) => {
+    switch (status.toLowerCase()) {
+      case 'online':
+        return 'check-circle';
+      case 'offline':
+        return 'cancel';
+      case 'unknown':
+        return 'help';
+      default:
+        return 'info';
+    }
+  };
+
+  return (
+    <TouchableOpacity
+      style={tw`mx-4 mb-4`}
+      onPress={onPress}
+      activeOpacity={0.7}
+    >
+      <View style={tw`bg-white rounded-2xl overflow-hidden border border-gray-100 shadow-sm`}>
+        {/* Status Bar with Gradient */}
+        <View style={[
+          tw`h-1.5 w-full`,
           {
-            backgroundColor:
-              device.status === "online" ? "#43A047" : "#FF7043",
-          },
-        ]}
-      >
-        {device.status}
-      </Text>
-    </View>
-    <View style={styles.deviceDetailsRow}>
-      <Text style={styles.deviceDetail}>
-        Model: {device.model || "-"}
-      </Text>
-    </View>
-    <View style={styles.deviceDetailsRow}>
-      <Text style={styles.deviceDetail}>
-        Category: {device.category || "-"}
-      </Text>
-    </View>
-    <View style={styles.deviceDetailsRow}>
-      <Text style={styles.deviceDetail}>
-        Contact: {device.phone || "-"}
-      </Text>
-    </View>
-    <View style={styles.deviceDetailsRow}>
-      <Text style={styles.deviceDetail}>
-        IMEI: {device.uniqueId || "-"}
-      </Text>
-    </View>
-    <View style={styles.deviceDetailsRow}>
-      <Text style={styles.deviceDetail}>
-        Last Update:{" "}
-        {device.lastUpdate
-          ? new Date(device.lastUpdate).toLocaleString([], {
-            month: "short",
-            day: "numeric",
-            hour: "2-digit",
-            minute: "2-digit",
-          })
-          : "-"}
-      </Text>
-    </View>
-    <View style={styles.deviceDetailsRow}>
-      <Text style={styles.deviceDetail}>
-        Expiration Time:{" "}
-        {device.expirationTime
-          ? new Date(device.expirationTime).toLocaleString([], {
-            month: "short",
-            day: "numeric",
-            hour: "2-digit",
-            minute: "2-digit",
-          })
-          : "-"}
-      </Text>
-    </View>
-    <View style={styles.deviceActionsRow}>
-      <TouchableOpacity
-        style={[
-          styles.deviceActionBtn,
-          { backgroundColor: "#43A047", flex: 1, marginRight: 6 },
-        ]}
-        onPress={onEdit}
-      >
-        <Text style={styles.deviceActionBtnText}>EDIT</Text>
-      </TouchableOpacity>
-      <TouchableOpacity
-        style={[
-          styles.deviceActionBtn,
-          { backgroundColor: "#FF7043", flex: 1, marginLeft: 6 },
-        ]}
-        onPress={onUsers}
-      >
-        <Text style={[styles.deviceActionBtnText, { color: "white" }]}>
-          USERS
-        </Text>
-      </TouchableOpacity>
-    </View>
-  </TouchableOpacity>
-));
+            backgroundColor: statusColor,
+            opacity: device.status.toLowerCase() === 'online' ? 1 : 0.85
+          }
+        ]} />
+
+        <View style={tw`p-5`}>
+          {/* Header Row with Icon */}
+          <View style={tw`flex-row justify-between items-start mb-4`}>
+            <View style={tw`flex-1 mr-4 flex-row items-center`}>
+              <View style={[
+                tw`w-10 h-10 rounded-full items-center justify-center mr-3`,
+                { backgroundColor: `${statusColor}15` }
+              ]}>
+                <MaterialIcons
+                  name={getStatusIcon(device.status)}
+                  size={22}
+                  color={statusColor}
+                />
+              </View>
+              <View>
+                <Text style={[tw`text-sm`, { fontFamily: 'GeistBold', color: '#1F2937' }]}>
+                  {device.name}
+                </Text>
+                <Text style={[tw`text-sm mt-0.5`, { fontFamily: 'Geist', color: '#6B7280' }]}>
+                  {device.model || "No Model"}
+                </Text>
+              </View>
+            </View>
+
+            {/* Status Badge */}
+            <View style={[
+              tw`px-3 py-1.5 rounded-full`,
+              { backgroundColor: `${statusColor}12` }
+            ]}>
+              <View style={tw`flex-row items-center`}>
+                <View style={[
+                  tw`w-1.5 h-1.5 rounded-full mr-1.5`,
+                  { backgroundColor: statusColor }
+                ]} />
+                <Text style={[
+                  tw`text-xs font-medium`,
+                  {
+                    fontFamily: 'Geist',
+                    color: statusColor
+                  }
+                ]}>
+                  {device.status.toUpperCase()}
+                </Text>
+              </View>
+            </View>
+          </View>
+
+          {/* Info Grid with Icons */}
+          <View style={tw`bg-gray-50 rounded-xl p-4 mb-4`}>
+            <View style={tw`flex-row flex-wrap`}>
+              <View style={tw`w-1/2 mb-3`}>
+                <View style={tw`flex-row items-center mb-1`}>
+                  <MaterialIcons name="category" size={14} color="#4A5D23" style={tw`mr-1.5`} />
+                  <Text style={[tw`text-xs`, { fontFamily: 'Geist', color: '#4A5D23' }]}>
+                    Category
+                  </Text>
+                </View>
+                <Text style={[tw`text-xs ml-5`, { fontFamily: 'Geist', color: '#1F2937' }]}>
+                  {device.category || "-"}
+                </Text>
+              </View>
+              <View style={tw`w-1/2 mb-3`}>
+                <View style={tw`flex-row items-center mb-1`}>
+                  <MaterialIcons name="phone" size={14} color="#4A5D23" style={tw`mr-1.5`} />
+                  <Text style={[tw`text-xs`, { fontFamily: 'Geist', color: '#4A5D23' }]}>
+                    Contact
+                  </Text>
+                </View>
+                <Text style={[tw`text-xs ml-5`, { fontFamily: 'Geist', color: '#1F2937' }]}>
+                  {device.phone || "-"}
+                </Text>
+              </View>
+              <View style={tw`w-1/2`}>
+                <View style={tw`flex-row items-center mb-1`}>
+                  <MaterialIcons name="fingerprint" size={14} color="#4A5D23" style={tw`mr-1.5`} />
+                  <Text style={[tw`text-xs`, { fontFamily: 'Geist', color: '#4A5D23' }]}>
+                    IMEI
+                  </Text>
+                </View>
+                <Text style={[tw`text-xs ml-5`, { fontFamily: 'Geist', color: '#1F2937' }]}>
+                  {device.uniqueId || "-"}
+                </Text>
+              </View>
+              <View style={tw`w-1/2`}>
+                <View style={tw`flex-row items-center mb-1`}>
+                  <MaterialIcons name="update" size={14} color="#4A5D23" style={tw`mr-1.5`} />
+                  <Text style={[tw`text-xs`, { fontFamily: 'Geist', color: '#4A5D23' }]}>
+                    Last Update
+                  </Text>
+                </View>
+                <Text style={[tw`text-xs ml-5`, { fontFamily: 'Geist', color: '#1F2937' }]}>
+                  {lastUpdate}
+                </Text>
+              </View>
+            </View>
+          </View>
+
+          {/* Action Buttons */}
+          <View style={tw`flex-row gap-3`}>
+            <TouchableOpacity
+              style={[
+                tw`flex-1 py-3 rounded-xl items-center justify-center flex-row`,
+                { backgroundColor: '#4A5D23' }
+              ]}
+              onPress={onEdit}
+            >
+              <MaterialIcons name="edit" size={18} color="#FFFFFF" style={tw`mr-2`} />
+              <Text style={[tw`text-xs`, { fontFamily: 'Poppins', color: '#FFFFFF' }]}>
+                Edit Device
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[
+                tw`flex-1 py-3 rounded-xl items-center justify-center flex-row`,
+                { backgroundColor: '#6B8E23' }
+              ]}
+              onPress={onUsers}
+            >
+              <MaterialIcons name="people" size={18} color="#FFFFFF" style={tw`mr-2`} />
+              <Text style={[tw`text-xs`, { fontFamily: 'Poppins', color: '#FFFFFF' }]}>
+                Manage Users
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </View>
+    </TouchableOpacity>
+  );
+});
 
 // Memoized Skeleton Card Component
 const SkeletonDeviceCard = memo(() => (
@@ -320,6 +413,53 @@ const SwitchField = memo(({
   </View>
 ));
 
+// Beautiful Search Bar
+const SearchBar = memo(({
+  search,
+  setSearch
+}: {
+  search: string;
+  setSearch: (text: string) => void;
+}) => (
+  <View style={tw`px-4 pt-4 pb-3 bg-white border-b border-gray-100`}>
+    <View style={tw`flex-row items-center bg-[#4A5D23]/5 rounded-xl px-4 py-1 border border-[#4A5D23]/10`}>
+      <MaterialIcons name="search" size={22} color="#4A5D23" />
+      <TextInput
+        style={[tw`flex-1 ml-3 text-base`, { fontFamily: 'Geist', color: '#1F2937' }]}
+        placeholder="Search devices..."
+        placeholderTextColor="#6B7280"
+        value={search}
+        onChangeText={setSearch}
+      />
+      {search ? (
+        <TouchableOpacity
+          onPress={() => setSearch("")}
+          style={tw`bg-[#4A5D23]/10 p-2 rounded-full`}
+        >
+          <MaterialIcons name="close" size={18} color="#4A5D23" />
+        </TouchableOpacity>
+      ) : null}
+    </View>
+  </View>
+));
+
+// Beautiful Header
+const Header = memo(({
+  onAddPress
+}: {
+  onAddPress: () => void;
+}) => (
+  <View style={tw`bg-white border-b border-gray-100 py-5 px-4`}>
+    <View style={tw`flex-row items-center justify-between mb-1`}>
+      <Text style={[tw`text-2xl`, { fontFamily: 'GeistBold', color: '#4A5D23' }]}>
+        Devices
+      </Text>
+
+    </View>
+
+  </View>
+));
+
 export default function DevicesScreen() {
   const dispatch = useDispatch();
   const { devices: devicesData, loading } = useSelector((state: RootState) => state.devices);
@@ -400,7 +540,7 @@ export default function DevicesScreen() {
       })}
       onEdit={() => openEditModal(item)}
       onUsers={() => {
-        setSelectedDeviceId(item.deviceId);
+        setSelectedDeviceId(item.id);
         setUsersModalVisible(true);
       }}
     />
@@ -411,21 +551,7 @@ export default function DevicesScreen() {
 
   // Memoized list header component
   const ListHeaderComponent = useMemo(() => (
-    <View style={styles.searchBarWrap}>
-      <MaterialIcons
-        name="search"
-        size={20}
-        color="#bbb"
-        style={{ marginLeft: 8, marginRight: 4 }}
-      />
-      <TextInput
-        style={styles.searchInput}
-        placeholder="Search device..."
-        placeholderTextColor="#888"
-        value={search}
-        onChangeText={setSearch}
-      />
-    </View>
+    <SearchBar search={search} setSearch={setSearch} />
   ), [search]);
 
   useEffect(() => {
@@ -822,15 +948,14 @@ export default function DevicesScreen() {
   ), [form, modelOpen, categoryOpen, groupOpen, editMode]);
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={tw`flex-1 bg-gray-50`}>
       <StatusBar barStyle="dark-content" backgroundColor="#fff" />
 
-      <View style={styles.headerWrap}>
-        <Text style={styles.header}>Devices</Text>
-      </View>
+      <Header onAddPress={openAddModal} />
+      <SearchBar search={search} setSearch={setSearch} />
 
       {loading && devicesData.length === 0 ? (
-        <View style={{ paddingTop: 12, paddingBottom: 80 }}>
+        <View style={tw`px-4 pt-4`}>
           {[...Array(6)].map((_, i) => (
             <SkeletonDeviceCard key={i} />
           ))}
@@ -840,23 +965,27 @@ export default function DevicesScreen() {
           data={filteredDevices}
           renderItem={renderItem}
           keyExtractor={keyExtractor}
-          ListHeaderComponent={ListHeaderComponent}
-          contentContainerStyle={{ paddingBottom: 80, paddingTop: 12 }}
+          contentContainerStyle={tw`pt-4 pb-6`}
+          showsVerticalScrollIndicator={false}
           initialNumToRender={10}
           maxToRenderPerBatch={10}
           windowSize={5}
           removeClippedSubviews={true}
-          getItemLayout={(data, index) => ({
-            length: 300,
-            offset: 300 * index,
-            index,
-          })}
+          ListEmptyComponent={
+            <View style={tw`items-center justify-center py-16 px-4`}>
+              <View style={tw`w-20 h-20 rounded-full bg-[#4A5D23]/5 items-center justify-center mb-4`}>
+                <MaterialIcons name="search-off" size={36} color="#4A5D23" />
+              </View>
+              <Text style={[tw`text-xl text-center`, { fontFamily: 'GeistBold', color: '#4A5D23' }]}>
+                No devices found
+              </Text>
+              <Text style={[tw`text-base mt-2 text-center`, { fontFamily: 'Geist', color: '#6B7280' }]}>
+                Try adjusting your search criteria or add a new device
+              </Text>
+            </View>
+          }
         />
       )}
-
-      <TouchableOpacity style={styles.fab} onPress={openAddModal}>
-        <MaterialIcons name="add" size={28} color="#fff" />
-      </TouchableOpacity>
 
       <Modal visible={modalVisible} animationType="slide" transparent>
         <View style={styles.modalOverlay}>
@@ -1084,9 +1213,11 @@ const styles = StyleSheet.create({
   },
   addBtnText: { color: "#fff", fontWeight: "bold", fontSize: 16 },
   cancelBtn: { marginTop: 8, alignItems: "center" },
-  cancelBtnText: {color: "#757575",
+  cancelBtnText: {
+    color: "#757575",
     fontWeight: "500",
- fontSize: 15 },
+    fontSize: 15
+  },
   searchBarWrap: {
     flexDirection: "row",
     alignItems: "center",
@@ -1098,7 +1229,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderWidth: 1,
-   borderColor: "#C8E6C9",
+    borderColor: "#C8E6C9",
   },
   searchInput: {
     flex: 1,

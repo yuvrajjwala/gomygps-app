@@ -80,7 +80,7 @@ export default function MapScreen() {
   const detailsAnimHeight = useRef(new Animated.Value(0)).current;
 
 
-  
+
 
   // Add new state for 3D view
   const [is3DView, setIs3DView] = useState(false);
@@ -121,7 +121,7 @@ export default function MapScreen() {
 
     const newDevice = { ...device, ...response.data[0] };
     setDevice(newDevice);
-    
+
     if (newDevice.latitude && newDevice.longitude) {
       const newPosition = {
         latitude: Number(newDevice.latitude) || 0,
@@ -131,7 +131,7 @@ export default function MapScreen() {
       // Update marker position and path
       setCurrentMarkerPosition(newPosition);
       setCarPath(prev => [...prev, newPosition]);
-      
+
       markerPosition.timing({
         toValue: newPosition,
         duration: 1000,
@@ -353,7 +353,7 @@ export default function MapScreen() {
         routeResponse.data.forEach((position: any) => {
           const currentTime = new Date(position.deviceTime).getTime();
           const timeDiff = currentTime - lastTimestamp;
-          
+
           // Check states
           const isIgnitionOn = position.attributes?.ignition === true;
           const isMoving = position.speed > 0;
@@ -458,10 +458,10 @@ export default function MapScreen() {
 
     // Get running hours (when ignition is on AND speed > 0)
     const runningHours = summaryData.movingDuration || 0;
-    
+
     // Get total ignition hours
     const ignitionHours = summaryData.engineHours || 0;
-    
+
     // Calculate idle hours (ignition on but not moving)
     const idleHours = ignitionHours - runningHours;
 
@@ -649,11 +649,11 @@ export default function MapScreen() {
                 },
               ]}
               onPress={() => {
-              setCarMode(true);
+                setCarMode(true);
                 const wasCarModeOff = carMode;
-                
+
                 // Only reset zoom when first enabling car mode
-                if ( mapRef.current && device?.latitude && device?.longitude) {
+                if (mapRef.current && device?.latitude && device?.longitude) {
                   mapRef.current.animateToRegion({
                     latitude: Number(device.latitude),
                     longitude: Number(device.longitude),
@@ -963,51 +963,28 @@ export default function MapScreen() {
         onRequestClose={() => setShareModalVisible(false)}
       >
         <Pressable
-          style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.3)' }}
+          style={shareModalStyles.modalContainer}
           onPress={() => setShareModalVisible(false)}
         >
-          <View style={{
-            position: 'absolute',
-            bottom: 0,
-            left: 0,
-            right: 0,
-            backgroundColor: '#fff',
-            borderTopLeftRadius: 18,
-            borderTopRightRadius: 18,
-            padding: 24,
-            alignItems: 'center',
-          }}>
-            <Text style={{ fontSize: 18, fontWeight: 'bold', marginBottom: 18, color: '#222' }}>Share Location</Text>
+          <View style={shareModalStyles.modalContent}>
+            <Text style={shareModalStyles.modalTitle}>Share Location</Text>
             <TouchableOpacity
-              style={{
-                width: '100%',
-                backgroundColor: '#43A047',
-                borderRadius: 10,
-                paddingVertical: 14,
-                alignItems: 'center',
-                marginBottom: 12,
-              }}
+              style={shareModalStyles.shareButton}
               onPress={handleShareCurrentLocation}
             >
-              <Text style={{ color: '#fff', fontWeight: 'bold', fontSize: 16 }}>Share Current Location</Text>
+              <Text style={shareModalStyles.shareButtonText}>Share Current Location</Text>
             </TouchableOpacity>
             <TouchableOpacity
-              style={{
-                width: '100%',
-                backgroundColor: '#2979FF',
-                borderRadius: 10,
-                paddingVertical: 14,
-                alignItems: 'center',
-              }}
+              style={shareModalStyles.shareButton}
               onPress={handleShareLiveLocation}
             >
-              <Text style={{ color: '#fff', fontWeight: 'bold', fontSize: 16 }}>Share Live Location</Text>
+              <Text style={shareModalStyles.shareButtonText}>Share Live Location</Text>
             </TouchableOpacity>
             <TouchableOpacity
-              style={{ marginTop: 18 }}
+              style={shareModalStyles.cancelButton}
               onPress={() => setShareModalVisible(false)}
             >
-              <Text style={{ color: '#2979FF', fontWeight: 'bold', fontSize: 16 }}>Cancel</Text>
+              <Text style={shareModalStyles.cancelButtonText}>Cancel</Text>
             </TouchableOpacity>
           </View>
         </Pressable>
@@ -1020,27 +997,32 @@ const { width } = Dimensions.get("window");
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: "black",
+    backgroundColor: "#FFFFFF",
   },
   header: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#000",
+    backgroundColor: "#4A5D23", // Olive green
     paddingHorizontal: 16,
-    paddingTop: 12,
-    paddingBottom: 8,
-    zIndex: 2,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: "rgba(255,255,255,0.1)",
+    elevation: 2,
+    shadowOpacity: 0.1,
   },
   headerTitle: {
-    color: "#fff",
-    fontWeight: "bold",
-    fontSize: 20,
-    letterSpacing: 1,
+    color: "#FFFFFF",
+    fontFamily: "Poppins",
+    fontSize: 18,
+    fontWeight: "600",
+    letterSpacing: 0.3,
   },
   headerSubtitle: {
-    color: "#BBDEFB",
-    fontSize: 13,
-    fontWeight: "600",
+    color: "rgba(255,255,255,0.9)",
+    fontFamily: "Poppins",
+    fontSize: 12,
+    fontWeight: "500",
+    marginTop: 2,
   },
   map: {
     flex: 1,
@@ -1052,14 +1034,14 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    backgroundColor: "#fff",
+    backgroundColor: "#FFFFFF",
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
-    shadowColor: "#000",
+    shadowColor: "#4A5D23",
     shadowOffset: { width: 0, height: -2 },
-    shadowOpacity: 0.12,
-    shadowRadius: 8,
-    elevation: 30,
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
+    elevation: 20,
     zIndex: 100,
     maxHeight: SCREEN_HEIGHT * 0.8,
   },
@@ -1074,9 +1056,11 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
   vehicleNumber: {
-    fontWeight: "bold",
-    fontSize: 18,
-    color: "#000000",
+    fontFamily: "Poppins",
+    fontWeight: "600",
+    fontSize: 20,
+    color: "#4A5D23",
+    letterSpacing: 0.3,
   },
   speedoWrap: {
     flexDirection: "row",
@@ -1106,8 +1090,8 @@ const styles = StyleSheet.create({
   },
   bottomCardDivider: {
     height: 1,
-    backgroundColor: "#F0F0F0",
-    marginVertical: 10,
+    backgroundColor: "rgba(74,93,35,0.1)",
+    marginVertical: 16,
   },
   statusIconsRow: {
     flexDirection: "row",
@@ -1119,23 +1103,23 @@ const styles = StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: 24,
-    borderWidth: 2,
-    backgroundColor: "#fff",
+    borderWidth: 1.5,
+    backgroundColor: "#FFFFFF",
     alignItems: "center",
     justifyContent: "center",
     marginHorizontal: 6,
-    shadowColor: "rgba(0,0,0,0.1)",
+    shadowColor: "rgba(74,93,35,0.15)",
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.5,
-    shadowRadius: 3,
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
     elevation: 3,
   },
   iconCircleActive: {
-    backgroundColor: "#4285F4",
-    borderColor: "#4285F4",
-    shadowColor: "#4285F4",
+    backgroundColor: "#4A5D23",
+    borderColor: "#4A5D23",
+    shadowColor: "#4A5D23",
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.18,
+    shadowOpacity: 0.15,
     shadowRadius: 8,
   },
   bottomButtonsRow: {
@@ -1145,43 +1129,47 @@ const styles = StyleSheet.create({
   },
   centerMapBtn: {
     flex: 1,
-    backgroundColor: "#43A047",
-    borderRadius: 10,
-    paddingVertical: 12,
+    backgroundColor: "#4A5D23",
+    borderRadius: 12,
+    paddingVertical: 14,
     alignItems: "center",
     marginRight: 8,
-    shadowColor: "#43A047",
+    shadowColor: "#4A5D23",
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
+    shadowOpacity: 0.15,
+    shadowRadius: 6,
     elevation: 3,
   },
   centerMapBtnText: {
-    color: "#fff",
-    fontWeight: "bold",
-    fontSize: 16,
+    color: "#FFFFFF",
+    fontFamily: "Poppins",
+    fontWeight: "600",
+    fontSize: 15,
+    letterSpacing: 0.3,
   },
   viewReportsBtn: {
     flex: 1,
-    backgroundColor: "#FF7043",
-    borderRadius: 10,
-    paddingVertical: 12,
+    backgroundColor: "#2C5282",
+    borderRadius: 12,
+    paddingVertical: 14,
     alignItems: "center",
     marginLeft: 8,
-    shadowColor: "#FF7043",
+    shadowColor: "#2C5282",
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
+    shadowOpacity: 0.15,
+    shadowRadius: 6,
     elevation: 3,
   },
   viewReportsBtnText: {
-    color: "#fff",
-    fontWeight: "bold",
-    fontSize: 16,
+    color: "#FFFFFF",
+    fontFamily: "Poppins",
+    fontWeight: "600",
+    fontSize: 15,
+    letterSpacing: 0.3,
   },
   markerImage: {
-    width: 30,
-    height: 30,
+    width: 32,
+    height: 32,
     resizeMode: "contain",
   },
   statsRow: {
@@ -1193,34 +1181,40 @@ const styles = StyleSheet.create({
   statsCol: {
     flex: 1,
     alignItems: "center",
-    padding: 5,
-    borderRadius: 8,
-    backgroundColor: "#f8f9fa",
+    padding: 4,
+    borderRadius: 12,
+    backgroundColor: "#FFFFFF",
     marginHorizontal: 2,
     borderWidth: 1,
-    borderColor: "rgba(0,0,0,0.05)",
-    shadowColor: "rgba(0,0,0,0.05)",
-    shadowOffset: { width: 0, height: 1 },
+    borderColor: "rgba(74,93,35,0.1)",
+    shadowColor: "rgba(74,93,35,0.1)",
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.8,
-    shadowRadius: 2,
-    elevation: 1,
+    shadowRadius: 4,
+    elevation: 2,
+    minHeight: 80,
+    justifyContent: "center",
   },
   statsValue: {
-    fontWeight: "bold",
-    fontSize: 10,
-    color: "#000",
+    fontFamily: "Poppins",
+    fontWeight: "600",
+    fontSize: 8,
+    color: "#4A5D23",
     marginTop: 2,
+    textAlign: "center",
   },
   statsLabel: {
-    fontSize: 9,
-    color: "#666",
+    fontFamily: "Poppins",
+    fontSize: 10,
+    color: "#666666",
     textAlign: "center",
     fontWeight: "500",
+    marginTop: 1,
   },
   statsDivider: {
     height: 1,
-    backgroundColor: "#eee",
-    marginVertical: 6,
+    backgroundColor: "rgba(74,93,35,0.1)",
+    marginVertical: 8,
   },
   floatingMenuLeft: {
     position: "absolute",
@@ -1237,82 +1231,140 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   fab: {
-    backgroundColor: "#fff",
-    borderRadius: 24,
-    width: 48,
-    height: 48,
+    backgroundColor: "#FFFFFF",
+    borderRadius: 16,
+    width: 44,
+    height: 44,
     alignItems: "center",
     justifyContent: "center",
     marginBottom: 12,
-    shadowColor: "#000",
+    shadowColor: "#4A5D23",
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.12,
+    shadowOpacity: 0.1,
     shadowRadius: 4,
-    elevation: 4,
+    elevation: 3,
+    borderWidth: 1,
+    borderColor: "rgba(74,93,35,0.1)",
   },
   fabSpeed: {
-    backgroundColor: "#FF7043",
-    borderRadius: 24,
-    width: 48,
-    height: 48,
+    backgroundColor: "#4A5D23",
+    borderRadius: 16,
+    width: 44,
+    height: 44,
     alignItems: "center",
     justifyContent: "center",
     marginBottom: 12,
-    shadowColor: "#000",
+    shadowColor: "#4A5D23",
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.12,
-    shadowRadius: 4,
+    shadowOpacity: 0.15,
+    shadowRadius: 6,
     elevation: 4,
-    zIndex: 20,
   },
   fabSpeedText: {
-    color: "#fff",
-    fontWeight: "bold",
+    color: "#FFFFFF",
+    fontFamily: "Poppins",
+    fontWeight: "600",
     fontSize: 14,
     marginTop: 2,
   },
   fabSpeedUnit: {
-    color: "#fff",
+    color: "#FFFFFF",
+    fontFamily: "Poppins",
     fontSize: 10,
+    opacity: 0.9,
     marginTop: -2,
   },
   statsColHighlight1: {
-    backgroundColor: "#EBF5FB",
-    borderColor: "#BBDEFB",
+    backgroundColor: "rgba(74,93,35,0.03)",
+    borderColor: "rgba(74,93,35,0.15)",
   },
   statsColHighlight2: {
-    backgroundColor: "#FFF8E1",
-    borderColor: "#FFECB3",
+    backgroundColor: "rgba(74,93,35,0.05)",
+    borderColor: "rgba(74,93,35,0.2)",
   },
   statsColHighlight3: {
-    backgroundColor: "#E8F5E9",
-    borderColor: "#C8E6C9",
+    backgroundColor: "rgba(74,93,35,0.03)",
+    borderColor: "rgba(74,93,35,0.15)",
   },
   statsColHighlight4: {
-    backgroundColor: "#F3E5F5",
-    borderColor: "#E1BEE7",
+    backgroundColor: "rgba(74,93,35,0.05)",
+    borderColor: "rgba(74,93,35,0.2)",
   },
   statsColHighlight5: {
-    backgroundColor: "#E0F2F1",
-    borderColor: "#B2DFDB",
+    backgroundColor: "rgba(74,93,35,0.03)",
+    borderColor: "rgba(74,93,35,0.15)",
   },
   statsColHighlight6: {
-    backgroundColor: "#FFEBEE",
-    borderColor: "#FFCDD2",
+    backgroundColor: "rgba(74,93,35,0.05)",
+    borderColor: "rgba(74,93,35,0.2)",
   },
   statsColHighlight7: {
-    backgroundColor: "#FFF8E1",
-    borderColor: "#FFE082",
+    backgroundColor: "rgba(74,93,35,0.03)",
+    borderColor: "rgba(74,93,35,0.15)",
   },
   statsColHighlight8: {
-    backgroundColor: "#E1F5FE",
-    borderColor: "#B3E5FC",
-  },
-  statsColHighlight9: {
-    backgroundColor: "#F1F8E9",
-    borderColor: "#DCEDC8",
+    backgroundColor: "rgba(74,93,35,0.05)",
+    borderColor: "rgba(74,93,35,0.2)",
   },
   statsIcon: {
-    marginBottom: 2,
+    marginBottom: 4,
+    color: "#4A5D23",
+  },
+});
+
+// Update the share modal styles
+const shareModalStyles = StyleSheet.create({
+  modalContainer: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.4)',
+    justifyContent: 'flex-end',
+  },
+  modalContent: {
+    backgroundColor: '#FFFFFF',
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    padding: 20,
+    maxHeight: SCREEN_HEIGHT * 0.5,
+  },
+  modalScrollContent: {
+    paddingBottom: 20,
+  },
+  modalTitle: {
+    fontFamily: "Poppins",
+    fontSize: 18,
+    fontWeight: "600" as const,
+    color: "#4A5D23",
+    marginBottom: 16,
+    textAlign: 'center',
+  },
+  shareButton: {
+    backgroundColor: '#4A5D23',
+    borderRadius: 12,
+    paddingVertical: 14,
+    alignItems: 'center' as const,
+    marginBottom: 10,
+    shadowColor: "#4A5D23",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 6,
+    elevation: 3,
+  },
+  shareButtonText: {
+    color: '#FFFFFF',
+    fontFamily: "Poppins",
+    fontWeight: "600" as const,
+    fontSize: 15,
+    letterSpacing: 0.3,
+  },
+  cancelButton: {
+    marginTop: 12,
+    padding: 8,
+  },
+  cancelButtonText: {
+    color: '#4A5D23',
+    fontFamily: "Poppins",
+    fontWeight: "600" as const,
+    fontSize: 15,
+    textAlign: 'center',
   },
 });

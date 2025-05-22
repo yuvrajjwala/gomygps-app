@@ -33,57 +33,57 @@ interface StatItem {
 }
 
 // Memoized Status Icon Component
-const StatusIcon = memo(({ 
-  icon, 
-  isActive, 
-  activeColor, 
-  inactiveColor, 
-  onPress 
-}: { 
-  icon: string; 
-  isActive: boolean; 
-  activeColor: string; 
-  inactiveColor: string; 
+const StatusIcon = memo(({
+  icon,
+  isActive,
+  activeColor,
+  inactiveColor,
+  onPress
+}: {
+  icon: string;
+  isActive: boolean;
+  activeColor: string;
+  inactiveColor: string;
   onPress: () => void;
 }) => (
-  <TouchableOpacity 
+  <TouchableOpacity
     style={[
-      styles.iconCircle, 
+      styles.iconCircle,
       { borderColor: isActive ? activeColor : inactiveColor }
     ]}
     onPress={onPress}
-  > 
-    <MaterialIcons 
-      name={icon as any} 
-      size={24} 
-      color={isActive ? activeColor : inactiveColor} 
+  >
+    <MaterialIcons
+      name={icon as any}
+      size={24}
+      color={isActive ? activeColor : inactiveColor}
     />
   </TouchableOpacity>
 ));
 
 // Memoized Stat Card Component
-const StatCard = memo(({ 
-  stat, 
-  backgroundColor 
-}: { 
-  stat: StatItem; 
+const StatCard = memo(({
+  stat,
+  backgroundColor
+}: {
+  stat: StatItem;
   backgroundColor: string;
 }) => (
   <View
     style={[
       styles.statsCardColorful,
-      { 
+      {
         backgroundColor,
         shadowColor: backgroundColor
       }
     ]}
   >
     {stat.icon ? (
-      <MaterialIcons 
-        name={stat.icon as any} 
-        size={22} 
-        color="#fff" 
-        style={{ marginBottom: 6 }} 
+      <MaterialIcons
+        name={stat.icon as any}
+        size={22}
+        color="#fff"
+        style={{ marginBottom: 6 }}
       />
     ) : null}
     <Text style={styles.statsValueColorful}>{stat.value}</Text>
@@ -92,22 +92,22 @@ const StatCard = memo(({
 ));
 
 // Memoized Action Button Component
-const ActionButton = memo(({ 
-  icon, 
-  text, 
-  backgroundColor, 
-  onPress 
-}: { 
-  icon: string; 
-  text: string; 
-  backgroundColor: string; 
+const ActionButton = memo(({
+  icon,
+  text,
+  backgroundColor,
+  onPress
+}: {
+  icon: string;
+  text: string;
+  backgroundColor: string;
   onPress: () => void;
 }) => (
-  <TouchableOpacity 
+  <TouchableOpacity
     style={[
       styles.backBtnColorful,
       { backgroundColor, shadowColor: backgroundColor }
-    ]} 
+    ]}
     onPress={onPress}
   >
     <MaterialIcons name={icon as any} size={20} color="#fff" />
@@ -275,7 +275,7 @@ export default function VehicleDetailsScreen() {
       <ScrollView contentContainerStyle={styles.scrollContent}>
         <Text style={styles.vehicleNumber}>{data.number}</Text>
         <Text style={styles.vehicleAddress}>{data.address}</Text>
-        
+
         <View style={styles.statusIconsRow}>
           <StatusIcon
             icon="local-parking"
@@ -284,7 +284,7 @@ export default function VehicleDetailsScreen() {
             inactiveColor="#A5F3C7"
             onPress={() => vehicle && (isParked ? removeGeofence(vehicle) : createGeofence(vehicle))}
           />
-          
+
           <StatusIcon
             icon="play-arrow"
             isActive={true}
@@ -297,7 +297,7 @@ export default function VehicleDetailsScreen() {
               }));
             }}
           />
-          
+
           <StatusIcon
             icon="directions-car"
             isActive={carMode}
@@ -305,7 +305,7 @@ export default function VehicleDetailsScreen() {
             inactiveColor="#90CAF9"
             onPress={() => setCarMode(!carMode)}
           />
-          
+
           <StatusIcon
             icon="lock"
             isActive={isLocked}
@@ -313,7 +313,7 @@ export default function VehicleDetailsScreen() {
             inactiveColor="#FFCDD2"
             onPress={() => vehicle && mobilize(vehicle.protocol)}
           />
-          
+
           <StatusIcon
             icon="location-on"
             isActive={autoFollow}
@@ -344,8 +344,8 @@ export default function VehicleDetailsScreen() {
           icon="map"
           text="History Playback"
           backgroundColor="#008fff"
-          onPress={() => router.push({ 
-            pathname: '/history-playback', 
+          onPress={() => router.push({
+            pathname: '/history-playback',
             params: { device: JSON.stringify(vehicle) }
           })}
         />
@@ -423,7 +423,7 @@ const styles = StyleSheet.create({
     marginTop: 4,
     marginBottom: 20,
     paddingHorizontal: 10,
-  
+
   },
   iconCircle: {
     width: 48,
@@ -504,41 +504,41 @@ const styles = StyleSheet.create({
     opacity: 0.85,
     fontWeight: '600',
   },
-    backBtnColorful: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'center',
-        backgroundColor: '#FF7043',
-        padding: 16,
-        borderRadius: 16,
-        marginTop: 24,
-        marginBottom: 10,
-        alignSelf: 'center',
-        width: '80%',
-        shadowColor: '#FF7043',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.16,
-        shadowRadius: 8,
-        elevation: 4,
-    },
-    backBtnColorful1: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'center',
-        backgroundColor: '#008fff',
-        padding: 16,
-        borderRadius: 16,
-        marginTop: 24,
-        marginBottom: 10,
-        alignSelf: 'center',
-        width: '80%',
-        shadowColor: '#FF7043',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.16,
-        shadowRadius: 8,
-        elevation: 4,
-    },
-   
+  backBtnColorful: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#FF7043',
+    padding: 16,
+    borderRadius: 16,
+    marginTop: 24,
+    marginBottom: 10,
+    alignSelf: 'center',
+    width: '80%',
+    shadowColor: '#FF7043',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.16,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  backBtnColorful1: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#008fff',
+    padding: 16,
+    borderRadius: 16,
+    marginTop: 24,
+    marginBottom: 10,
+    alignSelf: 'center',
+    width: '80%',
+    shadowColor: '#FF7043',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.16,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+
   backBtnTextColorful: {
     color: '#fff',
     fontWeight: 'bold',

@@ -14,6 +14,7 @@ import { Card } from "react-native-paper";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useSelector } from "react-redux";
 import { RootState } from "../store/store";
+import tw from 'twrnc';
 import { startPositionUpdates, stopPositionUpdates } from "@/app/services/backgroundService";
 const screenWidth = Dimensions.get("window").width;
 
@@ -33,7 +34,7 @@ export default function DashboardScreen() {
   // Start background service when entering dashboard
   useEffect(() => {
     startPositionUpdates(true);
-    
+
     // Stop background service when leaving dashboard
     return () => {
       stopPositionUpdates();
@@ -53,13 +54,14 @@ export default function DashboardScreen() {
 
   const updateVehicleStats = () => {
     const stats = [
-      { label: "All", color: "black", count: 0 },
-      { label: "Running", color: "#43A047", count: 0 },
-      { label: "Idle", color: "orange", count: 0 },
-      { label: "Stop", color: "red", count: 0 },
-      { label: "Inactive", color: "#00a8d5", count: 0 },
-      { label: "No Data", color: "gray", count: 0 },
+      { label: "All", color: "#1B1F23", count: 0 },
+      { label: "Running", color: "#00C48C", count: 0 },
+      { label: "Idle", color: "#F4B740", count: 0 },
+      { label: "Stop", color: "#FF6B6B", count: 0 },
+      { label: "Inactive", color: "#4EA8DE", count: 0 },
+      { label: "No Data", color: "#B0BEC5", count: 0 },
     ];
+
 
     devicesData.forEach((device) => {
       if (!device?.lastUpdate) {
@@ -73,14 +75,14 @@ export default function DashboardScreen() {
         stats[4].count++; // Inactive
         return;
       }
-      if (device.attributes.ignition===true && Number(device.speed) === 0) {
+      if (device.attributes.ignition === true && Number(device.speed) === 0) {
         stats[2].count++; // Idle
         return;
       }
       // if(device.attributes.ignition===false && device.speed > 0){ //HR38AE4284
       //   console.log(device.name, "ignition", device.attributes.ignition)
       // }
-      if (device.status === "online" &&  device.attributes.motion===true && Number(device.speed) > 0) {
+      if (device.status === "online" && device.attributes.motion === true && Number(device.speed) > 0) {
         stats[1].count++; // Running
         return;
       }
@@ -108,7 +110,7 @@ export default function DashboardScreen() {
 
   // Skeleton components
   const SkeletonStatusCard = () => (
-    <View style={{ width: '31%', borderRadius: 16, alignItems: 'center', paddingVertical: 18, backgroundColor: '#e0e0e0', marginBottom: 8 }} />
+    <View style={{ width: '31%', borderRadius: 10, alignItems: 'center', paddingVertical: 18, backgroundColor: '#e0e0e0', marginBottom: 8 }} />
   );
   const SkeletonChart = () => (
     <View style={{ margin: 8, borderRadius: 16, height: 200, backgroundColor: '#e0e0e0' }} />
@@ -140,8 +142,22 @@ export default function DashboardScreen() {
             {/* Skeleton Recent Devices */}
             <View style={styles.listCard}>
               <View style={styles.listHeaderRow}>
-                <View style={{ width: 80, height: 16, backgroundColor: '#e0e0e0', borderRadius: 8 }} />
-                <View style={{ width: 60, height: 16, backgroundColor: '#e0e0e0', borderRadius: 8 }} />
+                <View
+                  style={{
+                    width: 80,
+                    height: 16,
+                    backgroundColor: "#e0e0e0",
+                    borderRadius: 8,
+                  }}
+                />
+                <View
+                  style={{
+                    width: 60,
+                    height: 16,
+                    backgroundColor: "#e0e0e0",
+                    borderRadius: 8,
+                  }}
+                />
               </View>
               {[...Array(5)].map((_, i) => (
                 <SkeletonListRow key={i} />
@@ -150,7 +166,14 @@ export default function DashboardScreen() {
             {/* Skeleton Groups */}
             <View style={styles.listCard}>
               <View style={styles.listHeaderRow}>
-                <View style={{ width: 80, height: 16, backgroundColor: '#e0e0e0', borderRadius: 8 }} />
+                <View
+                  style={{
+                    width: 80,
+                    height: 16,
+                    backgroundColor: "#e0e0e0",
+                    borderRadius: 8,
+                  }}
+                />
               </View>
               {[...Array(4)].map((_, i) => (
                 <SkeletonListRow key={i} />
@@ -202,12 +225,15 @@ export default function DashboardScreen() {
             </Card>
             {/* Recent Devices */}
             <Card style={styles.listCard}>
-              <Card.Title title="Recent Devices" titleStyle={styles.listTitle} />
+              <Card.Title
+                title="Recent Devices"
+                titleStyle={styles.listTitle}
+              />
               <View style={styles.listHeaderRow}>
                 <Text style={styles.listHeader}>NAME</Text>
                 <Text style={styles.listHeader}>STATUS</Text>
               </View>
-              {devicesData?.length > 0 &&
+              {/* {devicesData?.length > 0 &&
                 devicesData?.slice(0, 5)?.map((device: any, idx: number) => (
                   <View
                     key={device.name + idx}
@@ -253,6 +279,66 @@ export default function DashboardScreen() {
                       </Text>
                     </View>
                   </View>
+                ))} */}
+              {devicesData?.length > 0 &&
+                devicesData.slice(0, 5).map((device, idx) => (
+                  <View
+                    key={device.name + idx}
+                    style={[
+                      tw`flex-row justify-between items-center px-4 py-3 bg-white rounded-lg `,
+                      { fontFamily: "Geist-Bold" },
+                      idx !== devicesData.length - 1 &&
+                        tw`border-b border-gray-200`,
+                      tw`shadow-sm`,
+                    ]}
+                  >
+                    {/* Left: Icon + Device Name */}
+                    <View style={tw`flex-row items-center`}>
+                      <View
+                        style={tw`bg-green-600 rounded-full w-10 h-10 flex items-center justify-center shadow`}
+                      >
+                        <MaterialIcons
+                          name="local-shipping"
+                          size={24}
+                          color="#fff"
+                        />
+                      </View>
+                      <Text
+                        style={tw`ml-4 text-sm font-semibold text-gray-900`}
+                      >
+                        {device.name}
+                      </Text>
+                    </View>
+
+                    {/* Right: Status Badge */}
+                    <View
+                      style={[
+                        tw`flex-row items-center rounded-full px-3 py-1 shadow`,
+                        device.status === "online"
+                          ? tw`bg-green-100`
+                          : tw`bg-red-100`,
+                      ]}
+                    >
+                      <View
+                        style={[
+                          tw`w-3 h-3 rounded-full mr-2`,
+                          device.status === "online"
+                            ? tw`bg-green-600`
+                            : tw`bg-red-500`,
+                        ]}
+                      />
+                      <Text
+                        style={[
+                          tw`text-xs font-medium`,
+                          device.status === "online"
+                            ? tw`text-green-700`
+                            : tw`text-red-600`,
+                        ]}
+                      >
+                        {device.status.toUpperCase()}
+                      </Text>
+                    </View>
+                  </View>
                 ))}
             </Card>
             {/* Groups */}
@@ -286,6 +372,7 @@ export default function DashboardScreen() {
   );
 }
 
+
 const styles = StyleSheet.create({
   header: {
     fontSize: 28,
@@ -293,10 +380,12 @@ const styles = StyleSheet.create({
     marginTop: 24,
     marginBottom: 16,
     alignSelf: "center",
-    color: "#00B8D4",
+    color: "#2E7D32", // Dark Green
   },
+
+  // Card Layout
   cardGrid: {
-    marginHorizontal: 8,
+    marginHorizontal: 12,
     marginBottom: 16,
   },
   cardRow: {
@@ -305,28 +394,37 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   statCard: {
-    
     marginHorizontal: 4,
     borderRadius: 16,
     alignItems: "center",
+    backgroundColor: "#E8F5E9", // Light Green
+    paddingVertical: 16,
+    flex: 1,
+    elevation: 3,
   },
+
+  // Pie Chart Card
   chartCard: {
-    margin: 8,
-    borderRadius: 16,
-    elevation: 4,
-    paddingBottom: 8,
+    margin: 12,
+    borderRadius: 20,
+    elevation: 5,
+    paddingBottom: 16,
+    backgroundColor: "#F1F8E9", // Soft light green
   },
+
+  // List Cards
   listCard: {
-    margin: 8,
-    borderRadius: 16,
+    margin: 12,
+    borderRadius: 20,
     elevation: 4,
     paddingBottom: 8,
     backgroundColor: "#fff",
   },
   listTitle: {
-    fontWeight: "bold",
-    fontSize: 20,
-    color: "#222",
+    fontFamily: "Poppins-Regular",
+    fontWeight: "light",
+    fontSize: 16,
+    color: "#1B5E20", // Darker green for section titles
   },
   listHeaderRow: {
     flexDirection: "row",
@@ -334,11 +432,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingBottom: 8,
     borderBottomWidth: 1,
-    borderColor: "#F0F0F0",
+    borderColor: "#E0E0E0",
   },
   listHeader: {
     fontWeight: "600",
-    color: "#888",
+    color: "#789262",
     fontSize: 13,
     letterSpacing: 1,
   },
@@ -349,12 +447,16 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 14,
     backgroundColor: "#fff",
-    borderRadius: 10,
+    borderRadius: 12,
+    marginVertical: 4,
+    elevation: 1,
   },
   listRowBorder: {
     borderBottomWidth: 1,
     borderColor: "#F0F0F0",
   },
+
+  // Icons
   listLeft: {
     flexDirection: "row",
     alignItems: "center",
@@ -363,7 +465,7 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: "#2979FF", // fallback for RN
+    backgroundColor: "#66BB6A", // Medium green
     marginRight: 12,
     justifyContent: "center",
     alignItems: "center",
@@ -372,7 +474,7 @@ const styles = StyleSheet.create({
     width: 34,
     height: 34,
     borderRadius: 17,
-    backgroundColor: "#536DFE",
+    backgroundColor: "#81C784", // Light green
     marginRight: 12,
     justifyContent: "center",
     alignItems: "center",
@@ -380,8 +482,10 @@ const styles = StyleSheet.create({
   deviceName: {
     fontWeight: "bold",
     fontSize: 16,
-    color: "#111",
+    color: "#212121",
   },
+
+  // Status Badges
   statusBadge: {
     flexDirection: "row",
     alignItems: "center",
@@ -392,10 +496,10 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   online: {
-    backgroundColor: "#E6F9ED",
+    backgroundColor: "#E8F5E9", // Light green background
   },
   offline: {
-    backgroundColor: "#F2F3F5",
+    backgroundColor: "#F1F1F1",
   },
   statusDot: {
     width: 8,
@@ -404,21 +508,23 @@ const styles = StyleSheet.create({
     marginRight: 6,
   },
   onlineDot: {
-    backgroundColor: "#00C853",
+    backgroundColor: "#43A047", // Green
   },
   offlineDot: {
-    backgroundColor: "#B0BEC5",
+    backgroundColor: "#BDBDBD",
   },
   statusText: {
     fontWeight: "bold",
     fontSize: 14,
   },
   onlineText: {
-    color: "#00C853",
+    color: "#2E7D32",
   },
   offlineText: {
-    color: "#888",
+    color: "#9E9E9E",
   },
+
+  // Type Badges
   typeBadge: {
     borderRadius: 16,
     paddingHorizontal: 10,
@@ -428,21 +534,23 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   parent: {
-    backgroundColor: "#E3E8FF",
+    backgroundColor: "#C8E6C9",
   },
   child: {
-    backgroundColor: "#F3E8FF",
+    backgroundColor: "#DCEDC8",
   },
   typeText: {
     fontWeight: "bold",
     fontSize: 14,
   },
   parentText: {
-    color: "#3D5AFE",
+    color: "#2E7D32",
   },
   childText: {
-    color: "#A259FF",
+    color: "#558B2F",
   },
+
+  // Header
   blackHeader: {
     flexDirection: "row",
     alignItems: "center",
@@ -454,23 +562,29 @@ const styles = StyleSheet.create({
     borderBottomColor: "#e0e0e0",
   },
   blackHeaderText: {
-    color: "#000",
+    color: "#2E7D32",
     fontSize: 20,
     fontWeight: "bold",
   },
+
+  // Status Row Grid
   statusRow: {
     flexDirection: "row",
     flexWrap: "wrap",
     marginHorizontal: 8,
     marginBottom: 16,
-    gap: 8,
+    gap: 12,
+    justifyContent: "space-between",
   },
   statusCard: {
-    width: "31%",
+    width: "30%",
     borderRadius: 16,
     alignItems: "center",
-    paddingVertical: 5,
+    paddingVertical: 16,
+    backgroundColor: "#C0CFB2", // valid pastel green
+    elevation: 2,
   },
+
   statusLabel: {
     color: "#fff",
     fontWeight: "600",
@@ -480,6 +594,6 @@ const styles = StyleSheet.create({
   statusCount: {
     color: "#fff",
     fontWeight: "bold",
-    fontSize: 16,
+    fontSize: 18,
   },
 });

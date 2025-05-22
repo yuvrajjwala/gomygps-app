@@ -50,8 +50,10 @@ export default function LoginScreen() {
   }, []); 
 
   return (
-    <ImageBackground 
-      source={{uri: 'https://images.pexels.com/photos/6169859/pexels-photo-6169859.jpeg?auto=compress&cs=tinysrgb&w=1200'}} 
+    <ImageBackground
+      source={{
+        uri: "https://images.pexels.com/photos/6169859/pexels-photo-6169859.jpeg?auto=compress&cs=tinysrgb&w=1200",
+      }}
       style={styles.backgroundImage}
       resizeMode="cover"
     >
@@ -60,11 +62,14 @@ export default function LoginScreen() {
           <StatusBar barStyle="light-content" />
           <KeyboardAvoidingView
             style={{ flex: 1 }}
-            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-            keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 24}
+            behavior={Platform.OS === "ios" ? "padding" : "height"}
+            keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 24}
           >
             <View style={styles.container}>
-              <Image source={require('../assets/images/icon.png')} style={styles.logo} />
+              <Image
+                source={require("../assets/images/icon.png")}
+                style={styles.logo}
+              />
               <Text style={styles.heading}>Welcome Back</Text>
               <Text style={styles.subheading}>Login to your account</Text>
               <TextInput
@@ -76,7 +81,7 @@ export default function LoginScreen() {
                 left={<TextInput.Icon icon="email" />}
                 keyboardType="email-address"
                 autoCapitalize="none"
-                theme={{ colors: { primary: 'black' } }}
+                theme={{ colors: { primary: "#2e7d32" } }}
               />
               <TextInput
                 label="Password"
@@ -85,26 +90,40 @@ export default function LoginScreen() {
                 style={styles.input}
                 mode="flat"
                 left={<TextInput.Icon icon="lock" />}
-                right={<TextInput.Icon icon={secure ? 'eye-off' : 'eye'} onPress={() => setSecure(!secure)} />}
+                right={
+                  <TextInput.Icon
+                    icon={secure ? "eye-off" : "eye"}
+                    onPress={() => setSecure(!secure)}
+                  />
+                }
                 secureTextEntry={secure}
-                theme={{ colors: { primary: 'black' } }}
+                theme={{ colors: { primary: "#2e7d32" } }}
               />
               {error ? (
-                <Text style={{ color: '#FF3D00', marginBottom: 10, fontWeight: 'bold', textAlign: 'center' }}>{error}</Text>
+                <Text
+                  style={{
+                    color: "#FF3D00",
+                    marginBottom: 10,
+                    fontWeight: "semibold",
+                    textAlign: "center",
+                  }}
+                >
+                  {error}
+                </Text>
               ) : null}
               <Button
                 mode="contained"
                 style={styles.loginBtn}
-                contentStyle={{ paddingVertical: 8 }}
-                labelStyle={{ fontWeight: 'bold', fontSize: 16 }}
-                buttonColor="#FFFFFF"
-                textColor="#000000"
+                contentStyle={{ paddingVertical: 4 }}
+                labelStyle={{ fontWeight:"medium", fontSize: 16 }}
+                buttonColor="#2e7d32"
+                textColor="#ffffff"
                 onPress={handleLogin}
               >
                 {isLoading ? (
-                  <ActivityIndicator size="small" color="#000000" />
+                  <ActivityIndicator size="small" color="#ffffff" />
                 ) : (
-                  'Login'
+                  "Login"
                 )}
               </Button>
             </View>
@@ -122,7 +141,7 @@ const styles = StyleSheet.create({
   },
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    backgroundColor: 'rgba(0, 80, 0, 0.2)',
   },
   safeArea: {
     flex: 1,
@@ -155,7 +174,7 @@ const styles = StyleSheet.create({
   input: {
     width: '100%',
     marginBottom: 14,
-    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+    backgroundColor: 'rgba(255, 255, 255, 0.95)',
   },
   loginBtn: {
     width: '100%',

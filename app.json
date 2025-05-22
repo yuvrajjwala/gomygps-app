@@ -76,7 +76,8 @@
             "./assets/sounds/notification.mp3"
           ]
         }
-      ]
+      ],
+      "expo-font"
     ],
     "experiments": {
       "typedRoutes": true

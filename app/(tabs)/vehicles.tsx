@@ -18,15 +18,16 @@ import { useSelector } from "react-redux";
 import { RootState } from "../store/store";
 import { startPositionUpdates, stopPositionUpdates } from "@/app/services/backgroundService";
 import { Marker } from "react-native-maps";
+import tw from 'twrnc';
 
 // Move constants outside component to prevent recreation
 const statusFilters = [
-  { label: "All", color: "black", icon: "apps" },
-  { label: "Running", color: "#43A047", icon: "autorenew" },
-  { label: "Idle", color: "#FFD600", icon: "show-chart" },
-  { label: "Stop", color: "red", icon: "stop-circle" },
-  { label: "In Active", color: "#00a8d5", icon: "show-chart" },
-  { label: "No Data", color: "gray", icon: "stop-circle" },
+  { label: "All", color: "#424242", icon: "apps" },            // Neutral dark gray for 'All'
+  { label: "Running", color: "#4CAF50", icon: "autorenew" },   // Standard green
+  { label: "Idle", color: "#FFC107", icon: "show-chart" },     // Amber for idle
+  { label: "Stop", color: "#F44336", icon: "stop-circle" },    // Standard red
+  { label: "In Active", color: "#29B6F6", icon: "show-chart" },// Light blue
+  { label: "No Data", color: "#9E9E9E", icon: "stop-circle" }, // Medium gray
 ];
 
 // Car images
@@ -50,13 +51,15 @@ const VehicleCard = memo(({
   getDeviceStatus: (device: any) => string;
 }) => {
   const vehicleNumberColor = "#2EAD4B";
+  
   const iconColors = [
     device.attributes.ignition ? "#66BB6A" : "#EF5350",
     device.attributes.is_mobilized ? "red" : "green",
     "#EF5350",
     "#29B6F6",
-    device?.attributes?.batteryLevel ? (device?.attributes?.batteryLevel > 0 ? "#66BB6A" : "red") :"#66BB6A"
+    device?.attributes?.batteryLevel ? (device?.attributes?.batteryLevel > 0 ? "#66BB6A" : "red") : "#66BB6A"
   ];
+
   const iconNames = [
     { "vpn-key": device.attributes.ignition },
     { lock: device.attributes.is_mobilized },
@@ -66,66 +69,101 @@ const VehicleCard = memo(({
   ];
 
   return (
-    <TouchableOpacity
-      activeOpacity={0.85}
-      onPress={onPress}
-    >
-      <View style={styles.vehicleCardNew}>
-        <View style={{ flex: 1, flexDirection: "row", alignItems: "stretch" }}>
-          <View style={{ flex: 1, flexDirection: "row", alignItems: "center" }}>
-            <View style={styles.vehicleIconWrap}>
-              <Image
-                source={carImages[getDeviceStatus(device) as keyof typeof carImages] || carImages.Default}
-                style={{
-                  width: 72,
-                  height: 72,
-                  marginRight: 20,
-                  resizeMode: "contain",
-                }}
-              />
-            </View>
-            <View style={{ flex: 1 }}>
-              <Text style={[styles.vehicleNumberNew, { color: vehicleNumberColor }]}>
-                {device?.name}
-              </Text>
-              <View style={{ height: 8 }} />
-              <Text style={styles.vehicleAddressNew}>{device?.address}</Text>
-              <Text style={styles.vehicleDateNew}>
-                {moment(device?.lastUpdate).format("D MMM YY, hh:mm A")}
-              </Text>
-            </View>
+    <TouchableOpacity onPress={onPress} activeOpacity={0.9}>
+      <View
+        style={tw`bg-white rounded-xl border border-[#ddd] p-3 mb-3 shadow`}
+      >
+        {/* Row: Vehicle Image + Info + Speed */}
+        <View style={tw`flex-row items-start`}>
+          {/* Vehicle Image */}
+          <View style={tw`mr-4`}>
+            <Image
+              source={
+                carImages[getDeviceStatus(device) as keyof typeof carImages] ||
+                carImages.Default
+              }
+              style={{ width: 64, height: 64, resizeMode: "contain" }}
+            />
           </View>
-          <View style={styles.statsColNew}>
-            <View style={styles.statRowCompact}>
-              <Text style={styles.statValueNew}>
+
+          {/* Vehicle Info */}
+          <View style={tw`flex-1`}>
+            <Text
+              style={[
+                tw`text-base font-semibold`,
+                { color: vehicleNumberColor, fontFamily: "Geist-SemiBold" },
+              ]}
+            >
+              {device?.name}
+            </Text>
+            <Text
+              style={[
+                tw`text-xs text-neutral-700 mt-1`,
+                { fontFamily: "Poppins" },
+              ]}
+            >
+              {device?.address}
+            </Text>
+            <Text
+              style={[
+                tw`text-[11px] text-gray-500 mt-1`,
+                { fontFamily: "Geist" },
+              ]}
+            >
+              {moment(device?.lastUpdate).format("D MMM YY, hh:mm A")}
+            </Text>
+          </View>
+
+          {/* Speed Stat */}
+          <View style={tw`items-end`}>
+            <View style={tw`flex-row items-end`}>
+              <Text
+                style={[
+                  tw`text-xl font-semibold text-gray-900`,
+                  { fontFamily: "Geist-SemiBold" },
+                ]}
+              >
                 {(Number(device?.speed) * 1.852 || 0).toFixed(0)}
               </Text>
-              <Text style={styles.statUnitNew}> km/h</Text>
-            </View>
-            <Text style={styles.statLabelNew}>Speed</Text>
-            {/* <View style={styles.statRowCompact}>
-              <Text style={styles.statValueNew}>
-                {((device?.attributes?.totalDistance || 0) / 1000).toFixed(0)}
+              <Text
+                style={[
+                  tw`text-sm text-gray-500 ml-1`,
+                  { fontFamily: "Geist" },
+                ]}
+              >
+                km/h
               </Text>
-              <Text style={styles.statUnitNew}> km</Text>
-            </View> */}
+            </View>
+            <Text style={[tw`text-xs text-gray-500`, { fontFamily: "Geist" }]}>
+              Speed
+            </Text>
           </View>
         </View>
-        <View style={styles.iconRowNew}>
-          {iconNames.map((icon, i) => (
-            <MaterialIcons
-              key={Object.keys(icon)[0] + i}
-              name={Object.keys(icon)[0] as any}
-              size={22}
-              color={iconColors[i]}
-              style={{
-                marginHorizontal: 4,
-                opacity: Object.keys(icon)[0] === "vpn-key"
-                  ? device.attributes.ignition ? 1 : 0.5
-                  : Object.values(icon)[0] ? 1 : 0.5,
-              }}
-            />
-          ))}
+
+        {/* Row: Status Icons */}
+        <View style={tw`flex-row justify-center mt-4 border-t border-[#ddd] py-1`}>
+          {iconNames.map((icon, i) => {
+            const key = Object.keys(icon)[0];
+            const isActive =
+              key === "vpn-key"
+                ? device.attributes.ignition
+                : Object.values(icon)[0];
+
+            return (
+              <MaterialIcons
+                key={key + i}
+                name={key as any}
+                size={20}
+                color={iconColors[i]}
+                style={[
+                  tw`mx-2`,
+                  {
+                    opacity: isActive ? 1 : 0.4,
+                  },
+                ]}
+              />
+            );
+          })}
         </View>
       </View>
     </TouchableOpacity>
@@ -222,24 +260,50 @@ const StatusFilter = memo(({
   isSelected: boolean; 
   count: number; 
   onPress: () => void;
-}) => (
-  <TouchableOpacity
-    onPress={onPress}
-    style={[
-      styles.statusCard,
-      filter.label === "Idle"
-        ? { backgroundColor: "#FF6F00" }
-        : { backgroundColor: filter.color, shadowColor: filter.color },
-      isSelected && {
-        borderWidth: 2,
-        borderColor: "#fff",
-      },
-    ]}
-  >
-    <Text style={styles.statusLabel}>{filter.label}</Text>
-    <Text style={styles.statusCount}>{count}</Text>
-  </TouchableOpacity>
-));
+}) => {
+  const backgroundColor = isSelected ? filter.color : `${filter.color}20`; // 20 = ~12% opacity
+  const textColor = isSelected ? '#fff' : filter.color;
+
+  return (
+    <TouchableOpacity
+      onPress={onPress}
+      style={[
+        tw`px-4 py-2 rounded-xl flex-1 items-center justify-center min-w-[25%] mx-1 my-1 `,
+        {
+          backgroundColor,
+          borderWidth: isSelected ? 2 : 0,
+          borderColor: filter.color,
+        }
+      ]}
+    >
+      <Text
+        style={[
+          tw`text-sm font-semibold`,
+          {
+            color: textColor,
+            fontFamily: 'Geist-Semibold',
+          }
+        ]}
+      >
+        {filter.label}
+      </Text>
+      {typeof count === 'number' && (
+        <Text
+          style={[
+            tw`text-xs mt-1`,
+            {
+              color: textColor,
+              fontFamily: 'Geist',
+            }
+          ]}
+        >
+          {count} vehicles
+        </Text>
+      )}
+    </TouchableOpacity>
+  );
+});
+
 
 export default function VehiclesScreen() {
   const router = useRouter();
@@ -458,7 +522,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     flexWrap: "wrap",
     marginHorizontal: 8,
-    marginBottom: 16,
+    marginBottom: 90,
     gap: 8,
     marginTop: 20,
   },

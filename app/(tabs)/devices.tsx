@@ -117,13 +117,13 @@ interface DeviceFormData {
 }
 
 // Memoized Device Card Component
-const DeviceCard = memo(({ 
-  device, 
-  onPress, 
-  onEdit, 
-  onUsers 
-}: { 
-  device: any; 
+const DeviceCard = memo(({
+  device,
+  onPress,
+  onEdit,
+  onUsers
+}: {
+  device: any;
   onPress: () => void;
   onEdit: () => void;
   onUsers: () => void;
@@ -174,11 +174,11 @@ const DeviceCard = memo(({
         Last Update:{" "}
         {device.lastUpdate
           ? new Date(device.lastUpdate).toLocaleString([], {
-              month: "short",
-              day: "numeric",
-              hour: "2-digit",
-              minute: "2-digit",
-            })
+            month: "short",
+            day: "numeric",
+            hour: "2-digit",
+            minute: "2-digit",
+          })
           : "-"}
       </Text>
     </View>
@@ -187,11 +187,11 @@ const DeviceCard = memo(({
         Expiration Time:{" "}
         {device.expirationTime
           ? new Date(device.expirationTime).toLocaleString([], {
-              month: "short",
-              day: "numeric",
-              hour: "2-digit",
-              minute: "2-digit",
-            })
+            month: "short",
+            day: "numeric",
+            hour: "2-digit",
+            minute: "2-digit",
+          })
           : "-"}
       </Text>
     </View>
@@ -222,7 +222,7 @@ const DeviceCard = memo(({
 
 // Memoized Skeleton Card Component
 const SkeletonDeviceCard = memo(() => (
-  <View style={[styles.deviceCard, { overflow: 'hidden' }]}> 
+  <View style={[styles.deviceCard, { overflow: 'hidden' }]}>
     <View style={styles.deviceRow}>
       <View style={{ flex: 1 }}>
         <View style={{ width: '60%', height: 18, backgroundColor: '#e0e0e0', borderRadius: 8, marginBottom: 8 }} />
@@ -255,13 +255,13 @@ const SkeletonDeviceCard = memo(() => (
 ));
 
 // Memoized Form Field Component
-const FormField = memo(({ 
-  label, 
-  required, 
-  children 
-}: { 
-  label: string; 
-  required?: boolean; 
+const FormField = memo(({
+  label,
+  required,
+  children
+}: {
+  label: string;
+  required?: boolean;
   children: React.ReactNode;
 }) => (
   <View style={styles.formField}>
@@ -273,13 +273,13 @@ const FormField = memo(({
 ));
 
 // Memoized Date Input Component
-const DateInput = memo(({ 
-  value, 
-  onPress, 
-  placeholder 
-}: { 
-  value: string; 
-  onPress: () => void; 
+const DateInput = memo(({
+  value,
+  onPress,
+  placeholder
+}: {
+  value: string;
+  onPress: () => void;
   placeholder: string;
 }) => (
   <TouchableOpacity style={styles.dateInputDark} onPress={onPress}>
@@ -296,15 +296,15 @@ const DateInput = memo(({
 ));
 
 // Memoized Switch Field Component
-const SwitchField = memo(({ 
-  label, 
-  value, 
-  onValueChange, 
-  subtext 
-}: { 
-  label: string; 
-  value: boolean; 
-  onValueChange: (value: boolean) => void; 
+const SwitchField = memo(({
+  label,
+  value,
+  onValueChange,
+  subtext
+}: {
+  label: string;
+  value: boolean;
+  onValueChange: (value: boolean) => void;
   subtext?: string;
 }) => (
   <View style={[styles.formField, styles.switchField]}>
@@ -449,7 +449,7 @@ export default function DevicesScreen() {
         Api.call("/api/devices", "GET", {}, false),
         Api.call("/api/positions", "GET", {}, false),
       ]);
-      
+
       if (responseDevices.status === 200 && responsePositions.status === 200) {
         const devicesWithPositions = responseDevices.data.map((device: any) => ({
           ...device,
@@ -457,9 +457,9 @@ export default function DevicesScreen() {
             (position: any) => position.deviceId === device.id
           ),
         }));
-        
+
         dispatch(setDevices(devicesWithPositions));
-      } 
+      }
     } catch (error) {
       console.error("Error fetching devices:", error);
     } finally {
@@ -519,9 +519,8 @@ export default function DevicesScreen() {
       return groups.flatMap((group) => [
         {
           value: group.id.toString(),
-          label: `${"\u00A0".repeat(depth * 4)}${depth > 0 ? "└─ " : ""}${
-            group.name
-          }`,
+          label: `${"\u00A0".repeat(depth * 4)}${depth > 0 ? "└─ " : ""}${group.name
+            }`,
         },
         ...(group.children ? flattenGroups(group.children, depth + 1) : []),
       ]);
@@ -910,16 +909,12 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
   },
   deviceCard: {
-    backgroundColor: "#fff",
-    borderRadius: 18,
-    marginHorizontal: 14,
-    marginBottom: 16,
-    padding: 18,
+    backgroundColor: "#FFFFFF",
+    borderRadius: 16,
+    marginHorizontal: 16,
+    marginBottom: 12,
+    padding: 20,
     elevation: 3,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
-    shadowRadius: 6,
   },
   deviceRow: {
     flexDirection: "row",
@@ -935,21 +930,23 @@ const styles = StyleSheet.create({
     marginRight: 12,
   },
   deviceNumber: {
-    fontWeight: "bold",
-    fontSize: 19,
-    color: "#222",
+    fontWeight: "600",
+    fontSize: 18,
+    color: "#1B5E20", // Dark green text
+    marginBottom: 4,
   },
   deviceName: {
     fontSize: 15,
     color: "#444",
   },
   deviceModel: {
-    fontWeight: "bold",
-    fontSize: 15,
-    color: "#fff",
-    paddingVertical: 4,
-    paddingHorizontal: 8,
-    borderRadius: 8,
+    fontWeight: "400",
+    fontSize: 12,
+    color: "#FFFFFF",
+    paddingVertical: 2,
+    paddingHorizontal: 12,
+    borderRadius: 20,
+    backgroundColor: "#43A047", // Green status
   },
   deviceDetailsRow: {
     flexDirection: "row",
@@ -957,9 +954,11 @@ const styles = StyleSheet.create({
     marginBottom: 2,
   },
   deviceDetail: {
-    color: "#444",
-    fontSize: 15,
+    color: "#424242",
+    fontSize: 11,
+    marginVertical: 2,
   },
+
   deviceActionsRow: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -972,11 +971,12 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     elevation: 1,
+    backgroundColor: "#2E7D32",
   },
   deviceActionBtnText: {
     color: "#fff",
-    fontWeight: "bold",
-    fontSize: 15,
+    fontWeight: "medium",
+    fontSize: 14,
     letterSpacing: 1,
   },
   fab: {
@@ -1084,7 +1084,9 @@ const styles = StyleSheet.create({
   },
   addBtnText: { color: "#fff", fontWeight: "bold", fontSize: 16 },
   cancelBtn: { marginTop: 8, alignItems: "center" },
-  cancelBtnText: { color: "#000", fontWeight: "bold", fontSize: 15 },
+  cancelBtnText: {color: "#757575",
+    fontWeight: "500",
+ fontSize: 15 },
   searchBarWrap: {
     flexDirection: "row",
     alignItems: "center",
@@ -1096,7 +1098,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderWidth: 1,
-    borderColor: "#E3F2FD",
+   borderColor: "#C8E6C9",
   },
   searchInput: {
     flex: 1,

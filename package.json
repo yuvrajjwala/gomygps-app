@@ -10,6 +10,8 @@
     "lint": "expo lint"
   },
   "dependencies": {
+    "@expo-google-fonts/geist": "^0.3.1",
+    "@expo-google-fonts/poppins": "^0.3.1",
     "@expo/vector-icons": "^14.1.0",
     "@gorhom/bottom-sheet": "^5.1.4",
     "@hookform/resolvers": "^5.0.1",
@@ -22,6 +24,7 @@
     "@reduxjs/toolkit": "^2.7.0",
     "axios": "^1.9.0",
     "expo": "~53.0.7",
+    "expo-app-loading": "^2.1.1",
     "expo-blur": "~14.1.4",
     "expo-constants": "~17.1.5",
     "expo-device": "~7.1.4",
@@ -61,6 +64,7 @@
     "react-native-webview": "13.13.5",
     "react-redux": "^9.2.0",
     "redux-persist": "^6.0.0",
+    "twrnc": "^4.7.0",
     "xlsx": "^0.18.5",
     "zod": "^3.24.4"
   },

@@ -33,7 +33,10 @@ function RootLayoutNav() {
 export default function RootLayout() {
   const [loaded] = useFonts({
     SpaceMono: require("../assets/fonts/SpaceMono-Regular.ttf"),
-  
+    Poppins: require("../assets/fonts/Poppins-Regular.ttf"),
+    GeistBold:require("../assets/fonts/Geist-Bold.ttf"),
+    Geist:require("../assets/fonts/Geist-Regular.ttf"),
+   
   });
 
   if (!loaded) {

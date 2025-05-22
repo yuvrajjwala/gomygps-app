@@ -51,16 +51,25 @@ export default function DashboardScreen() {
       setIsInitialLoad(false);
     }
   }, [devicesData]);
-
+  const premiumColors = {
+    primary: "#1B5E20",
+    secondary: "#2E7D32",
+    accent: "#4CAF50",
+    background: "#FFFFFF",
+    textPrimary: "#2D3748",
+    textSecondary: "#718096",
+    chartColors: ["#1B5E20", "#4CAF50", "#FFB74D", "#EF5350", "#29B6F6"],
+  };
   const updateVehicleStats = () => {
-    const stats = [
-      { label: "All", color: "#1B1F23", count: 0 },
-      { label: "Running", color: "#00C48C", count: 0 },
-      { label: "Idle", color: "#F4B740", count: 0 },
-      { label: "Stop", color: "#FF6B6B", count: 0 },
-      { label: "Inactive", color: "#4EA8DE", count: 0 },
-      { label: "No Data", color: "#B0BEC5", count: 0 },
-    ];
+  const stats = [
+  { label: "All", color: "#6366F1", count: 0 },         // Indigo 500 — Primary
+  { label: "Running", color: "#22C55E", count: 0 },     // Green 500 — Positive
+  { label: "Idle", color: "#FACC15", count: 0 },        // Yellow 400 — Attention
+  { label: "Stop", color: "#EF4444", count: 0 },        // Red 500 — Error
+  { label: "Inactive", color: "#3B82F6", count: 0 },    // Blue 500 — Neutral/Offline
+  { label: "No Data", color: "#9CA3AF", count: 0 },     // Gray 400 — Unknown
+];
+
 
 
     devicesData.forEach((device) => {
@@ -113,7 +122,7 @@ export default function DashboardScreen() {
     <View style={{ width: '31%', borderRadius: 10, alignItems: 'center', paddingVertical: 18, backgroundColor: '#e0e0e0', marginBottom: 8 }} />
   );
   const SkeletonChart = () => (
-    <View style={{ margin: 8, borderRadius: 16, height: 200, backgroundColor: '#e0e0e0' }} />
+    <View style={{ margin: 8, borderRadius: 16, height: 200, backgroundColor: '#e0e0e0',paddingVertical: 18 }} />
   );
   const SkeletonListRow = () => (
     <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 14, backgroundColor: '#e0e0e0', borderRadius: 10, marginBottom: 8 }}>
@@ -191,9 +200,9 @@ export default function DashboardScreen() {
                     filter.label === "Idle"
                       ? { backgroundColor: "#FF6F00" }
                       : {
-                          backgroundColor: filter.color,
-                          shadowColor: filter.color,
-                        },
+                        backgroundColor: filter.color,
+                        shadowColor: filter.color,
+                      },
                     filter.label === "Idle" && {
                       borderWidth: 2,
                       borderColor: "#fff",
@@ -205,166 +214,98 @@ export default function DashboardScreen() {
                 </View>
               ))}
             </View>
-            <Card style={styles.chartCard}>
-              <Card.Title
-                title="Vehicle Status Distribution"
-                titleStyle={{ color: "#FF1744", fontWeight: "bold" }}
-              />
+            <View style={tw`bg-gray-50 rounded-2xl p-5 mb-6 shadow-sm`}>
+              <Text style={tw`font-geist-bold text-lg text-emerald-900 mb-4`}>
+                Vehicle Status Distribution
+              </Text>
               <PieChart
                 data={pieData}
-                width={screenWidth - 30}
-                height={180}
+                width={screenWidth - 40}
+                height={200}
                 chartConfig={{
-                  color: (opacity = 1) => `rgba(255,23,68,${opacity})`,
+                  color: (opacity = 1) => `rgba(27, 94, 32, ${opacity})`,
                 }}
-                accessor={"population"}
-                backgroundColor={"transparent"}
-                paddingLeft={"15"}
+                accessor="population"
+                backgroundColor="transparent"
+                paddingLeft="15"
                 absolute
               />
-            </Card>
+            </View>
             {/* Recent Devices */}
-            <Card style={styles.listCard}>
-              <Card.Title
-                title="Recent Devices"
-                titleStyle={styles.listTitle}
-              />
-              <View style={styles.listHeaderRow}>
-                <Text style={styles.listHeader}>NAME</Text>
-                <Text style={styles.listHeader}>STATUS</Text>
-              </View>
-              {/* {devicesData?.length > 0 &&
-                devicesData?.slice(0, 5)?.map((device: any, idx: number) => (
-                  <View
-                    key={device.name + idx}
-                    style={[
-                      styles.listRow,
-                      idx !== devicesData?.length - 1 && styles.listRowBorder,
-                    ]}
-                  >
-                    <View style={styles.listLeft}>
-                      <View style={styles.deviceIconCircle}>
-                        <MaterialIcons
-                          name="local-shipping"
-                          size={24}
-                          color="#fff"
-                          style={{}}
-                        />
-                      </View>
-                      <Text style={styles.deviceName}>{device.name}</Text>
-                    </View>
-                    <View
-                      style={[
-                        styles.statusBadge,
-                        device.status === "online" ? styles.online : styles.offline,
-                      ]}
-                    >
-                      <View
-                        style={[
-                          styles.statusDot,
-                          device.status === "online"
-                            ? styles.onlineDot
-                            : styles.offlineDot,
-                        ]}
-                      />
-                      <Text
-                        style={[
-                          styles.statusText,
-                          device.status === "online"
-                            ? styles.onlineText
-                            : styles.offlineText,
-                        ]}
-                      >
-                        {device.status}
-                      </Text>
-                    </View>
-                  </View>
-                ))} */}
-              {devicesData?.length > 0 &&
-                devicesData.slice(0, 5).map((device, idx) => (
-                  <View
-                    key={device.name + idx}
-                    style={[
-                      tw`flex-row justify-between items-center px-4 py-3 bg-white rounded-lg `,
-                      { fontFamily: "Geist-Bold" },
-                      idx !== devicesData.length - 1 &&
-                        tw`border-b border-gray-200`,
-                      tw`shadow-sm`,
-                    ]}
-                  >
-                    {/* Left: Icon + Device Name */}
-                    <View style={tw`flex-row items-center`}>
-                      <View
-                        style={tw`bg-green-600 rounded-full w-10 h-10 flex items-center justify-center shadow`}
-                      >
-                        <MaterialIcons
-                          name="local-shipping"
-                          size={24}
-                          color="#fff"
-                        />
-                      </View>
-                      <Text
-                        style={tw`ml-4 text-sm font-semibold text-gray-900`}
-                      >
-                        {device.name}
-                      </Text>
-                    </View>
+            <View style={tw`bg-gray-50 rounded-2xl p-5 mb-6 shadow-sm`}>
+              <Text style={tw`font-geist-bold text-lg text-emerald-900 mb-4`}>
+                Recent Devices
+              </Text>
 
-                    {/* Right: Status Badge */}
-                    <View
-                      style={[
-                        tw`flex-row items-center rounded-full px-3 py-1 shadow`,
-                        device.status === "online"
-                          ? tw`bg-green-100`
-                          : tw`bg-red-100`,
-                      ]}
-                    >
-                      <View
-                        style={[
-                          tw`w-3 h-3 rounded-full mr-2`,
-                          device.status === "online"
-                            ? tw`bg-green-600`
-                            : tw`bg-red-500`,
-                        ]}
-                      />
-                      <Text
-                        style={[
-                          tw`text-xs font-medium`,
-                          device.status === "online"
-                            ? tw`text-green-700`
-                            : tw`text-red-600`,
-                        ]}
-                      >
-                        {device.status.toUpperCase()}
-                      </Text>
-                    </View>
-                  </View>
-                ))}
-            </Card>
-            {/* Groups */}
-            <Card style={styles.listCard}>
-              <Card.Title title="Groups" titleStyle={styles.listTitle} />
-              <View style={styles.listHeaderRow}>
-                <Text style={styles.listHeader}>NAME</Text>
+              <View style={tw`flex-row justify-between mb-3 px-2`}>
+                <Text style={tw`font-poppins text-xs text-emerald-800/60 uppercase tracking-wide`}>
+                  Device
+                </Text>
+                <Text style={tw`font-poppins text-xs text-emerald-800/60 uppercase tracking-wide`}>
+                  Status
+                </Text>
               </View>
+
+              {devicesData?.slice(0, 5).map((device, index) => (
+                <View
+                  key={index}
+                  style={tw`flex-row justify-between items-center py-3 border-b border-gray-200/80`}
+                >
+                  <View style={tw`flex-row items-center`}>
+                    <View style={tw`bg-emerald-700 w-10 h-10 rounded-full items-center justify-center mr-3`}>
+                      <MaterialIcons name="local-shipping" size={24} color="white" />
+                    </View>
+                    <Text style={tw`font-geist text-gray-900`}>
+                      {device.name}
+                    </Text>
+                  </View>
+
+                  <View style={[
+                    tw`px-3 py-1 rounded-full flex-row items-center`,
+                    device.status === 'online'
+                      ? tw`bg-emerald-100`
+                      : tw`bg-gray-200`
+                  ]}>
+                    <View style={[
+                      tw`w-2 h-2 rounded-full mr-2`,
+                      device.status === 'online'
+                        ? tw`bg-emerald-600`
+                        : tw`bg-gray-500`
+                    ]} />
+                    <Text style={[
+                      tw`font-PoppinsRegular text-xs`,
+                      device.status === 'online'
+                        ? tw`text-emerald-700`
+                        : tw`text-gray-600`
+                    ]}>
+                      {device.status.toUpperCase()}
+                    </Text>
+                  </View>
+                </View>
+              ))}
+            </View>
+            {/* Groups */}
+
+            <View style={tw`bg-gray-50 rounded-2xl p-5 shadow-sm`}>
+              <Text style={tw`font-geist-bold  text-lg text-emerald-900 mb-4`}>
+                Groups
+              </Text>
+
               {groupsData?.length > 0 &&
                 groupsData?.map((group: any, idx: number) => (
                   <View
-                    key={group.name}
-                    style={[
-                      styles.listRow,
-                      idx !== groupsData?.length - 1 && styles.listRowBorder,
-                    ]}
+                    key={idx}
+                    style={tw`flex-row items-center py-3 border-b border-gray-200/80`}
                   >
-                    <View style={styles.listLeft}>
-                      <View style={styles.groupIconCircle}>
-                        <MaterialIcons name="layers" size={22} color="#fff" />
-                      </View>
-                      <Text style={styles.deviceName}>{group.name}</Text>
+                    <View style={tw`bg-emerald-600 w-9 h-9 rounded-lg items-center justify-center mr-3`}>
+                      <MaterialIcons name="layers" size={20} color="white" />
                     </View>
+                    <Text style={tw`font-geist text-gray-900`}>
+                      {group.name}
+                    </Text>
                   </View>
                 ))}
-            </Card>
+            </View>
           </>
         )}
       </ScrollView>
@@ -421,7 +362,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#fff",
   },
   listTitle: {
-    fontFamily: "Poppins-Regular",
+    fontFamily: "PoppinsRegular",
     fontWeight: "light",
     fontSize: 16,
     color: "#1B5E20", // Darker green for section titles

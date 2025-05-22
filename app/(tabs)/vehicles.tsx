@@ -120,7 +120,7 @@ const VehicleCard = memo(({
               <Text
                 style={[
                   tw`text-xl font-semibold text-gray-900`,
-                  { fontFamily: "Geist-SemiBold" },
+                  { fontFamily: "GeistBold" },
                 ]}
               >
                 {(Number(device?.speed) * 1.852 || 0).toFixed(0)}
@@ -281,7 +281,7 @@ const StatusFilter = memo(({
           tw`text-sm font-semibold`,
           {
             color: textColor,
-            fontFamily: 'Geist-Semibold',
+            fontFamily: 'GeistBold',
           }
         ]}
       >

@@ -54,12 +54,12 @@ interface DropdownItem {
 
 const formatDate = (dateStr: string) => {
   const date = new Date(dateStr);
-  return date.toLocaleDateString('en-US', { 
-    month: 'short', 
+  return date.toLocaleDateString('en-US', {
+    month: 'short',
     day: 'numeric',
     hour: 'numeric',
     minute: '2-digit',
-    hour12: true 
+    hour12: true
   });
 };
 
@@ -75,7 +75,7 @@ export default function RouteReportScreen() {
   // Device dropdown states
   const [deviceValue, setDeviceValue] = useState<string | null>(null);
   const [deviceItems, setDeviceItems] = useState<DropdownItem[]>([]);
-  
+
   // Group dropdown states
   const [groupValue, setGroupValue] = useState<string | null>(null);
   const [groupItems, setGroupItems] = useState<DropdownItem[]>([]);
@@ -126,7 +126,7 @@ export default function RouteReportScreen() {
       const listener = generatingProgress.addListener(({ value }) => {
         currentValue = value;
       });
-      
+
       Animated.timing(generatingProgress, {
         toValue: targetProgress,
         duration: (targetProgress - currentValue) * 50, // 50ms per number
@@ -185,21 +185,21 @@ export default function RouteReportScreen() {
     try {
       // Convert local time to UTC with +5:30 offset
       const fromDateUTC = new Date(fromDate);
-      fromDateUTC.setHours(fromDateUTC.getHours() , fromDateUTC.getMinutes());
-      
+      fromDateUTC.setHours(fromDateUTC.getHours(), fromDateUTC.getMinutes());
+
       await new Promise(resolve => setTimeout(resolve, 1000)); // Wait for animation
       setGeneratingStatus('Processing date range...');
       animateGeneratingProgress(30);
 
       const toDateUTC = new Date(toDate);
-      toDateUTC.setHours(toDateUTC.getHours(), toDateUTC.getMinutes() );
+      toDateUTC.setHours(toDateUTC.getHours(), toDateUTC.getMinutes());
 
       await new Promise(resolve => setTimeout(resolve, 1000)); // Wait for animation
       setGeneratingStatus('Fetching route data...');
       animateGeneratingProgress(50);
 
       const response = await Api.call('/api/reports/route?from=' + fromDateUTC.toISOString().slice(0, 19) + 'Z&to=' + toDateUTC.toISOString().slice(0, 19) + 'Z&deviceId=' + deviceValue, 'GET', {}, false);
-      
+
       setGeneratingStatus('Processing response...');
       animateGeneratingProgress(70);
 
@@ -233,11 +233,11 @@ export default function RouteReportScreen() {
         <View style={styles.downloadCard}>
           <MaterialIcons name="cloud-download" size={40} color="#FF7043" />
           <Text style={styles.downloadStatusText}>{downloadStatus}</Text>
-          
+
           {/* Slider Track */}
           <View style={styles.sliderContainer}>
             <View style={styles.sliderTrack} />
-            <Animated.View 
+            <Animated.View
               style={[
                 styles.sliderBall,
                 {
@@ -246,7 +246,7 @@ export default function RouteReportScreen() {
                     outputRange: ['0%', '92%']
                   })
                 }
-              ]} 
+              ]}
             >
               <MaterialIcons name="fiber-manual-record" size={24} color="#FF7043" />
             </Animated.View>
@@ -263,7 +263,7 @@ export default function RouteReportScreen() {
     // Start animation and show overlay immediately
     setIsDownloading(true);
     setDownloadStatus('Preparing report data...');
-    
+
     // Start animation immediately
     Animated.timing(downloadProgress, {
       toValue: 30,
@@ -281,7 +281,7 @@ export default function RouteReportScreen() {
           "Distance (KM)": ((entry?.attributes?.distance) / 1000).toFixed(2),
           "Speed (km/hr)": (entry?.speed * 1.852).toFixed(2),
           "AC": entry?.attributes?.ac ? "Yes" : "No",
-          "Odometer (KM)": (entry?.attributes?.odometer/1000).toFixed(2),
+          "Odometer (KM)": (entry?.attributes?.odometer / 1000).toFixed(2),
           "Latitude": entry?.latitude?.toFixed(4),
           "Longitude": entry?.longitude?.toFixed(4),
           "Address": entry?.address || "N/A"
@@ -298,7 +298,7 @@ export default function RouteReportScreen() {
         const worksheet = XLSX.utils.json_to_sheet(excelData);
         const workbook = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(workbook, worksheet, "Route Report");
-        
+
         setDownloadStatus('Saving file...');
         Animated.timing(downloadProgress, {
           toValue: 85,
@@ -306,12 +306,12 @@ export default function RouteReportScreen() {
           useNativeDriver: false
         }).start();
 
-        const wbout = XLSX.write(workbook, { 
-          type: 'base64', 
+        const wbout = XLSX.write(workbook, {
+          type: 'base64',
           bookType: 'xlsx',
-          compression: true 
+          compression: true
         });
-        
+
         const timestamp = new Date().getTime();
         const uri = `${FileSystem.cacheDirectory}Route_Report_${timestamp}.xlsx`;
 
@@ -325,7 +325,7 @@ export default function RouteReportScreen() {
           duration: 400,
           useNativeDriver: false
         }).start();
-        
+
         await Sharing.shareAsync(uri, {
           mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
           dialogTitle: 'Download Report'
@@ -390,7 +390,7 @@ export default function RouteReportScreen() {
           <MaterialIcons name="sync" size={40} color="#FF7043" />
           <Text style={styles.downloadStatusText}>{generatingStatus}</Text>
           <View style={styles.progressBarContainer}>
-            <Animated.View 
+            <Animated.View
               style={[
                 styles.progressBar,
                 {
@@ -399,13 +399,13 @@ export default function RouteReportScreen() {
                     outputRange: ['0%', '100%']
                   })
                 }
-              ]} 
+              ]}
             />
           </View>
           {/* Percentage text for generating progress */}
           <View style={styles.percentageContainer}>
             <Text>Generating Report...</Text>
-            
+
           </View>
         </View>
       </View>
@@ -421,13 +421,13 @@ export default function RouteReportScreen() {
           <MaterialIcons name="arrow-back" size={24} color="#000" />
         </TouchableOpacity>
         <Text style={styles.headerTitleDark}>
-           Route Report
+          Route Report
         </Text>
         <View style={{ width: 24 }} />
       </View>
 
       <ScrollView contentContainerStyle={styles.scrollContent}>
-      
+
         {/* Filter Card */}
         <View style={styles.filterCardDark}>
           <View style={styles.filterFieldBlock}>
@@ -456,8 +456,8 @@ export default function RouteReportScreen() {
 
           <View style={styles.filterFieldBlock}>
             <Text style={styles.filterLabelDark}>From</Text>
-            <TouchableOpacity 
-              style={styles.dateInputDark} 
+            <TouchableOpacity
+              style={styles.dateInputDark}
               onPress={() => setFromDatePickerVisible(true)}
             >
               <Text style={styles.dateInputTextDark}>{fromDate.toLocaleString()}</Text>
@@ -475,8 +475,8 @@ export default function RouteReportScreen() {
 
           <View style={styles.filterFieldBlock}>
             <Text style={styles.filterLabelDark}>To</Text>
-            <TouchableOpacity 
-              style={styles.dateInputDark} 
+            <TouchableOpacity
+              style={styles.dateInputDark}
               onPress={() => setToDatePickerVisible(true)}
             >
               <Text style={styles.dateInputTextDark}>{toDate.toLocaleString()}</Text>
@@ -493,8 +493,8 @@ export default function RouteReportScreen() {
           </View>
 
           <View style={styles.buttonContainer}>
-            <TouchableOpacity 
-              style={[styles.generateButtonDark, loading && styles.generateButtonDisabledDark]} 
+            <TouchableOpacity
+              style={[styles.generateButtonDark, loading && styles.generateButtonDisabledDark]}
               disabled={loading}
               onPress={fetchReport}
             >
@@ -508,9 +508,9 @@ export default function RouteReportScreen() {
               )}
             </TouchableOpacity>
 
-            <TouchableOpacity 
+            <TouchableOpacity
               style={[
-                styles.downloadButtonDark, 
+                styles.downloadButtonDark,
                 styles.filterDownloadButton,
                 reportData.length === 0 && styles.downloadButtonDisabledDark
               ]}
@@ -526,7 +526,7 @@ export default function RouteReportScreen() {
                 </>
               )}
             </TouchableOpacity>
-            
+
           </View>
         </View>
         {/* Report Data */}
@@ -559,7 +559,7 @@ export default function RouteReportScreen() {
                         String(((entry?.attributes?.distance) / 1000).toFixed(2) + " KM"),
                         String((entry?.speed * 1.852).toFixed(2) + " km/hr"),
                         String(entry?.attributes?.ac ? "Yes" : "No"),
-                        String((entry?.attributes?.odometer/1000).toFixed(2) + " km"),
+                        String((entry?.attributes?.odometer / 1000).toFixed(2) + " km"),
                         String(entry?.latitude?.toFixed(4) + "°"),
                         String(entry?.longitude?.toFixed(4) + "°"),
                         String(entry?.address || "N/A")
@@ -597,7 +597,7 @@ export default function RouteReportScreen() {
             </View>
 
             {/* Download Button */}
-            <TouchableOpacity 
+            <TouchableOpacity
               style={[
                 styles.downloadButtonDark,
                 reportData.length === 0 && styles.downloadButtonDisabledDark
@@ -619,7 +619,7 @@ export default function RouteReportScreen() {
           <View style={styles.noDataContainer}>
             <Text style={styles.noDataText}>{reportFetched ? "No data found" : ""}</Text>
           </View>
-        )}   
+        )}
       </ScrollView>
       <LoadingOverlay />
       <DownloadOverlay />
@@ -717,20 +717,26 @@ const styles = StyleSheet.create({
   generateButtonDark: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FF7043',
+    backgroundColor: '#4A5D23', // Olive Green
     paddingVertical: 16,
     paddingHorizontal: 18,
-    borderRadius: 10,
+    borderRadius: 12,
     marginTop: 10,
     justifyContent: 'center',
     elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
   },
   generateButtonDisabledDark: {
     opacity: 0.5,
+    backgroundColor: '#8B9D6B', // Light Olive
   },
   generateButtonTextDark: {
-    color: '#fff',
-    fontWeight: 'bold',
+    color: '#FFFFFF',
+    fontFamily: 'Poppins',
+    fontWeight: '600',
     marginLeft: 8,
     fontSize: 16,
     letterSpacing: 0.5,
@@ -780,19 +786,28 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
   },
   paginationButtonDark: {
-    backgroundColor: '#007AFF',
-    paddingVertical: 8,
+    backgroundColor: '#F8F9F5', // Very Light Olive
+    paddingVertical: 10,
     paddingHorizontal: 16,
-    borderRadius: 8,
+    borderRadius: 12,
     marginHorizontal: 8,
+    borderWidth: 1,
+    borderColor: '#4A5D23', // Olive Green
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
   },
   paginationButtonDisabledDark: {
     opacity: 0.5,
+    borderColor: '#8B9D6B', // Light Olive
   },
   paginationButtonTextDark: {
-    color: '#fff',
+    color: '#4A5D23', // Olive Green
+    fontFamily: 'Poppins',
     fontSize: 14,
-    fontWeight: 'bold',
+    fontWeight: '600',
   },
   paginationTextDark: {
     color: '#000',
@@ -803,19 +818,25 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#43A047',
+    backgroundColor: '#6B8E23', // Olive Drab
     padding: 0,
-    borderRadius: 8,
+    borderRadius: 12,
     height: 52,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
   },
   downloadButtonDisabledDark: {
     opacity: 0.5,
-    backgroundColor: '#a5d6a7', // lighter green when disabled
+    backgroundColor: '#8B9D6B', // Light Olive
   },
   downloadButtonTextDark: {
-    color: '#fff',
+    color: '#FFFFFF',
+    fontFamily: 'Poppins',
     fontSize: 16,
-    fontWeight: 'bold',
+    fontWeight: '600',
     marginLeft: 8,
   },
   scrollContent: {
@@ -830,7 +851,7 @@ const styles = StyleSheet.create({
   filterDownloadButton: {
     flex: 1,
     marginTop: 0,
-    },
+  },
   noDataContainer: {
     flex: 1,
     justifyContent: 'center',

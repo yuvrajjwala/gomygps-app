@@ -65,12 +65,12 @@ interface DropdownItem {
 const formatDate = (dateStr: string) => {
   if (!dateStr) return '';
   const date = new Date(dateStr);
-  return date.toLocaleDateString('en-US', { 
-    month: 'short', 
+  return date.toLocaleDateString('en-US', {
+    month: 'short',
     day: 'numeric',
     hour: 'numeric',
     minute: '2-digit',
-    hour12: true 
+    hour12: true
   });
 };
 
@@ -81,11 +81,11 @@ export default function SummaryReportScreen() {
   const [groups, setGroups] = useState<Group[]>([]);
   const [isLoadingVehicles, setIsLoadingVehicles] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
-  
+
   // Device dropdown states
   const [deviceValue, setDeviceValue] = useState<string | null>(null);
   const [deviceItems, setDeviceItems] = useState<DropdownItem[]>([]);
-  
+
   // Group dropdown states
   const [groupValue, setGroupValue] = useState<string | null>(null);
   const [groupItems, setGroupItems] = useState<DropdownItem[]>([]);
@@ -157,7 +157,7 @@ export default function SummaryReportScreen() {
       setReportFetched(true);
       const fromDateUTC = new Date(fromDate);
       fromDateUTC.setHours(fromDateUTC.getHours(), fromDateUTC.getMinutes());
-      
+
       await new Promise(resolve => setTimeout(resolve, 1000));
       setGeneratingStatus('Processing date range...');
       animateGeneratingProgress(30);
@@ -168,16 +168,16 @@ export default function SummaryReportScreen() {
       await new Promise(resolve => setTimeout(resolve, 1000));
       setGeneratingStatus('Fetching summary data...');
       animateGeneratingProgress(50);
-//   TODO: Remove the hardcoded deviceId
+      //   TODO: Remove the hardcoded deviceId
       const summaryResponse = await Api.call('/api/reports/summary?from=' + fromDateUTC.toISOString().slice(0, 19) + 'Z&to=' + toDateUTC.toISOString().slice(0, 19) + 'Z' + (deviceValue ? '&deviceId=' + '12' : '') + (groupValue ? '&groupId=' + groupValue : ''), 'GET', {}, false);
-      console.log('summaryResponse',deviceValue);
+      console.log('summaryResponse', deviceValue);
       setGeneratingStatus('Processing response...');
       animateGeneratingProgress(70);
 
       const tripsResponse = await Api.call('/api/reports/trips?from=' + fromDateUTC.toISOString().slice(0, 19) + 'Z&to=' + toDateUTC.toISOString().slice(0, 19) + 'Z' + (deviceValue ? '&deviceId=' + deviceValue : ''), 'GET', {}, false);
-      console.log('tripsResponse',tripsResponse);
+      console.log('tripsResponse', tripsResponse);
       await new Promise(resolve => setTimeout(resolve, 1000));
-      
+
       const combinedData = summaryResponse?.data?.map((summary: any) => {
         const trip = tripsResponse.data.find((t: any) => t.deviceId === summary.deviceId);
         return {
@@ -218,7 +218,7 @@ export default function SummaryReportScreen() {
   const exportToExcel = async () => {
     setIsDownloading(true);
     setDownloadStatus('Preparing report data...');
-    
+
     Animated.timing(downloadProgress, {
       toValue: 30,
       duration: 800,
@@ -238,13 +238,13 @@ export default function SummaryReportScreen() {
             "Total Distance (km)": entry?.totalDistance ? (entry.totalDistance / 1000).toFixed(2) : "N/A",
             "Top Speed (km/h)": entry?.maxSpeed ? (entry.maxSpeed * 1.852).toFixed(2) : "N/A",
             "Average Speed (km/h)": entry?.averageSpeed ? (entry.averageSpeed * 1.852).toFixed(2) : "N/A",
-            "Engine Hours (hr)": entry?.engineHours ? (entry.engineHours/3600).toFixed(2) : "N/A",
+            "Engine Hours (hr)": entry?.engineHours ? (entry.engineHours / 3600).toFixed(2) : "N/A",
             "AC Hours (hr)": entry?.acHours ? entry.acHours : "N/A",
-            "Running Hours (hr)": entry?.movingDuration ? (entry.movingDuration/3600).toFixed(2) : "N/A",
-            "Stopped Hours (hr)": entry?.stoppedDuration ? (entry.stoppedDuration/3600).toFixed(2) : "N/A",
-            "Idle Hours (hr)": entry?.idleDuration ? (entry.idleDuration/3600).toFixed(2) : "N/A",
-            "Overspeed Duration (hr)": entry?.overspeedDuration ? (entry.overspeedDuration/3600).toFixed(2) : "N/A",
-            "Overspeed Distance (km)": entry?.overspeedDistance ? (entry.overspeedDistance/1000).toFixed(2) : "N/A",
+            "Running Hours (hr)": entry?.movingDuration ? (entry.movingDuration / 3600).toFixed(2) : "N/A",
+            "Stopped Hours (hr)": entry?.stoppedDuration ? (entry.stoppedDuration / 3600).toFixed(2) : "N/A",
+            "Idle Hours (hr)": entry?.idleDuration ? (entry.idleDuration / 3600).toFixed(2) : "N/A",
+            "Overspeed Duration (hr)": entry?.overspeedDuration ? (entry.overspeedDuration / 3600).toFixed(2) : "N/A",
+            "Overspeed Distance (km)": entry?.overspeedDistance ? (entry.overspeedDistance / 1000).toFixed(2) : "N/A",
             "Spent Fuel (L)": entry?.spentFuel ? entry.spentFuel.toFixed(2) : "N/A",
             "Mileage Fuel": entry?.mileageFuel || "N/A",
             "Current Status": entry?.currentStatus || "N/A",
@@ -271,7 +271,7 @@ export default function SummaryReportScreen() {
 
         const workbook = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(workbook, worksheet, "Summary Report");
-        
+
         setDownloadStatus('Saving file...');
         Animated.timing(downloadProgress, {
           toValue: 85,
@@ -282,7 +282,7 @@ export default function SummaryReportScreen() {
         const wbout = XLSX.write(workbook, { type: 'base64', bookType: 'xlsx' });
         const formattedDate = new Date().toISOString().split('T')[0];
         const filename = FileSystem.documentDirectory + `summary/Summary-${formattedDate}.xlsx`;
-        
+
         await FileSystem.writeAsStringAsync(filename, wbout, {
           encoding: FileSystem.EncodingType.Base64,
         });
@@ -338,7 +338,7 @@ export default function SummaryReportScreen() {
   };
 
   const handleDeviceChange = (value: string | null) => {
-    console.log('handleDeviceChange',value);
+    console.log('handleDeviceChange', value);
     setDeviceValue(value);
     if (value) {
       setGroupValue(null);
@@ -369,7 +369,7 @@ export default function SummaryReportScreen() {
           <MaterialIcons name="sync" size={40} color="#FF7043" />
           <Text style={styles.downloadStatusText}>{generatingStatus}</Text>
           <View style={styles.progressBarContainer}>
-            <Animated.View 
+            <Animated.View
               style={[
                 styles.progressBar,
                 {
@@ -378,7 +378,7 @@ export default function SummaryReportScreen() {
                     outputRange: ['0%', '100%']
                   })
                 }
-              ]} 
+              ]}
             />
           </View>
           <Text style={styles.downloadStatusText1}>Generating Report...</Text>
@@ -395,10 +395,10 @@ export default function SummaryReportScreen() {
         <View style={styles.downloadCard}>
           <MaterialIcons name="cloud-download" size={40} color="#FF7043" />
           <Text style={styles.downloadStatusText}>{downloadStatus}</Text>
-          
+
           <View style={styles.sliderContainer}>
             <View style={styles.sliderTrack} />
-            <Animated.View 
+            <Animated.View
               style={[
                 styles.sliderBall,
                 {
@@ -407,7 +407,7 @@ export default function SummaryReportScreen() {
                     outputRange: ['0%', '92%']
                   })
                 }
-              ]} 
+              ]}
             >
               <MaterialIcons name="fiber-manual-record" size={24} color="#FF7043" />
             </Animated.View>
@@ -434,7 +434,7 @@ export default function SummaryReportScreen() {
       </View>
 
       <ScrollView contentContainerStyle={styles.scrollContent}>
-      
+
         {/* Filter Card */}
         <View style={styles.filterCardDark}>
           <View style={styles.filterFieldBlock}>
@@ -463,8 +463,8 @@ export default function SummaryReportScreen() {
 
           <View style={styles.filterFieldBlock}>
             <Text style={styles.filterLabelDark}>From</Text>
-            <TouchableOpacity 
-              style={styles.dateInputDark} 
+            <TouchableOpacity
+              style={styles.dateInputDark}
               onPress={() => setFromDatePickerVisible(true)}
             >
               <Text style={styles.dateInputTextDark}>{fromDate.toLocaleString()}</Text>
@@ -482,8 +482,8 @@ export default function SummaryReportScreen() {
 
           <View style={styles.filterFieldBlock}>
             <Text style={styles.filterLabelDark}>To</Text>
-            <TouchableOpacity 
-              style={styles.dateInputDark} 
+            <TouchableOpacity
+              style={styles.dateInputDark}
               onPress={() => setToDatePickerVisible(true)}
             >
               <Text style={styles.dateInputTextDark}>{toDate.toLocaleString()}</Text>
@@ -500,8 +500,8 @@ export default function SummaryReportScreen() {
           </View>
 
           <View style={styles.buttonContainer}>
-            <TouchableOpacity 
-              style={[styles.generateButtonDark, loading && styles.generateButtonDisabledDark]} 
+            <TouchableOpacity
+              style={[styles.generateButtonDark, loading && styles.generateButtonDisabledDark]}
               disabled={loading}
               onPress={handleGenerateReport}
             >
@@ -515,9 +515,9 @@ export default function SummaryReportScreen() {
               )}
             </TouchableOpacity>
 
-            <TouchableOpacity 
+            <TouchableOpacity
               style={[
-                styles.downloadButtonDark, 
+                styles.downloadButtonDark,
                 styles.filterDownloadButton,
                 reportData.length === 0 && styles.downloadButtonDisabledDark
               ]}
@@ -591,13 +591,13 @@ export default function SummaryReportScreen() {
                         String(entry?.totalDistance ? (entry.totalDistance / 1000).toFixed(2) + " km" : "N/A"),
                         String(entry?.maxSpeed ? (entry.maxSpeed * 1.852).toFixed(2) + " km/h" : "N/A"),
                         String(entry?.averageSpeed ? (entry.averageSpeed * 1.852).toFixed(2) + " km/h" : "N/A"),
-                        String(entry?.engineHours ? (entry.engineHours/3600).toFixed(2) + " hr" : "N/A"),
+                        String(entry?.engineHours ? (entry.engineHours / 3600).toFixed(2) + " hr" : "N/A"),
                         String(entry?.acHours ? entry.acHours + " hr" : "N/A"),
-                        String(entry?.movingDuration ? (entry.movingDuration/3600).toFixed(2) + " hr" : "N/A"),
-                        String(entry?.stoppedDuration ? (entry.stoppedDuration/3600).toFixed(2) + " hr" : "N/A"),
-                        String(entry?.idleDuration ? (entry.idleDuration/3600).toFixed(2) + " hr" : "N/A"),
-                        String(entry?.overspeedDuration ? (entry.overspeedDuration/3600).toFixed(2) + " hr" : "N/A"),
-                        String(entry?.overspeedDistance ? (entry.overspeedDistance/1000).toFixed(2) + " km" : "N/A"),
+                        String(entry?.movingDuration ? (entry.movingDuration / 3600).toFixed(2) + " hr" : "N/A"),
+                        String(entry?.stoppedDuration ? (entry.stoppedDuration / 3600).toFixed(2) + " hr" : "N/A"),
+                        String(entry?.idleDuration ? (entry.idleDuration / 3600).toFixed(2) + " hr" : "N/A"),
+                        String(entry?.overspeedDuration ? (entry.overspeedDuration / 3600).toFixed(2) + " hr" : "N/A"),
+                        String(entry?.overspeedDistance ? (entry.overspeedDistance / 1000).toFixed(2) + " km" : "N/A"),
                         String(entry?.spentFuel ? entry.spentFuel.toFixed(2) + " L" : "N/A"),
                         String(entry?.mileageFuel || "N/A"),
                         String(entry?.currentStatus || "N/A"),
@@ -747,20 +747,26 @@ const styles = StyleSheet.create({
   generateButtonDark: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FF7043',
+    backgroundColor: '#4A5D23', // Olive Green
     paddingVertical: 16,
     paddingHorizontal: 18,
-    borderRadius: 10,
+    borderRadius: 12,
     justifyContent: 'center',
     elevation: 2,
     flex: 1,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
   },
   generateButtonDisabledDark: {
     opacity: 0.5,
+    backgroundColor: '#8B9D6B', // Light Olive
   },
   generateButtonTextDark: {
-    color: '#fff',
-    fontWeight: 'bold',
+    color: '#FFFFFF',
+    fontFamily: 'Poppins',
+    fontWeight: '600',
     marginLeft: 8,
     fontSize: 16,
     letterSpacing: 0.5,
@@ -813,19 +819,28 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
   },
   paginationButtonDark: {
-    backgroundColor: '#f5f5f5',
-    paddingVertical: 8,
+    backgroundColor: '#F8F9F5', // Very Light Olive
+    paddingVertical: 10,
     paddingHorizontal: 16,
-    borderRadius: 8,
+    borderRadius: 12,
     marginHorizontal: 8,
+    borderWidth: 1,
+    borderColor: '#4A5D23', // Olive Green
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
   },
   paginationButtonDisabledDark: {
     opacity: 0.5,
+    borderColor: '#8B9D6B', // Light Olive
   },
   paginationButtonTextDark: {
-    color: '#000',
+    color: '#4A5D23', // Olive Green
+    fontFamily: 'Poppins',
     fontSize: 14,
-    fontWeight: 'bold',
+    fontWeight: '600',
   },
   paginationTextDark: {
     color: '#000',
@@ -836,20 +851,26 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#43A047',
+    backgroundColor: '#6B8E23', // Olive Drab
     padding: 0,
-    borderRadius: 8,
+    borderRadius: 12,
     height: 52,
     width: 100,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
   },
   downloadButtonDisabledDark: {
     opacity: 0.5,
-    backgroundColor: '#a5d6a7', // lighter green when disabled
+    backgroundColor: '#8B9D6B', // Light Olive
   },
   downloadButtonTextDark: {
-    color: '#fff',
+    color: '#FFFFFF',
+    fontFamily: 'Poppins',
     fontSize: 16,
-    fontWeight: 'bold',
+    fontWeight: '600',
     marginLeft: 8,
   },
   scrollContent: {
@@ -923,7 +944,7 @@ const styles = StyleSheet.create({
   },
   progressBar: {
     height: '100%',
-    backgroundColor: '#FF7043',
+    backgroundColor: '#4A5D23', // Olive Green
   },
   sliderContainer: {
     width: '100%',

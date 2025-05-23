@@ -71,18 +71,18 @@ const eventTypes = [
 const formatDate = (dateStr: string) => {
   if (!dateStr) return '';
   const date = new Date(dateStr);
-  return date.toLocaleDateString('en-US', { 
-    month: 'short', 
+  return date.toLocaleDateString('en-US', {
+    month: 'short',
     day: 'numeric',
     hour: 'numeric',
     minute: '2-digit',
-    hour12: true 
+    hour12: true
   });
 };
 
 const formatType = (type: string) => {
   if (!type) return '';
-  
+
   const typeMap: { [key: string]: string } = {
     "allEvents": "All Events",
     "commandResult": "Command Result",
@@ -106,7 +106,7 @@ const formatType = (type: string) => {
     "driverChanged": "Driver Changed",
     "media": "Media"
   };
-  
+
   return typeMap[type] || type
     .replace(/([A-Z0-9])/g, ' $1')
     .replace(/_/g, ' ')
@@ -117,7 +117,7 @@ const formatType = (type: string) => {
 
 
 
-const NoDataFound = ({reportFetched}: {reportFetched: boolean}) => (
+const NoDataFound = ({ reportFetched }: { reportFetched: boolean }) => (
   <View style={styles.noDataContainer}>
     <MaterialIcons name="info-outline" size={48} color="#666" />
     <Text style={styles.noDataText}>{reportFetched ? "No data found" : ""}</Text>
@@ -130,11 +130,11 @@ export default function EventReportScreen() {
   const [isDownloading, setIsDownloading] = useState(false);
   const [reportData, setReportData] = useState<ReportData[]>([]);
   const [groups, setGroups] = useState<Group[]>([]);
-  
+
   // Device dropdown states
   const [deviceValue, setDeviceValue] = useState<string | null>(null);
   const [deviceItems, setDeviceItems] = useState<DropdownItem[]>([]);
-  
+
   // Group dropdown states
   const [groupValue, setGroupValue] = useState<string | null>(null);
   const [groupItems, setGroupItems] = useState<DropdownItem[]>([]);
@@ -153,7 +153,7 @@ export default function EventReportScreen() {
   const [isFromDatePickerVisible, setFromDatePickerVisible] = useState(false);
   const [isToDatePickerVisible, setToDatePickerVisible] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
-  
+
   const recordsPerPage = 50;
 
   const [downloadProgress] = useState(new Animated.Value(0));
@@ -162,7 +162,7 @@ export default function EventReportScreen() {
   const [targetProgress, setTargetProgress] = useState(0);
   const [generatingStatus, setGeneratingStatus] = useState('');
   const dispatch = useDispatch();
-  const { devices: devicesData, loading } = useSelector((state: RootState) => state.devices);     
+  const { devices: devicesData, loading } = useSelector((state: RootState) => state.devices);
   useEffect(() => {
     fetchGroups();
   }, []);
@@ -191,7 +191,7 @@ export default function EventReportScreen() {
       const listener = generatingProgress.addListener(({ value }) => {
         currentValue = value;
       });
-      
+
       Animated.timing(generatingProgress, {
         toValue: targetProgress,
         duration: (targetProgress - currentValue) * 50,
@@ -229,23 +229,23 @@ export default function EventReportScreen() {
     animateGeneratingProgress(20);
 
     try {
-     
+
       const fromDateUTC = new Date(fromDate);
-      fromDateUTC.setHours(fromDateUTC.getHours() , fromDateUTC.getMinutes());
-      
+      fromDateUTC.setHours(fromDateUTC.getHours(), fromDateUTC.getMinutes());
+
       await new Promise(resolve => setTimeout(resolve, 1000));
       setGeneratingStatus('Processing date range...');
       animateGeneratingProgress(30);
 
       const toDateUTC = new Date(toDate);
-      toDateUTC.setHours(toDateUTC.getHours() , toDateUTC.getMinutes());
+      toDateUTC.setHours(toDateUTC.getHours(), toDateUTC.getMinutes());
 
       await new Promise(resolve => setTimeout(resolve, 1000));
       setGeneratingStatus('Fetching event data...');
       animateGeneratingProgress(50);
 
       const response = await Api.call('/api/reports/events?from=' + fromDateUTC.toISOString().slice(0, 19) + 'Z&to=' + toDateUTC.toISOString().slice(0, 19) + 'Z' + (deviceValue ? '&deviceId=' + deviceValue : '') + (groupValue ? '&groupId=' + groupValue : '') + '&type=' + eventTypeValue, 'GET', {}, false);
-      
+
       setGeneratingStatus('Processing response...');
       animateGeneratingProgress(70);
 
@@ -270,7 +270,7 @@ export default function EventReportScreen() {
   const exportToExcel = async () => {
     setIsDownloading(true);
     setDownloadStatus('Preparing report data...');
-    
+
     Animated.timing(downloadProgress, {
       toValue: 30,
       duration: 800,
@@ -286,7 +286,7 @@ export default function EventReportScreen() {
             "Date & Time": formatDate(entry?.eventTime),
             "Geofence": entry?.geofenceId ? entry?.geofence?.name : "-",
             "Command Type": entry?.attributes?.commandType || "-",
-            "Command Operator": entry?.attributes?.command || entry?.attributes?.operator 
+            "Command Operator": entry?.attributes?.command || entry?.attributes?.operator
               ? `${entry?.attributes?.command || ""}${entry?.attributes?.command && entry?.attributes?.operator ? " " : ""}${entry?.attributes?.operator ? `(${entry?.attributes?.operator})` : ""}`
               : "-",
             "Maintenance": entry?.attributes?.maintenance || "-"
@@ -302,7 +302,7 @@ export default function EventReportScreen() {
 
         const workbook = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(workbook, worksheet, "Event Report");
-        
+
         setDownloadStatus('Saving file...');
         Animated.timing(downloadProgress, {
           toValue: 85,
@@ -322,7 +322,7 @@ export default function EventReportScreen() {
           duration: 400,
           useNativeDriver: false
         }).start();
-        
+
         await Sharing.shareAsync(uri);
       } catch (error) {
         console.error('Error exporting to Excel:', error);
@@ -384,7 +384,7 @@ export default function EventReportScreen() {
           <MaterialIcons name="sync" size={40} color="#FF7043" />
           <Text style={styles.downloadStatusText}>{generatingStatus}</Text>
           <View style={styles.progressBarContainer}>
-            <Animated.View 
+            <Animated.View
               style={[
                 styles.progressBar,
                 {
@@ -393,7 +393,7 @@ export default function EventReportScreen() {
                     outputRange: ['0%', '100%']
                   })
                 }
-              ]} 
+              ]}
             />
           </View>
           <Text style={styles.downloadStatusText1}>Generating Report...</Text>
@@ -410,10 +410,10 @@ export default function EventReportScreen() {
         <View style={styles.downloadCard}>
           <MaterialIcons name="cloud-download" size={40} color="#FF7043" />
           <Text style={styles.downloadStatusText}>{downloadStatus}</Text>
-          
+
           <View style={styles.sliderContainer}>
             <View style={styles.sliderTrack} />
-            <Animated.View 
+            <Animated.View
               style={[
                 styles.sliderBall,
                 {
@@ -422,7 +422,7 @@ export default function EventReportScreen() {
                     outputRange: ['0%', '92%']
                   })
                 }
-              ]} 
+              ]}
             >
               <MaterialIcons name="fiber-manual-record" size={24} color="#FF7043" />
             </Animated.View>
@@ -451,7 +451,7 @@ export default function EventReportScreen() {
       </View>
 
       <ScrollView contentContainerStyle={styles.scrollContent}>
-      
+
         {/* Filter Card */}
         <View style={styles.filterCardDark}>
           <View style={styles.filterFieldBlock}>
@@ -491,8 +491,8 @@ export default function EventReportScreen() {
 
           <View style={styles.filterFieldBlock}>
             <Text style={styles.filterLabelDark}>From</Text>
-            <TouchableOpacity 
-              style={styles.dateInputDark} 
+            <TouchableOpacity
+              style={styles.dateInputDark}
               onPress={() => setFromDatePickerVisible(true)}
             >
               <Text style={styles.dateInputTextDark}>{fromDate.toLocaleString()}</Text>
@@ -510,8 +510,8 @@ export default function EventReportScreen() {
 
           <View style={styles.filterFieldBlock}>
             <Text style={styles.filterLabelDark}>To</Text>
-            <TouchableOpacity 
-              style={styles.dateInputDark} 
+            <TouchableOpacity
+              style={styles.dateInputDark}
               onPress={() => setToDatePickerVisible(true)}
             >
               <Text style={styles.dateInputTextDark}>{toDate.toLocaleString()}</Text>
@@ -528,8 +528,8 @@ export default function EventReportScreen() {
           </View>
 
           <View style={styles.buttonContainer}>
-            <TouchableOpacity 
-              style={[styles.generateButtonDark, loading && styles.generateButtonDisabledDark]} 
+            <TouchableOpacity
+              style={[styles.generateButtonDark, loading && styles.generateButtonDisabledDark]}
               disabled={loading}
               onPress={handleGenerateReport}
             >
@@ -544,7 +544,7 @@ export default function EventReportScreen() {
             </TouchableOpacity>
 
             {/* Download Button */}
-            <TouchableOpacity 
+            <TouchableOpacity
               style={[
                 styles.downloadButtonDark,
                 reportData.length === 0 && styles.downloadButtonDisabledDark
@@ -596,7 +596,7 @@ export default function EventReportScreen() {
                         String(formatDate(entry?.eventTime)),
                         String(entry?.geofenceId ? entry?.geofence?.name : "-"),
                         String(entry?.attributes?.commandType || "-"),
-                        String(entry?.attributes?.command || entry?.attributes?.operator 
+                        String(entry?.attributes?.command || entry?.attributes?.operator
                           ? `${entry?.attributes?.command || ""}${entry?.attributes?.command && entry?.attributes?.operator ? " " : ""}${entry?.attributes?.operator ? `(${entry?.attributes?.operator})` : ""}`
                           : "-"),
                         String(entry?.attributes?.maintenance || "-")
@@ -641,7 +641,7 @@ export default function EventReportScreen() {
       <DownloadOverlay />
     </SafeAreaView>
   );
-} 
+}
 
 const styles = StyleSheet.create({
   containerDark: {
@@ -659,9 +659,10 @@ const styles = StyleSheet.create({
     borderBottomColor: '#e0e0e0',
   },
   headerTitleDark: {
-    color: '#000',
+    color: '#4A5D23',
+    fontFamily: 'Poppins',
     fontSize: 20,
-    fontWeight: 'bold',
+    fontWeight: '600',
   },
   filterCardDark: {
     backgroundColor: '#fff',
@@ -681,8 +682,9 @@ const styles = StyleSheet.create({
     marginBottom: 18,
   },
   filterLabelDark: {
-    color: '#000',
-    fontWeight: 'bold',
+    color: '#4A5D23',
+    fontFamily: 'Poppins',
+    fontWeight: '600',
     marginBottom: 6,
     fontSize: 15,
   },
@@ -733,20 +735,26 @@ const styles = StyleSheet.create({
   generateButtonDark: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FF7043',
+    backgroundColor: '#4A5D23',
     paddingVertical: 16,
     paddingHorizontal: 18,
-    borderRadius: 10,
+    borderRadius: 12,
     justifyContent: 'center',
     elevation: 2,
     flex: 1,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
   },
   generateButtonDisabledDark: {
     opacity: 0.5,
+    backgroundColor: '#8B9D6B',
   },
   generateButtonTextDark: {
-    color: '#fff',
-    fontWeight: 'bold',
+    color: '#FFFFFF',
+    fontFamily: 'Poppins',
+    fontWeight: '600',
     marginLeft: 8,
     fontSize: 16,
     letterSpacing: 0.5,
@@ -797,19 +805,28 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
   },
   paginationButtonDark: {
-    backgroundColor: '#f5f5f5',
-    paddingVertical: 8,
+    backgroundColor: '#F8F9F5',
+    paddingVertical: 10,
     paddingHorizontal: 16,
-    borderRadius: 8,
+    borderRadius: 12,
     marginHorizontal: 8,
+    borderWidth: 1,
+    borderColor: '#4A5D23',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
   },
   paginationButtonDisabledDark: {
     opacity: 0.5,
+    borderColor: '#8B9D6B',
   },
   paginationButtonTextDark: {
-    color: '#000',
+    color: '#4A5D23',
+    fontFamily: 'Poppins',
     fontSize: 14,
-    fontWeight: 'bold',
+    fontWeight: '600',
   },
   paginationTextDark: {
     color: '#000',
@@ -820,20 +837,26 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#43A047',
+    backgroundColor: '#6B8E23',
     padding: 0,
-    borderRadius: 8,
+    borderRadius: 12,
     height: 52,
     width: 100,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
   },
   downloadButtonDisabledDark: {
     opacity: 0.5,
-    backgroundColor: '#a5d6a7',
+    backgroundColor: '#8B9D6B',
   },
   downloadButtonTextDark: {
-    color: '#fff',
+    color: '#FFFFFF',
+    fontFamily: 'Poppins',
     fontSize: 16,
-    fontWeight: 'bold',
+    fontWeight: '600',
     marginLeft: 8,
   },
   scrollContent: {

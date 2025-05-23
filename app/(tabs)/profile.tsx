@@ -10,6 +10,8 @@ import {
   Text,
   TouchableOpacity,
   View,
+  ViewStyle,
+  TextStyle,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useDispatch } from "react-redux";
@@ -26,7 +28,7 @@ export default function DriversScreen() {
     const loadNotificationState = async () => {
       const enabled = await isNotificationsEnabled();
       setNotificationsEnabledState(enabled);
-      
+
       // If notifications are not enabled, enable them by default
       if (!enabled) {
         await setNotificationsEnabled(true);
@@ -44,34 +46,34 @@ export default function DriversScreen() {
   const options = [
     {
       label: "Notifications",
-      icon: "notifications",
-      color: "#000000",
+      icon: "notifications-active",
+      color: "#4A5D23",
       isToggle: true,
       value: notificationsEnabled,
       onToggle: handleNotificationToggle,
     },
     {
       label: "Geofencing",
-      icon: "my-location",
-      color: "#000000",
+      icon: "location-on",
+      color: "#4A5D23",
       onPress: () => router.push("/geofencing"),
     },
     {
       label: "User Management",
-      icon: "person",
-      color: "#000000",
+      icon: "people",
+      color: "#4A5D23",
       onPress: () => router.push("/userManagement"),
     },
     {
       label: "Group Management",
-      icon: "group",
-      color: "#000000",
+      icon: "groups",
+      color: "#4A5D23",
       onPress: () => router.push("/group-management"),
     },
     {
       label: "Logout",
       icon: "logout",
-      color: "red",
+      color: "#E53E3E",
       onPress: async () => {
         Alert.alert("Logout", "Are you sure you want to logout?", [
           { text: "Cancel", style: "cancel" },
@@ -106,7 +108,7 @@ export default function DriversScreen() {
             activeOpacity={0.7}
             onPress={opt.onPress}
           >
-            <View style={[styles.iconCircle, { backgroundColor: "#F5F5F5" }]}>
+            <View style={[styles.iconCircle, { backgroundColor: "#F8F9F5" }]}>
               <MaterialIcons
                 name={opt.icon as any}
                 size={28}
@@ -120,17 +122,17 @@ export default function DriversScreen() {
               <Switch
                 value={opt.value}
                 onValueChange={opt.onToggle}
-                trackColor={{ false: "#E0E0E0", true: "#000000" }}
+                trackColor={{ false: "#E0E0E0", true: "#4A5D23" }}
                 thumbColor="#FFFFFF"
                 ios_backgroundColor="#E0E0E0"
-                style={{ marginLeft: "auto" }}
+                style={styles.switchStyle}
               />
             ) : (
               <MaterialIcons
                 name="chevron-right"
                 size={24}
                 color={opt.color}
-                style={{ marginLeft: "auto" }}
+                style={styles.chevronStyle}
               />
             )}
           </TouchableOpacity>
@@ -173,7 +175,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     backgroundColor: "#FFFFFF",
     borderRadius: 16,
-    paddingVertical: 10,
+    paddingVertical: 14,
     paddingHorizontal: 20,
     marginBottom: 16,
     elevation: 2,
@@ -185,16 +187,18 @@ const styles = StyleSheet.create({
     borderColor: "#F0F0F0",
   },
   iconCircle: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
     alignItems: "center",
     justifyContent: "center",
-    marginRight: 20,
+    marginRight: 16,
+    backgroundColor: "#F8F9F5",
   },
   optionLabel: {
-    fontSize: 18,
-    fontWeight: "600",
+    fontSize: 16,
+    fontFamily: "Poppins",
+    fontWeight: "500",
     color: "#000000",
     letterSpacing: 0.3,
   },
@@ -333,6 +337,17 @@ const styles = StyleSheet.create({
   blackHeaderText: {
     color: "#000",
     fontSize: 20,
-    fontWeight: "bold",
+    fontFamily: "Poppins",
+    fontWeight: "600",
+  },
+  switchTrackColor: {
+    false: "#E0E0E0",
+    true: "#4A5D23",
+  },
+  switchStyle: {
+    marginLeft: "auto",
+  },
+  chevronStyle: {
+    marginLeft: "auto",
   },
 });

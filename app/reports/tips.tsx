@@ -125,7 +125,7 @@ export default function TipsReportScreen() {
     setGroupItems(groupDropdownItems);
   }, [groups]);
 
-  
+
 
   const fetchGroups = async () => {
     try {
@@ -211,7 +211,7 @@ export default function TipsReportScreen() {
   const exportToExcel = async () => {
     setIsDownloading(true);
     setDownloadStatus('Preparing report data...');
-    
+
     Animated.timing(downloadProgress, {
       toValue: 30,
       duration: 800,
@@ -330,7 +330,7 @@ export default function TipsReportScreen() {
           <MaterialIcons name="sync" size={40} color="#FF7043" />
           <Text style={styles.downloadStatusText}>{generatingStatus}</Text>
           <View style={styles.progressBarContainer}>
-            <Animated.View 
+            <Animated.View
               style={[
                 styles.progressBar,
                 {
@@ -339,7 +339,7 @@ export default function TipsReportScreen() {
                     outputRange: ['0%', '100%']
                   })
                 }
-              ]} 
+              ]}
             />
           </View>
           <Text style={styles.downloadStatusText1}>Generating Report...</Text>
@@ -356,10 +356,10 @@ export default function TipsReportScreen() {
         <View style={styles.downloadCard}>
           <MaterialIcons name="cloud-download" size={40} color="#FF7043" />
           <Text style={styles.downloadStatusText}>{downloadStatus}</Text>
-          
+
           <View style={styles.sliderContainer}>
             <View style={styles.sliderTrack} />
-            <Animated.View 
+            <Animated.View
               style={[
                 styles.sliderBall,
                 {
@@ -368,7 +368,7 @@ export default function TipsReportScreen() {
                     outputRange: ['0%', '92%']
                   })
                 }
-              ]} 
+              ]}
             >
               <MaterialIcons name="fiber-manual-record" size={24} color="#FF7043" />
             </Animated.View>
@@ -491,7 +491,7 @@ export default function TipsReportScreen() {
             </TouchableOpacity>
 
             {/* Download Button */}
-            <TouchableOpacity 
+            <TouchableOpacity
               style={[
                 styles.downloadButtonDark,
                 reportData.length === 0 && styles.downloadButtonDisabledDark
@@ -696,20 +696,26 @@ const styles = StyleSheet.create({
   generateButtonDark: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#FF7043",
+    backgroundColor: "#4A5D23",
     paddingVertical: 16,
     paddingHorizontal: 18,
-    borderRadius: 10,
+    borderRadius: 12,
     justifyContent: "center",
     elevation: 2,
     flex: 1,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
   },
   generateButtonDisabledDark: {
     opacity: 0.5,
+    backgroundColor: "#8B9D6B",
   },
   generateButtonTextDark: {
-    color: "#fff",
-    fontWeight: "bold",
+    color: "#FFFFFF",
+    fontFamily: "Poppins",
+    fontWeight: "600",
     marginLeft: 8,
     fontSize: 16,
     letterSpacing: 0.5,
@@ -755,19 +761,28 @@ const styles = StyleSheet.create({
     backgroundColor: "#fff",
   },
   paginationButtonDark: {
-    backgroundColor: "#f5f5f5",
-    paddingVertical: 8,
+    backgroundColor: "#F8F9F5",
+    paddingVertical: 10,
     paddingHorizontal: 16,
-    borderRadius: 8,
+    borderRadius: 12,
     marginHorizontal: 8,
+    borderWidth: 1,
+    borderColor: "#4A5D23",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
   },
   paginationButtonDisabledDark: {
     opacity: 0.5,
+    borderColor: "#8B9D6B",
   },
   paginationButtonTextDark: {
-    color: "#000",
+    color: "#4A5D23",
+    fontFamily: "Poppins",
     fontSize: 14,
-    fontWeight: "bold",
+    fontWeight: "600",
   },
   paginationTextDark: {
     color: "#000",
@@ -778,20 +793,26 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#43A047",
+    backgroundColor: "#6B8E23",
     padding: 0,
-    borderRadius: 8,
+    borderRadius: 12,
     height: 52,
     width: 100,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
   },
   downloadButtonDisabledDark: {
     opacity: 0.5,
-    backgroundColor: "#a5d6a7",
+    backgroundColor: "#8B9D6B",
   },
   downloadButtonTextDark: {
-    color: "#fff",
+    color: "#FFFFFF",
+    fontFamily: "Poppins",
     fontSize: 16,
-    fontWeight: "bold",
+    fontWeight: "600",
     marginLeft: 8,
   },
   scrollContent: {
@@ -864,8 +885,8 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   progressBar: {
-    height: '100%',
-    backgroundColor: '#FF7043',
+    height: "100%",
+    backgroundColor: "#4A5D23",
   },
   sliderContainer: {
     width: '100%',

@@ -204,7 +204,7 @@ export default function DashboardScreen() {
     name: stat.label,
     population: stat.count,
     color: stat.color,
-    legendFontColor: "#222",
+    legendFontColor: "#fafafa",
     legendFontSize: 16,
   }));
 

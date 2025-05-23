@@ -16,6 +16,7 @@ import { useSelector } from "react-redux";
 import { RootState } from "../store/store";
 import tw from 'twrnc';
 import { startPositionUpdates, stopPositionUpdates } from "@/app/services/backgroundService";
+import { LinearGradient } from 'expo-linear-gradient';
 const screenWidth = Dimensions.get("window").width;
 
 interface VehicleStat {
@@ -26,6 +27,23 @@ interface VehicleStat {
   bgColor: string;
   textColor: string;
 }
+
+const statusCardGradients = [
+  ["#8e54e9", "#4776e6"], // All - purple/blue
+  ["#11998e", "#38ef7d"], // Running - green
+  ["#f7971e", "#ffd200"], // Idle - orange/yellow
+  ["#f953c6", "#b91d73"], // Stop - red/pink
+  ["#396afc", "#2948ff"], // Inactive - blue
+  ["#232526", "#414345"], // No Data - dark
+];
+const statusCardIcons = [
+  "local-shipping", // All
+  "speed",          // Running
+  "schedule",       // Idle
+  "block",          // Stop
+  "power-settings-new", // Inactive
+  "help",           // No Data
+];
 
 export default function DashboardScreen() {
   const { devices: devicesData, loading } = useSelector((state: RootState) => state.devices);
@@ -283,40 +301,42 @@ export default function DashboardScreen() {
         ) : (
           <>
             <View style={tw`px-4 py-2`}>
-
               <View style={tw`flex-row flex-wrap justify-between gap-3`}>
                 {vehicleStats.map((stat, index) => (
-                  <View
+                  <LinearGradient
                     key={stat.label}
-                    style={tw`w-[48%] bg-white rounded-2xl p-4 shadow-sm border border-gray-100 mb-3`}
+                    colors={statusCardGradients[index % statusCardGradients.length] as [string, string]}
+                    start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
+                    style={tw`w-[48%] rounded-2xl p-4 mb-3 shadow-md`}
                   >
                     <View style={tw`flex-row items-center justify-between mb-2`}>
                       <View style={tw`flex-row items-center`}>
-                        <View style={[tw`w-8 h-8 rounded-lg items-center justify-center mr-2`, { backgroundColor: stat.bgColor }]}>
-                          <MaterialIcons name={stat.icon} size={18} color={stat.textColor} />
+                        <View style={[tw`w-8 h-8 rounded-lg items-center justify-center mr-2`, { backgroundColor: 'rgba(255,255,255,0.18)' }]}>
+                          <MaterialIcons name={statusCardIcons[index % statusCardIcons.length] as keyof typeof MaterialIcons.glyphMap} size={18} color={stat.textColor} />
                         </View>
-                        <Text style={tw`font-[Poppins] text-sm text-gray-600`}>
+                        <Text style={tw`font-[Poppins] text-sm text-white`}>
                           {stat.label}
                         </Text>
                       </View>
-                      <View style={[tw`px-2 py-1 rounded-full`, { backgroundColor: `${stat.bgColor}15` }]}>
-                        <Text style={[tw`font-[GeistBold] text-sm`, { color: stat.bgColor }]}>
+                      <View style={[tw`px-2 py-1 rounded-full`, { backgroundColor: 'rgba(255,255,255,0.18)' }]}>
+                        <Text style={[tw`font-[GeistBold] text-sm`, { color: '#fff' }]}>
                           {stat.count}
                         </Text>
                       </View>
                     </View>
-                    <View style={tw`h-1 w-full bg-gray-100 rounded-full overflow-hidden`}>
+                    <View style={tw`h-1 w-full bg-white/30 rounded-full overflow-hidden`}>
                       <View
                         style={[
                           tw`h-full rounded-full`,
                           {
                             width: `${(stat.count / vehicleStats[0].count) * 100}%`,
-                            backgroundColor: stat.bgColor
+                            backgroundColor: '#fff',
+                            opacity: 0.7
                           }
                         ]}
                       />
                     </View>
-                  </View>
+                  </LinearGradient>
                 ))}
               </View>
             </View>
@@ -339,58 +359,54 @@ export default function DashboardScreen() {
               />
             </View>
 
-            <View style={tw`bg-gray-50 rounded-2xl p-5 mx-4 mb-6 shadow-sm`}>
-              <Text style={tw`font-[GeistBold] text-lg text-[#4A5D23] border-b border-gray-200 pb-2 mb-4`}>
-                Recent Devices
-              </Text>
-
-              <View style={tw`flex-row justify-between mb-3 px-2`}>
-                <Text style={tw`font-[Poppins] text-xs text-[#4A5D23]/60 uppercase tracking-wide`}>
-                  Device
-                </Text>
-                <Text style={tw`font-[Poppins] text-xs text-[#4A5D23]/60 uppercase tracking-wide`}>
-                  Status
-                </Text>
-              </View>
-
-              {devicesData?.slice(0, 5).map((device, index) => (
-                <View
-                  key={index}
-                  style={tw`flex-row justify-between items-center py-3 border-b border-gray-200/80`}
-                >
-                  <View style={tw`flex-row items-center`}>
-                    <View style={tw`bg-[#4A5D23] w-10 h-10 rounded-full items-center justify-center mr-3`}>
-                      <MaterialIcons name="local-shipping" size={24} color="white" />
+            <View style={tw`bg-white rounded-2xl p-5 mx-4 mb-6 shadow-md`}>
+              <Text style={tw`font-[Poppins] text-lg text-[#2250a2] font-bold mb-4`}>Recent Devices</Text>
+              {devicesData?.slice(0, 5).map((device, index) => {
+                const isOnline = device.status === 'online';
+                return (
+                  <View
+                    key={index}
+                    style={[
+                      tw`flex-row items-center justify-between mb-4`,
+                      { paddingBottom: index === 4 ? 0 : 12, borderBottomWidth: index === 4 ? 0 : 1, borderColor: '#F0F0F0' }
+                    ]}
+                  >
+                    {/* Device Icon */}
+                    <LinearGradient
+                      colors={isOnline ? ["#11998e", "#38ef7d"] : ["#636e72", "#b2bec3"]}
+                      start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
+                      style={tw`w-12 h-12 rounded-full items-center justify-center mr-4`}
+                    >
+                      <MaterialIcons name="local-shipping" size={26} color="#fff" />
+                    </LinearGradient>
+                    {/* Device Name */}
+                    <View style={tw`flex-1`}>
+                      <Text style={tw`font-[Poppins] text-base text-[#222] font-semibold`} numberOfLines={1}>
+                        {device.name}
+                      </Text>
+                      <Text style={tw`font-[Poppins] text-xs text-[#7b8ca5] mt-0.5`} numberOfLines={1}>
+                        {device.lastUpdate ? new Date(device.lastUpdate).toLocaleString() : 'No update'}
+                      </Text>
                     </View>
-                    <Text style={tw`font-[Geist] text-gray-900`}>
-                      {device.name}
-                    </Text>
-                  </View>
-
-                  <View style={[
-                    tw`px-3 py-1 rounded-full flex-row items-center`,
-                    { fontFamily: 'Poppins' },
-                    device.status === 'online'
-                      ? tw`bg-[#4A5D23]/10`
-                      : tw`bg-gray-200`
-                  ]}>
+                    {/* Status Badge */}
                     <View style={[
-                      tw`w-2 h-2 rounded-full mr-2`,
-                      device.status === 'online'
-                        ? tw`bg-[#4A5D23]`
-                        : tw`bg-gray-500`
-                    ]} />
-                    <Text style={[
-                      { fontFamily: 'Poppins', fontSize: 10 },
-                      device.status === 'online'
-                        ? tw`text-[#4A5D23]`
-                        : tw`text-gray-600`
+                      tw`flex-row items-center px-3 py-1.5 rounded-full ml-2`,
+                      { backgroundColor: isOnline ? '#e0f9f4' : '#f5f6fa', minWidth: 70, justifyContent: 'center' }
                     ]}>
-                      {device.status.toUpperCase()}
-                    </Text>
+                      <View style={[
+                        tw`w-2 h-2 rounded-full mr-2`,
+                        { backgroundColor: isOnline ? '#00b894' : '#636e72' }
+                      ]} />
+                      <Text style={[
+                        tw`font-[Poppins] text-xs font-semibold`,
+                        { color: isOnline ? '#00b894' : '#636e72' }
+                      ]}>
+                        {device.status.toUpperCase()}
+                      </Text>
+                    </View>
                   </View>
-                </View>
-              ))}
+                );
+              })}
             </View>
 
             <View style={tw`bg-gray-50 rounded-2xl p-5 mx-4 mb-6 shadow-sm`}>

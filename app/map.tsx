@@ -532,6 +532,7 @@ export default function MapScreen() {
       <MapView
         ref={mapRef}
         style={styles.map}
+        minZoomLevel={15}
         initialRegion={{
           latitude: Number(device?.latitude) || 0,
           longitude: Number(device?.longitude) || 0,

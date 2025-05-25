@@ -44,7 +44,7 @@ export default function MapScreen() {
     },
   ]);
   const mapRef = useRef<MapView>(null);
-  const [zoomLevel, setZoomLevel] = useState(0.0002);
+  const [zoomLevel, setZoomLevel] = useState(0.0003);
   const [isParked, setIsParked] = useState(false);
   const [isLocked, setIsLocked] = useState(false);
   const [carMode, setCarMode] = useState(false);

@@ -52,7 +52,7 @@ const VehicleCard = memo(({
   const vehicleNumberColor = "#2EAD4B";
   const iconColors = [
     device.attributes.ignition ? "#66BB6A" : "#EF5350",
-    device.attributes.is_mobilized ? "red" : "green",
+    device.attributes.blocked? "red" : "green",
     "#EF5350",
     "#29B6F6",
     device?.attributes?.batteryLevel ? (device?.attributes?.batteryLevel > 0 ? "#66BB6A" : "red") :"#66BB6A"

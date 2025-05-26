@@ -122,6 +122,12 @@ export default function MapScreen() {
     const newDevice = { ...device, ...response.data[0] };
     setDevice(newDevice);
     
+    // Update lock state based on blocked attribute
+    
+    if (newDevice.attributes?.blocked !== undefined) {
+      setIsLocked(newDevice.attributes.blocked);
+    }
+    
     if (newDevice.latitude && newDevice.longitude) {
       const newPosition = {
         latitude: Number(newDevice.latitude) || 0,
@@ -268,7 +274,10 @@ export default function MapScreen() {
 
   const mobilize = async (protocol: string) => {
     try {
-      let lockStatus = isLocked ? "RELAY,1#" : "RELAY,0#";
+      // Send RELAY#0 to unlock (when blocked is true)
+      // Send RELAY#1 to lock (when blocked is false)
+      const command = isLocked ? "RELAY,0#" : "RELAY,1#";
+      
       await Api.call(
         "/api/commands/send",
         "POST",
@@ -278,18 +287,13 @@ export default function MapScreen() {
           description: "mobilize",
           type: "custom",
           attributes: {
-            data: lockStatus,
+            data: command,
           },
         },
         false
       );
-      let deviceData = await fetchDeviceDetails(device?.deviceId);
-      let newAttributes = {
-        ...deviceData.attributes,
-        is_mobilized: !isLocked,
-      };
-      deviceData.attributes = newAttributes;
-      await Api.call(`/api/devices/${deviceData.id}`, "PUT", deviceData, false);
+      
+      // Toggle the lock state
       setIsLocked(!isLocked);
     } catch (error) {
       console.error("Error mobilizing device:", error);
@@ -676,7 +680,7 @@ export default function MapScreen() {
               style={[
                 styles.iconCircle,
                 {
-                  borderColor: isLocked ? "#E53935" : "#FFCDD2",
+                  borderColor: isLocked ? "red" : "red",
                   backgroundColor: isLocked ? "#E53935" : "#fff",
                 },
               ]}
@@ -689,7 +693,7 @@ export default function MapScreen() {
               <MaterialIcons
                 name={isLocked ? "lock" : "lock-open"}
                 size={24}
-                color={isLocked ? "#fff" : "#E53935"}
+                color={isLocked ? "#fff" : "red"}
               />
             </TouchableOpacity>
 

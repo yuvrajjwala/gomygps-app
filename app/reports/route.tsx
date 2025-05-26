@@ -82,12 +82,14 @@ export default function RouteReportScreen() {
 
   const [fromDate, setFromDate] = useState(() => {
     const date = new Date();
-    date.setHours(date.getHours() - 24); // Set to 24 hours ago
+    date.setHours(0, 0, 0, 0);
     return date;
   });
   const [toDate, setToDate] = useState(new Date());
   const [isFromDatePickerVisible, setFromDatePickerVisible] = useState(false);
   const [isToDatePickerVisible, setToDatePickerVisible] = useState(false);
+  const [dateRangeOption, setDateRangeOption] = useState('today');
+  const [showCustomDateRange, setShowCustomDateRange] = useState(false);
   const [reportFetched, setReportFetched] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const recordsPerPage = 50;
@@ -97,6 +99,14 @@ export default function RouteReportScreen() {
   const [targetProgress, setTargetProgress] = useState(0);
   const [generatingStatus, setGeneratingStatus] = useState('');
   const loadingAnimation = useRef(new Animated.Value(45)).current;
+
+  const dateRangeOptions = [
+    { label: 'Today', value: 'today' },
+    { label: 'Yesterday', value: 'yesterday' },
+    { label: 'Last 3 Days', value: 'last3days' },
+    { label: 'Last 7 Days', value: 'last7days' },
+    { label: 'Custom Range', value: 'custom' }
+  ];
 
   useEffect(() => {
     fetchGroups();
@@ -381,6 +391,45 @@ export default function RouteReportScreen() {
     }
   };
 
+  const handleDateRangeChange = (value: string | null) => {
+    if (!value) return;
+    
+    setDateRangeOption(value);
+    setShowCustomDateRange(value === 'custom');
+    
+    const now = new Date();
+    const today = new Date(now);
+    today.setHours(0, 0, 0, 0);
+
+    switch (value) {
+      case 'today':
+        setFromDate(today);
+        setToDate(now);
+        break;
+      case 'yesterday':
+        const yesterday = new Date(today);
+        yesterday.setDate(yesterday.getDate() - 1);
+        setFromDate(yesterday);
+        setToDate(today);
+        break;
+      case 'last3days':
+        const threeDaysAgo = new Date(today);
+        threeDaysAgo.setDate(threeDaysAgo.getDate() - 3);
+        setFromDate(threeDaysAgo);
+        setToDate(now);
+        break;
+      case 'last7days':
+        const sevenDaysAgo = new Date(today);
+        sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+        setFromDate(sevenDaysAgo);
+        setToDate(now);
+        break;
+      case 'custom':
+        // Keep existing dates
+        break;
+    }
+  };
+
   const LoadingOverlay = () => {
     if (!loading) return null;
 
@@ -455,42 +504,57 @@ export default function RouteReportScreen() {
           </View>
 
           <View style={styles.filterFieldBlock}>
-            <Text style={styles.filterLabelDark}>From</Text>
-            <TouchableOpacity 
-              style={styles.dateInputDark} 
-              onPress={() => setFromDatePickerVisible(true)}
-            >
-              <Text style={styles.dateInputTextDark}>{fromDate.toLocaleString()}</Text>
-              <MaterialIcons name="calendar-today" size={18} color="#666" style={{ marginLeft: 6 }} />
-            </TouchableOpacity>
-            <DateTimePickerModal
-              isVisible={isFromDatePickerVisible}
-              mode="datetime"
-              onConfirm={handleFromDateConfirm}
-              onCancel={() => setFromDatePickerVisible(false)}
-              date={fromDate}
-              maximumDate={toDate}
+            <Text style={styles.filterLabelDark}>Date Range</Text>
+            <SearchableDropdown
+              items={dateRangeOptions}
+              value={dateRangeOption}
+              onValueChange={handleDateRangeChange}
+              placeholder="Select date range"
+              zIndex={1000}
             />
           </View>
 
-          <View style={styles.filterFieldBlock}>
-            <Text style={styles.filterLabelDark}>To</Text>
-            <TouchableOpacity 
-              style={styles.dateInputDark} 
-              onPress={() => setToDatePickerVisible(true)}
-            >
-              <Text style={styles.dateInputTextDark}>{toDate.toLocaleString()}</Text>
-              <MaterialIcons name="calendar-today" size={18} color="#666" style={{ marginLeft: 6 }} />
-            </TouchableOpacity>
-            <DateTimePickerModal
-              isVisible={isToDatePickerVisible}
-              mode="datetime"
-              onConfirm={handleToDateConfirm}
-              onCancel={() => setToDatePickerVisible(false)}
-              date={toDate}
-              minimumDate={fromDate}
-            />
-          </View>
+          {showCustomDateRange && (
+            <>
+              <View style={styles.filterFieldBlock}>
+                <Text style={styles.filterLabelDark}>From</Text>
+                <TouchableOpacity 
+                  style={styles.dateInputDark} 
+                  onPress={() => setFromDatePickerVisible(true)}
+                >
+                  <Text style={styles.dateInputTextDark}>{fromDate.toLocaleString()}</Text>
+                  <MaterialIcons name="calendar-today" size={18} color="#666" style={{ marginLeft: 6 }} />
+                </TouchableOpacity>
+                <DateTimePickerModal
+                  isVisible={isFromDatePickerVisible}
+                  mode="datetime"
+                  onConfirm={handleFromDateConfirm}
+                  onCancel={() => setFromDatePickerVisible(false)}
+                  date={fromDate}
+                  maximumDate={toDate}
+                />
+              </View>
+
+              <View style={styles.filterFieldBlock}>
+                <Text style={styles.filterLabelDark}>To</Text>
+                <TouchableOpacity 
+                  style={styles.dateInputDark} 
+                  onPress={() => setToDatePickerVisible(true)}
+                >
+                  <Text style={styles.dateInputTextDark}>{toDate.toLocaleString()}</Text>
+                  <MaterialIcons name="calendar-today" size={18} color="#666" style={{ marginLeft: 6 }} />
+                </TouchableOpacity>
+                <DateTimePickerModal
+                  isVisible={isToDatePickerVisible}
+                  mode="datetime"
+                  onConfirm={handleToDateConfirm}
+                  onCancel={() => setToDatePickerVisible(false)}
+                  date={toDate}
+                  minimumDate={fromDate}
+                />
+              </View>
+            </>
+          )}
 
           <View style={styles.buttonContainer}>
             <TouchableOpacity 

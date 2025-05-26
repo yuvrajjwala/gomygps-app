@@ -2,9 +2,8 @@ import Api from '@/config/Api';
 import { MaterialIcons } from '@expo/vector-icons';
 import * as FileSystem from 'expo-file-system';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import * as Sharing from 'expo-sharing';
 import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, Animated, ScrollView, StatusBar, StyleSheet, Text, TouchableOpacity, View, Alert } from 'react-native';
+import { ActivityIndicator, Alert, Animated, ScrollView, StatusBar, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import DateTimePickerModal from "react-native-modal-datetime-picker";
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Row, Rows, Table, TableWrapper } from 'react-native-table-component';
@@ -127,9 +126,9 @@ export default function SummaryReportScreen() {
 
   useEffect(() => {
     // Transform devices data for dropdown
-    const deviceDropdownItems = devicesData.map((device: Device) => ({
+    const deviceDropdownItems = devicesData.map((device: any) => ({
       label: device.name,
-      value: device.id
+      value: device.deviceId
     }));
     setDeviceItems(deviceDropdownItems);
   }, [devicesData]);

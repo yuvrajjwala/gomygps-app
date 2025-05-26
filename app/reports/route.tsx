@@ -114,9 +114,9 @@ export default function RouteReportScreen() {
 
   useEffect(() => {
     // Transform devices data for dropdown
-    const deviceDropdownItems = devicesData.map((device: Device) => ({
+    const deviceDropdownItems = devicesData.map((device: any) => ({
       label: device.name,
-      value: device.id
+      value: device.deviceId
     }));
     setDeviceItems(deviceDropdownItems);
   }, [devicesData]);

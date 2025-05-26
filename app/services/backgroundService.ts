@@ -26,6 +26,7 @@ export const startPositionUpdates = (isAuthenticated: boolean) => {
           ...responsePositions.data.find(
             (position: any) => position.deviceId === device.id
           ),
+          deviceId: device.id
         }));
         store.dispatch(setDevices(devicesWithPositions));
         store.dispatch(setLoading(false));

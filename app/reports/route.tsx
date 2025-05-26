@@ -20,7 +20,6 @@ import { Row, Rows, Table, TableWrapper } from 'react-native-table-component';
 import { useDispatch, useSelector } from 'react-redux';
 import * as XLSX from 'xlsx';
 import SearchableDropdown from '../components/SearchableDropdown';
-import { setLoading } from '../store/slices/deviceSlice';
 import { RootState } from '../store/store';
 
 interface Device {
@@ -71,7 +70,8 @@ export default function RouteReportScreen() {
   const [isLoadingVehicles, setIsLoadingVehicles] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
   const dispatch = useDispatch();
-  const { devices: devicesData, loading } = useSelector((state: RootState) => state.devices);
+  const { devices: devicesData } = useSelector((state: RootState) => state.devices);
+  const [loading, setLoading] = useState(false);
   // Device dropdown states
   const [deviceValue, setDeviceValue] = useState<string | null>(null);
   const [deviceItems, setDeviceItems] = useState<DropdownItem[]>([]);
@@ -113,6 +113,7 @@ export default function RouteReportScreen() {
   }, []);
 
   useEffect(() => {
+    console.log(devicesData[0]);
     // Transform devices data for dropdown
     const deviceDropdownItems = devicesData.map((device: any) => ({
       label: device.name,
@@ -188,7 +189,7 @@ export default function RouteReportScreen() {
       alert("Please select a device.");
       return;
     }
-    dispatch(setLoading(true));
+    (setLoading(true));
     setGeneratingStatus('Initializing report generation...');
     animateGeneratingProgress(20);
 
@@ -228,7 +229,7 @@ export default function RouteReportScreen() {
     } finally {
       setReportFetched(true);
       setTimeout(() => {
-        dispatch(setLoading(false));
+        setLoading(false);
         generatingProgress.setValue(0);
         setTargetProgress(0);
       }, 1000);

@@ -89,8 +89,8 @@ export default function MapScreen() {
 
   // Add state to track current map region
   const [currentMapRegion, setCurrentMapRegion] = useState({
-    latitudeDelta: zoomLevel * 10,
-    longitudeDelta: zoomLevel * 10
+    latitudeDelta: 0.01,
+    longitudeDelta: 0.01
   });
 
   const getVehicleIcon = (): ImageSourcePropType => {
@@ -102,10 +102,10 @@ export default function MapScreen() {
     if (lastUpdate < fourHoursAgo) {
       return require("@/assets/images/cars/blue.png");
     }
-    if (device.status === "online" && Number(device.speed) === 0) {
+    if (device.attributes?.ignition === true && Number(device.speed) === 0) {
       return require("@/assets/images/cars/orange.png");
     }
-    return device.status === "online"
+    return device.attributes?.ignition === true 
       ? require("@/assets/images/cars/green.png")
       : require("@/assets/images/cars/red.png");
   };
@@ -121,8 +121,6 @@ export default function MapScreen() {
 
     const newDevice = { ...device, ...response.data[0] };
     setDevice(newDevice);
-    
-    // Update lock state based on blocked attribute
     
     if (newDevice.attributes?.blocked !== undefined) {
       setIsLocked(newDevice.attributes.blocked);
@@ -144,7 +142,7 @@ export default function MapScreen() {
         useNativeDriver: false,
       } as any).start();
 
-      // If car mode is enabled, follow car but keep current zoom
+      // If car mode is enabled, follow the vehicle but maintain current zoom
       if (carMode && mapRef.current) {
         mapRef.current.animateToRegion({
           latitude: newPosition.latitude,
@@ -166,24 +164,40 @@ export default function MapScreen() {
     }
   }, [device?.latitude, device?.longitude]);
 
+  // Add useEffect to handle car mode changes and auto-update
   useEffect(() => {
-    if (isFocused) {
-      getPosition();
+    if (carMode && mapRef.current && device?.latitude && device?.longitude) {
+      // Center map on vehicle when car mode is enabled, but maintain current zoom
+      mapRef.current.animateToRegion({
+        latitude: Number(device.latitude),
+        longitude: Number(device.longitude),
+        latitudeDelta: currentMapRegion.latitudeDelta || 0.01,
+        longitudeDelta: currentMapRegion.longitudeDelta || 0.01,
+      }, 1000);
+
+      // Set up interval to update position every 5 seconds when car mode is active
       const interval = setInterval(() => {
         getPosition();
       }, 10000);
+
+      // Clean up interval when car mode is disabled or component unmounts
       return () => clearInterval(interval);
     }
-  }, [isFocused]);
-
-  // Modify car mode effect to only update state
-  useEffect(() => {
-    if (carMode) {
-      setZoomLevel(0.0002);
-    } else {
-      setZoomLevel(0.0002);
-    }
   }, [carMode]);
+
+  // Modify the existing position update interval
+  useEffect(() => {
+    if (isFocused) {
+      getPosition();
+      // Only set up the 10-second interval if car mode is not active
+      const interval = setInterval(() => {
+        if (!carMode) {
+          getPosition();
+        }
+      }, 10000);
+      return () => clearInterval(interval);
+    }
+  }, [isFocused, carMode]);
 
   const createGeofence = async (device: any) => {
     try {
@@ -536,12 +550,13 @@ export default function MapScreen() {
       <MapView
         ref={mapRef}
         style={styles.map}
-        minZoomLevel={15}
+        minZoomLevel={3}
+        maxZoomLevel={20}
         initialRegion={{
           latitude: Number(device?.latitude) || 0,
           longitude: Number(device?.longitude) || 0,
-          latitudeDelta: 0.0002,
-          longitudeDelta: 0.0002,
+          latitudeDelta: 0.01,
+          longitudeDelta: 0.01,
         }}
         zoomEnabled={true}
         zoomControlEnabled={true}
@@ -556,7 +571,6 @@ export default function MapScreen() {
         showsBuildings={is3DView}
         showsIndoors={is3DView}
         onRegionChangeComplete={(region) => {
-          setZoomLevel(region.latitudeDelta);
           setCurrentMapRegion({
             latitudeDelta: region.latitudeDelta,
             longitudeDelta: region.longitudeDelta
@@ -623,6 +637,26 @@ export default function MapScreen() {
               />
             </TouchableOpacity>
 
+            {/* Ignition Status */}
+            <TouchableOpacity
+              style={[
+                styles.iconCircle,
+                {
+                  borderColor: device?.attributes?.ignition ? "#43A047" : "#E53935",
+                  backgroundColor: device?.attributes?.ignition ? "#43A047" : "#fff",
+                },
+              ]}
+              onPress={() => {
+                // Optional: Add any ignition-related action here
+              }}
+            >
+              <MaterialIcons
+                name="vpn-key"
+                size={24}
+                color={device?.attributes?.ignition ? "#fff" : "#E53935"}
+              />
+            </TouchableOpacity>
+
             {/* Play (active) */}
             <TouchableOpacity
               style={[
@@ -654,18 +688,7 @@ export default function MapScreen() {
                 },
               ]}
               onPress={() => {
-              setCarMode(true);
-                const wasCarModeOff = carMode;
-                
-                // Only reset zoom when first enabling car mode
-                if ( mapRef.current && device?.latitude && device?.longitude) {
-                  mapRef.current.animateToRegion({
-                    latitude: Number(device.latitude),
-                    longitude: Number(device.longitude),
-                    latitudeDelta: 0.0002, // Default zoom level only on initial enable
-                    longitudeDelta: 0.0002,
-                  }, 1000);
-                }
+                setCarMode(!carMode);
               }}
             >
               <MaterialIcons

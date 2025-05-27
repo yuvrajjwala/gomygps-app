@@ -51,6 +51,12 @@ export default function DriversScreen() {
       onToggle: handleNotificationToggle,
     },
     {
+      label: "All Vehicle Map",
+      icon: "map",
+      color: "#000000",
+      onPress: () => router.push("/all-vehicles-map"),
+    },
+    {
       label: "Geofencing",
       icon: "my-location",
       color: "#000000",

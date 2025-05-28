@@ -550,7 +550,7 @@ export default function StopReportScreen() {
                   <TableWrapper style={styles.tableWrapperDark}>
                     <Rows
                       data={currentRecords.map(entry => [
-                        String(devicesData.find((device) => device.id === entry?.deviceId)?.name || ""),
+                        String(devicesData.find((device) => device.deviceId === entry?.deviceId)?.name || ""),
                         String(formatDate(entry?.startTime)),
                         String(formatDate(entry?.endTime)),
                         String((Number(entry?.endOdometer) / 1000).toFixed(2) + " KM"),

@@ -178,7 +178,7 @@ export default function SummaryReportScreen() {
       setGeneratingStatus('Fetching summary data...');
       animateGeneratingProgress(50);
 //   TODO: Remove the hardcoded deviceId
-      const summaryResponse = await Api.call('/api/reports/summary?from=' + fromDateUTC.toISOString().slice(0, 19) + 'Z&to=' + toDateUTC.toISOString().slice(0, 19) + 'Z' + (deviceValue ? '&deviceId=' + '12' : '') + (groupValue ? '&groupId=' + groupValue : ''), 'GET', {}, false);
+      const summaryResponse = await Api.call('/api/reports/summary?from=' + fromDateUTC.toISOString().slice(0, 19) + 'Z&to=' + toDateUTC.toISOString().slice(0, 19) + 'Z' + (deviceValue ? '&deviceId=' + deviceValue : '') + (groupValue ? '&groupId=' + groupValue : ''), 'GET', {}, false);
       console.log('summaryResponse',deviceValue);
       setGeneratingStatus('Processing response...');
       animateGeneratingProgress(70);

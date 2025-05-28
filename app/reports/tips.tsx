@@ -591,7 +591,7 @@ export default function TipsReportScreen() {
                   <TableWrapper style={styles.tableWrapperDark}>
                     <Rows
                       data={currentRecords.map(trip => [
-                        String(devicesData.find(device => device.id === trip?.deviceId)?.name || ''),
+                        String(devicesData.find(device => device.deviceId === trip?.deviceId)?.name || ''),
                         formatDate(trip.startTime),
                         formatDate(trip.endTime),
                         String(trip.startOdometer || '0'),

@@ -655,7 +655,7 @@ export default function EventReportScreen() {
                   <TableWrapper style={styles.tableWrapperDark}>
                     <Rows
                       data={currentRecords.map(entry => [
-                        String(devicesData.find((device) => device.id === entry?.deviceId)?.name || ""),
+                        String(devicesData.find((device) => device.deviceId === entry?.deviceId)?.name || ""),
                         String(formatType(entry?.type) || ""),
                         String(formatDate(entry?.eventTime)),
                         String(entry?.geofenceId ? entry?.geofence?.name : "-"),

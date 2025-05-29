@@ -122,6 +122,7 @@ export default function UserManagementScreen() {
   const [search, setSearch] = useState("");
   const [connectionModalOpen, setConnectionModalOpen] = useState(false);
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
+  const [showPassword, setShowPassword] = useState(false);
   const [formData, setFormData] = useState<FormData>({
     name: "",
     email: "",
@@ -456,12 +457,6 @@ export default function UserManagementScreen() {
         </TouchableOpacity>
       </View>
       <View style={styles.cardButtonsContainer}>
-        {/* <TouchableOpacity 
-          style={styles.cardButton}
-          onPress={() => handleOptionsPress(item)}
-        >
-          <Text style={styles.cardButtonText}>Options</Text>
-        </TouchableOpacity> */}
         <TouchableOpacity style={styles.cardButton1}>
           <Text style={styles.cardButtonText}>Whatsapp</Text>
         </TouchableOpacity>
@@ -567,16 +562,28 @@ export default function UserManagementScreen() {
                 {!selectedUser && (
                   <>
                     <Text style={styles.geoAddLabel}>Password</Text>
-                    <TextInput
-                      style={styles.geoAddInput}
-                      value={formData.password}
-                      onChangeText={(text) =>
-                        setFormData({ ...formData, password: text })
-                      }
-                      placeholder="Enter password"
-                      placeholderTextColor="#666"
-                      secureTextEntry
-                    />
+                    <View style={styles.passwordContainer}>
+                      <TextInput
+                        style={[ { flex: 1 }]}
+                        value={formData.password}
+                        onChangeText={(text) =>
+                          setFormData({ ...formData, password: text })
+                        }
+                        placeholder="Enter password"
+                        placeholderTextColor="#666"
+                        secureTextEntry={!showPassword}
+                      />
+                      <TouchableOpacity
+                        style={styles.eyeIcon}
+                        onPress={() => setShowPassword(!showPassword)}
+                      >
+                        <MaterialIcons
+                          name={showPassword ? "visibility" : "visibility-off"}
+                          size={24}
+                          color="#666"
+                        />
+                      </TouchableOpacity>
+                    </View>
                   </>
                 )}
 
@@ -645,6 +652,7 @@ export default function UserManagementScreen() {
                   placeholder="Enter device limit"
                   placeholderTextColor="#666"
                   keyboardType="numeric"
+                  readOnly={formData.readonly}
                 />
 
                 <Text style={styles.geoAddLabel}>User Limit</Text>
@@ -657,6 +665,7 @@ export default function UserManagementScreen() {
                   placeholder="Enter user limit"
                   placeholderTextColor="#666"
                   keyboardType="numeric"
+                  readOnly={formData.readonly}
                 />
 
                 <View style={styles.checkboxContainer}>
@@ -1361,5 +1370,18 @@ const styles = StyleSheet.create({
     marginLeft: 8,
     fontSize: 14,
     color: "#000000",
+  },
+  passwordContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+    marginBottom: 8,
+    paddingLeft: 10,
+  },
+  eyeIcon: {
+    padding: 10,
   },
 });

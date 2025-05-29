@@ -486,7 +486,7 @@ export default function UserManagementScreen() {
             flex: 1,
             paddingBottom: 50,
             backgroundColor: "#ffffff",
-            paddingHorizontal: 15,
+            paddingHorizontal: 10,
           }}
         >
           <TextInput
@@ -1080,7 +1080,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#ffffff",
     borderRadius: 16,
     paddingVertical: 10,
-    paddingHorizontal: 10,
+    paddingHorizontal: 2,
     marginBottom: 16,
     elevation: 2,
     shadowColor: "#ffffff",

@@ -5,6 +5,7 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import moment from "moment";
 import React, { useEffect, useRef, useState } from "react";
 import {
+  Alert,
   Animated,
   Dimensions,
   Image,
@@ -708,9 +709,25 @@ export default function MapScreen() {
                 },
               ]}
               onPress={() => {
-                if (device) {
-                  mobilize(device.protocol);
-                }
+                Alert.alert(
+                  isLocked ? "Unlock Vehicle?" : "Lock Vehicle?",
+                  `Are you sure you want to ${isLocked ? 'unlock' : 'lock'} this vehicle?`,
+                  [
+                    {
+                      text: "Cancel",
+                      style: "cancel"
+                    },
+                    {
+                      text: isLocked ? "Yes, Unlock" : "Yes, Lock",
+                      style: isLocked ? "default" : "destructive",
+                      onPress: () => {
+                        if (device) {
+                          mobilize(device.protocol);
+                        }
+                      }
+                    }
+                  ]
+                );
               }}
             >
               <MaterialIcons

@@ -1,6 +1,5 @@
 import Api from '@/config/Api';
 import { MaterialIcons } from '@expo/vector-icons';
-import { Picker } from '@react-native-picker/picker';
 import React, { useEffect, useState } from 'react';
 import {
   Dimensions,
@@ -11,6 +10,9 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import { useSelector } from 'react-redux';
+import { RootState } from '../store/store';
+import SearchableDropdown from './SearchableDropdown';
 
 const { height } = Dimensions.get('window');
 
@@ -21,22 +23,28 @@ interface ConnectionsFormProps {
   type?: string;
 }
 
+interface DropdownItem {
+  label: string;
+  value: string;
+}
+
 const ConnectionsForm: React.FC<ConnectionsFormProps> = ({
   id,
   open,
   onClose,
   type = 'userId',
 }) => {
-  const [allDevices, setAllDevices] = useState([]);
-  const [allGeofences, setAllGeofences] = useState([]);
-  const [allNotifications, setAllNotifications] = useState([]);
-  const [groups, setGroups] = useState([]);
-  const [users, setUsers] = useState([]);
-  const [selectedDevices, setSelectedDevices] = useState([]);
-  const [selectedGroups, setSelectedGroups] = useState([]);
-  const [selectedUsers, setSelectedUsers] = useState([]);
-  const [selectedGeofences, setSelectedGeofences] = useState([]);
-  const [selectedNotifications, setSelectedNotifications] = useState([]);
+  const { devices: devicesData } = useSelector((state: RootState) => state.devices);
+  const [allDevices, setAllDevices] = useState<DropdownItem[]>([]);
+  const [allGeofences, setAllGeofences] = useState<DropdownItem[]>([]);
+  const [allNotifications, setAllNotifications] = useState<DropdownItem[]>([]);
+  const [groups, setGroups] = useState<DropdownItem[]>([]);
+  const [users, setUsers] = useState<DropdownItem[]>([]);
+  const [selectedDevices, setSelectedDevices] = useState<any[]>([]);
+  const [selectedGroups, setSelectedGroups] = useState<any[]>([]);
+  const [selectedUsers, setSelectedUsers] = useState<any[]>([]);
+  const [selectedGeofences, setSelectedGeofences] = useState<any[]>([]);
+  const [selectedNotifications, setSelectedNotifications] = useState<any[]>([]);
 
   const reqJSON = { [type]: id };
 
@@ -178,7 +186,10 @@ const ConnectionsForm: React.FC<ConnectionsFormProps> = ({
   const getAllGeofences = async () => {
     try {
       const res = await Api.call('/api/geofences', 'GET', {}, false);
-      setAllGeofences(res.data);
+      setAllGeofences(res.data.map((item: any) => ({
+        label: item.name,
+        value: item.id
+      })));
     } catch (error) {
       console.log(error);
     }
@@ -187,27 +198,39 @@ const ConnectionsForm: React.FC<ConnectionsFormProps> = ({
   const getAllNotifications = async () => {
     try {
       const res = await Api.call('/api/notifications?all=true', 'GET', {}, false);
-      setAllNotifications(res.data);
+      setAllNotifications(res.data.map((item: any) => ({
+        label: item.name,
+        value: item.id
+      })));
     } catch (error) {
       console.log(error);
     }
   };
 
   useEffect(() => {
-    getAllGeofences();
-  }, []);
+    // Transform devices data for dropdown
+    const deviceDropdownItems = devicesData.map((device: any) => ({
+      label: device.name,
+      value: device.deviceId
+    }));
+    setAllDevices(deviceDropdownItems);
+  }, [devicesData]);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [devicesRes, groupsRes, usersRes] = await Promise.all([
-          Api.call('/api/devices', 'GET', {}, false),
+        const [groupsRes, usersRes] = await Promise.all([
           Api.call('/api/groups', 'GET', {}, false),
           Api.call('/api/users', 'GET', {}, false),
         ]);
-        setAllDevices(devicesRes.data);
-        setGroups(groupsRes.data);
-        setUsers(usersRes.data);
+        setGroups(groupsRes.data.map((item: any) => ({
+          label: item.name,
+          value: item.id
+        })));
+        setUsers(usersRes.data.map((item: any) => ({
+          label: item.name,
+          value: item.id
+        })));
       } catch (error) {
         console.log(error);
       }
@@ -246,7 +269,7 @@ const ConnectionsForm: React.FC<ConnectionsFormProps> = ({
     items: any[],
     onDelete: (id: string) => void,
     onAdd: (id: string) => void,
-    allItems: any[]
+    allItems: DropdownItem[]
   ) => (
     <View style={styles.section}>
       <Text style={styles.sectionTitle}>{title}</Text>
@@ -254,16 +277,13 @@ const ConnectionsForm: React.FC<ConnectionsFormProps> = ({
         {items.map((item) => renderBadge(item, () => onDelete(item.id)))}
       </View>
       <View style={styles.pickerContainer}>
-        <Picker
-          selectedValue=""
+        <SearchableDropdown
+          items={allItems}
+          value=""
           onValueChange={(value) => value && onAdd(value)}
-          style={styles.picker}
-        >
-          <Picker.Item label={`Select ${title}`} value="" />
-          {allItems.map((item) => (
-            <Picker.Item key={item.id} label={item.name} value={item.id} />
-          ))}
-        </Picker>
+          placeholder={`Select ${title}`}
+          zIndex={1000}
+        />
       </View>
     </View>
   );
@@ -361,9 +381,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     borderWidth: 1,
     borderColor: '#E0E0E0',
-  },
-  picker: {
-    color: '#000000',
+    marginTop: 8,
   },
 });
 

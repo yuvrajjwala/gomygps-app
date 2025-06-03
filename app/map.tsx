@@ -633,7 +633,7 @@ export default function MapScreen() {
             >
               <MaterialIcons
                 name="local-parking"
-                size={24}
+                size={20}
                 color={isParked ? "#fff" : "#43A047"}
               />
             </TouchableOpacity>
@@ -653,7 +653,7 @@ export default function MapScreen() {
             >
               <MaterialIcons
                 name="vpn-key"
-                size={24}
+                size={20}
                 color={device?.attributes?.ignition ? "#fff" : "#E53935"}
               />
             </TouchableOpacity>
@@ -676,7 +676,7 @@ export default function MapScreen() {
                 });
               }}
             >
-              <MaterialIcons name="play-arrow" size={24} color="#fff" />
+              <MaterialIcons name="play-arrow" size={20} color="#fff" />
             </TouchableOpacity>
 
             {/* Car Mode */}
@@ -694,7 +694,7 @@ export default function MapScreen() {
             >
               <MaterialIcons
                 name="directions-car"
-                size={24}
+                size={20}
                 color={carMode ? "#fff" : "#4285F4"}
               />
             </TouchableOpacity>
@@ -732,7 +732,7 @@ export default function MapScreen() {
             >
               <MaterialIcons
                 name={isLocked ? "lock" : "lock-open"}
-                size={24}
+                size={20}
                 color={isLocked ? "#fff" : "red"}
               />
             </TouchableOpacity>
@@ -750,7 +750,7 @@ export default function MapScreen() {
             >
               <MaterialIcons
                 name="share"
-                size={24}
+                size={20}
                 color="#43A047"
               />
             </TouchableOpacity>
@@ -1161,8 +1161,8 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   iconCircle: {
-    width: 48,
-    height: 48,
+    width: 40,
+    height: 40,
     borderRadius: 24,
     borderWidth: 2,
     backgroundColor: "#fff",

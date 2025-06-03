@@ -75,14 +75,14 @@ const formatDate = (dateStr: string) => {
 
 export default function SummaryReportScreen() {
   const router = useRouter();
-  const { id } = useLocalSearchParams();
+  const { deviceId } = useLocalSearchParams();
   const [reportData, setReportData] = useState<ReportData[]>([]);
   const [groups, setGroups] = useState<Group[]>([]);
   const [isLoadingVehicles, setIsLoadingVehicles] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
   
   // Device dropdown states
-  const [deviceValue, setDeviceValue] = useState<string | null>(null);
+  const [deviceValue, setDeviceValue] = useState<string | null>(Number(deviceId) as any || null);
   const [deviceItems, setDeviceItems] = useState<DropdownItem[]>([]);
   
   // Group dropdown states
@@ -646,8 +646,8 @@ export default function SummaryReportScreen() {
                     <Rows
                       data={currentRecords.map(entry => [
                         String(entry?.deviceName || "N/A"),
-                        String(entry?.startTime ? formatDate(entry.startTime) : "N/A"),
-                        String(entry?.endTime ? formatDate(entry.endTime) : "N/A"),
+                        String(formatDate(fromDate.toISOString())),
+                        String(formatDate(toDate.toISOString())),
                         String(entry?.startOdometer ? (entry.startOdometer / 1000).toFixed(2) + " km" : "N/A"),
                         String(entry?.endOdometer ? (entry.endOdometer / 1000).toFixed(2) + " km" : "N/A"),
                         String(entry?.distance ? (entry.distance / 1000).toFixed(2) + " km" : "N/A"),

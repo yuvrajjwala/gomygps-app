@@ -7,6 +7,7 @@ import {
   Alert,
   Dimensions,
   FlatList,
+  Linking,
   Modal,
   SafeAreaView,
   ScrollView,
@@ -457,7 +458,7 @@ export default function UserManagementScreen() {
         </TouchableOpacity>
       </View>
       <View style={styles.cardButtonsContainer}>
-        <TouchableOpacity style={styles.cardButton1}>
+        <TouchableOpacity onPress={() => Linking.openURL(`https://wa.me/91${item.phone}`)} style={styles.cardButton1}>
           <Text style={styles.cardButtonText}>Whatsapp</Text>
         </TouchableOpacity>
       </View>

@@ -126,15 +126,13 @@ const NoDataFound = ({reportFetched}: {reportFetched: boolean}) => (
 
 export default function EventReportScreen() {
   const router = useRouter();
-  const { id } = useLocalSearchParams();
+  const { deviceId } = useLocalSearchParams();
   const [isDownloading, setIsDownloading] = useState(false);
   const [reportData, setReportData] = useState<ReportData[]>([]);
   const [groups, setGroups] = useState<Group[]>([]);
-  
   // Device dropdown states
-  const [deviceValue, setDeviceValue] = useState<string | null>(null);
+  const [deviceValue, setDeviceValue] = useState<string | null>(Number(deviceId) as any || null);
   const [deviceItems, setDeviceItems] = useState<DropdownItem[]>([]);
-  
   // Group dropdown states
   const [groupValue, setGroupValue] = useState<string | null>(null);
   const [groupItems, setGroupItems] = useState<DropdownItem[]>([]);

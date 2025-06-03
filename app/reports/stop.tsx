@@ -57,14 +57,14 @@ const formatDate = (dateStr: string) => {
 
 export default function StopReportScreen() {
   const router = useRouter();
-  const { id } = useLocalSearchParams();
+  const { deviceId } = useLocalSearchParams();
   const [reportData, setReportData] = useState<ReportData[]>([]);
   const [groups, setGroups] = useState<Group[]>([]);
   const [isLoadingVehicles, setIsLoadingVehicles] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
   
   // Device dropdown states
-  const [deviceValue, setDeviceValue] = useState<string | null>(null);
+  const [deviceValue, setDeviceValue] = useState<string | null>(Number(deviceId) as any || null);
   const [deviceItems, setDeviceItems] = useState<DropdownItem[]>([]);
 
   const [reportFetched, setReportFetched] = useState(false);

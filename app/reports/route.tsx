@@ -64,7 +64,7 @@ const formatDate = (dateStr: string) => {
 
 export default function RouteReportScreen() {
   const router = useRouter();
-  const { id } = useLocalSearchParams();
+  const { deviceId } = useLocalSearchParams();
   const [reportData, setReportData] = useState<ReportData[]>([]);
   const [groups, setGroups] = useState<Group[]>([]);
   const [isLoadingVehicles, setIsLoadingVehicles] = useState(false);
@@ -73,7 +73,7 @@ export default function RouteReportScreen() {
   const { devices: devicesData } = useSelector((state: RootState) => state.devices);
   const [loading, setLoading] = useState(false);
   // Device dropdown states
-  const [deviceValue, setDeviceValue] = useState<string | null>(null);
+  const [deviceValue, setDeviceValue] = useState<string | null>(Number(deviceId) as any || null);
   const [deviceItems, setDeviceItems] = useState<DropdownItem[]>([]);
   
   // Group dropdown states

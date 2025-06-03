@@ -70,7 +70,7 @@ const formatDate = (dateStr: string) => {
 
 export default function TipsReportScreen() {
   const router = useRouter();
-  const { id } = useLocalSearchParams();
+  const { deviceId } = useLocalSearchParams();
   const [reportData, setReportData] = useState<ReportData[]>([]);
   const [groups, setGroups] = useState<Group[]>([]);
   const [isLoadingVehicles, setIsLoadingVehicles] = useState(false);
@@ -78,7 +78,7 @@ export default function TipsReportScreen() {
   const dispatch = useDispatch();
   const { devices: devicesData, loading } = useSelector((state: RootState) => state.devices);
   // Device dropdown states
-  const [deviceValue, setDeviceValue] = useState<string | null>(null);
+  const [deviceValue, setDeviceValue] = useState<string | null>(Number(deviceId) as any || null);
   const [deviceItems, setDeviceItems] = useState<DropdownItem[]>([]);
 
   // Group dropdown states

@@ -171,11 +171,11 @@ export default function GroupManagement() {
     const itemMap: { [key: string]: Group } = {};
     const roots: Group[] = [];
 
-    items.forEach((item) => {
+    items?.forEach((item) => {
       itemMap[item.id] = { ...item, children: [], hasChildren: false };
     });
 
-    items.forEach((item) => {
+    items?.forEach((item) => {
       if (!item.groupId) {
         roots.push(itemMap[item.id]);
       } else {
@@ -218,9 +218,6 @@ export default function GroupManagement() {
   const treeData = buildTreeStructure(groups);
   const flattenedData = flattenTree(treeData);
 
-  const filteredGroups = groups.filter((g) =>
-    g.name.toLowerCase().includes(search.toLowerCase())
-  );
 
   const renderGroupItem = ({ item }: { item: Group }) => {
     const depth = item.depth || 0;

@@ -14,12 +14,13 @@ import {
   Alert,
   Dimensions,
   Image,
+  StatusBar,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
 } from "react-native";
-import MapView, { Marker, Polyline } from "react-native-maps";
+import MapView, { Marker, Polyline, PROVIDER_GOOGLE } from "react-native-maps";
 import DateTimePickerModal from "react-native-modal-datetime-picker";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -1047,6 +1048,8 @@ export default function HistoryPlaybackScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
+            <StatusBar barStyle="light-content" backgroundColor="#000" />
+
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()}>
@@ -1085,6 +1088,7 @@ export default function HistoryPlaybackScreen() {
           <>
             <MapView
               ref={mapRef}
+              provider={PROVIDER_GOOGLE}
               style={StyleSheet.absoluteFillObject}
               initialRegion={{
                 latitude: routeData[0]?.latitude || 0,

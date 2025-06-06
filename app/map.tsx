@@ -22,7 +22,8 @@ import {
 import MapView, {
   AnimatedRegion,
   Marker,
-  Polyline
+  Polyline,
+  PROVIDER_GOOGLE
 } from "react-native-maps";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -550,6 +551,7 @@ export default function MapScreen() {
       {/* Map */}
       <MapView
         ref={mapRef}
+        provider={PROVIDER_GOOGLE}
         style={styles.map}
         minZoomLevel={3}
         maxZoomLevel={20}
@@ -1269,14 +1271,14 @@ const styles = StyleSheet.create({
   },
   floatingMenuLeft: {
     position: "absolute",
-    top: 120,
+    top: 130,
     left: 16,
     zIndex: 5,
     alignItems: "center",
   },
   floatingMenuRight: {
     position: "absolute",
-    top: 120,
+    top: 130,
     right: 16,
     zIndex: 5,
     alignItems: "center",

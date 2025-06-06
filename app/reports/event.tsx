@@ -635,7 +635,7 @@ export default function EventReportScreen() {
           <View style={styles.tableContainerDark}>
             <ScrollView horizontal showsHorizontalScrollIndicator={false}>
               <View>
-                <Table borderStyle={{ borderWidth: 1, borderColor: '#e0e0e0' }}>
+                <Table borderStyle={{  borderColor: '#e0e0e0' }}>
                   <Row
                     data={[
                       'Vehicle Number',
@@ -819,7 +819,8 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
   },
   tableWrapperDark: {
-    borderRadius: 8,
+    borderBottomLeftRadius: 10,
+    borderBottomRightRadius: 10,
     backgroundColor: '#fff',
     borderWidth: 1,
     borderColor: '#e0e0e0',
@@ -833,6 +834,10 @@ const styles = StyleSheet.create({
   tableHeaderDark: {
     backgroundColor: '#f5f5f5',
     padding: 12,
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
+    borderTopLeftRadius: 10,
+    borderTopRightRadius: 10,
   },
   tableHeaderTextDark: {
     color: '#000',
